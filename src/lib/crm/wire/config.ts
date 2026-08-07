@@ -5,7 +5,8 @@
  * accounts — table grants + RLS). Same pattern as ops/command: secrets live on
  * the Vercel project, never in git.
  *
- * Public URL + anon are known platform defaults (safe in browser / NEXT_PUBLIC).
+ * Sandbox without secrets can still show LIVE data by proxying
+ * `/api/crm/book` on the sibling Vercel deploy (see getHydrateProxyUrl).
  */
 
 export type CrmDataSource = "mock" | "live";
@@ -17,6 +18,10 @@ export const PLATFORM_SUPABASE_URL =
 /** Anon key is browser-safe (shipped in prod CRM client). Not sufficient for CRM tables. */
 export const PLATFORM_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impnc2dodGZwZWp4YmNkbW9sdnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDQ3MTcsImV4cCI6MjA4ODgyMDcxN30.3mx6z4rIYkuH9T-hkUZLpWpMDxJYyllsTxLsAispGwk";
+
+/** Default sibling used when sandbox has no service_role */
+export const DEFAULT_HYDRATE_PROXY =
+  "https://rivvet-crm-rivvetai.vercel.app";
 
 function firstEnv(...keys: string[]): string {
   for (const k of keys) {
@@ -104,4 +109,17 @@ export function isLiveWire(): boolean {
 
 export function isVercelRuntime(): boolean {
   return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
+
+/**
+ * When sandbox has no service_role, hydrate via the LIVE sibling deploy.
+ * Override with CRM_HYDRATE_PROXY= or disable with CRM_HYDRATE_PROXY=off.
+ */
+export function getHydrateProxyUrl(): string {
+  const explicit = firstEnv("CRM_HYDRATE_PROXY");
+  if (explicit === "off" || explicit === "0" || explicit === "false") return "";
+  if (explicit) return explicit.replace(/\/$/, "");
+  // Only auto-proxy outside Vercel (Grok sandbox / local dev)
+  if (isVercelRuntime()) return "";
+  return DEFAULT_HYDRATE_PROXY;
 }

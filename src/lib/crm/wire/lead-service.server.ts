@@ -17,6 +17,7 @@ import {
 } from "../sequence-queries";
 import { filterLeads, applyLeadFilters, defaultLeadFilters } from "../filters";
 import {
+  getHydrateProxyUrl,
   getServerSupabaseConfig,
   isLiveWire,
   isVercelRuntime,
@@ -286,9 +287,14 @@ export function wireStatusService(): WireStatus {
     message =
       "Forced MOCK (CRM_DATA_SOURCE=mock). Remove that env to allow LIVE.";
   } else if (!hasService) {
-    message = vercel
-      ? "Blocked: SUPABASE_SERVICE_ROLE_KEY not on rivvet-crm — copy from crm-rivvetai (same as LINEAR_API_KEY for ops/command)."
-      : "Blocked: SUPABASE_SERVICE_ROLE_KEY missing — anon cannot read crm_opportunities (RLS).";
+    const proxy = getHydrateProxyUrl();
+    if (!vercel && proxy) {
+      message = `No local service_role — hydrate proxies LIVE book from ${proxy.replace(/^https?:\/\//, "")}.`;
+    } else {
+      message = vercel
+        ? "Blocked: SUPABASE_SERVICE_ROLE_KEY not on rivvet-crm — copy from crm-rivvetai (same as LINEAR_API_KEY for ops/command)."
+        : "Blocked: SUPABASE_SERVICE_ROLE_KEY missing — anon cannot read crm_opportunities (RLS).";
+    }
   } else {
     message = cfg.blockReason || "Mock seed — LIVE not active.";
   }

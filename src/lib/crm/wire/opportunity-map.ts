@@ -18,7 +18,8 @@ export type ProdOppRow = Record<string, unknown>;
 
 function str(v: unknown, fallback = ""): string {
   if (v == null) return fallback;
-  return String(v);
+  const s = String(v).trim();
+  return s || fallback;
 }
 
 function num(v: unknown, fallback = 0): number {
@@ -39,7 +40,6 @@ const STAGES = new Set<string>([
 export function mapOppStage(raw: unknown): OppStage {
   const s = str(raw, "qualified").toLowerCase().replace(/\s+/g, "_");
   if (STAGES.has(s)) return s as OppStage;
-  // legacy / alternate labels
   const aliases: Record<string, OppStage> = {
     discovery: "qualified",
     qualified_discovery: "qualified",
@@ -61,19 +61,27 @@ function ownerFromEmail(email: string | null): OwnerId {
   const e = email.toLowerCase();
   if (e.includes("maya")) return "usr_maya";
   if (e.includes("jordan")) return "usr_jordan";
-  if (e.includes("brayden") || e.includes("rivvet")) return "usr_you";
+  // Real reps / founders map to "you" for My open
+  if (
+    e.includes("brayden") ||
+    e.includes("scott") ||
+    e.includes("ryan") ||
+    e.includes("@rivvetai.com")
+  ) {
+    return "usr_you";
+  }
   return "usr_you";
 }
 
 function accountNameOf(row: ProdOppRow): string {
   const acc = row.accounts;
   if (acc && typeof acc === "object" && !Array.isArray(acc)) {
-    return str((acc as { name?: string }).name, "—");
+    return str((acc as { name?: string }).name, "");
   }
   if (Array.isArray(acc) && acc[0] && typeof acc[0] === "object") {
-    return str((acc[0] as { name?: string }).name, "—");
+    return str((acc[0] as { name?: string }).name, "");
   }
-  return str(row.company_name || row.account_name, "—");
+  return str(row.company_name || row.account_name, "");
 }
 
 function stageProb(stage: OppStage): number {
@@ -95,6 +103,28 @@ function forecastFor(stage: OppStage): ForecastCategory {
   return "pipeline";
 }
 
+/** QA / smoke rows that slip past is_test=false */
+export function isPipelineJunk(row: ProdOppRow): boolean {
+  if (row.is_test === true || row.is_test === "true") return true;
+  const blob = [
+    row.opportunity_name,
+    row.company_name,
+    row.test_reason,
+    row.contact_email,
+  ]
+    .map((v) => str(v, "").toLowerCase())
+    .join(" ");
+  return (
+    /\bqa\b/.test(blob) ||
+    /e2e acceptance/.test(blob) ||
+    /commerce smoke/.test(blob) ||
+    /commerce verify/.test(blob) ||
+    /test throwaway/.test(blob) ||
+    /throwaway@/.test(blob) ||
+    /\+qa-/.test(blob)
+  );
+}
+
 export function mapOpportunityRow(row: ProdOppRow): Opportunity {
   const id = str(row.opportunity_id || row.deal_id || row.id);
   const stage = mapOppStage(row.stage);
@@ -111,10 +141,8 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
     : row.owner_email
       ? str(row.owner_email)
       : null;
-  const start =
-    closeDate || new Date().toISOString().slice(0, 10);
+  const start = closeDate || new Date().toISOString().slice(0, 10);
   const deal = emptyDealDraft(start);
-  // Prefer amount-driven monthly estimate for display
   if (amount > 0) {
     deal.productId = amount >= 30000 ? "unlimited" : "value_based";
   }
@@ -125,12 +153,21 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
       ? str(row.gtm_lead_id)
       : null;
 
+  const accountName = accountNameOf(row);
+  const rawName = str(row.opportunity_name || row.company_name, "");
+  // Prefer human name; never fall back to empty (UUID shows separately as short id)
+  const name =
+    rawName ||
+    accountName ||
+    (row.contact_email ? str(row.contact_email) : "") ||
+    "Opportunity";
+
   return {
     id,
     gtmLeadId: gtm,
-    name: str(row.opportunity_name || row.company_name, "Opportunity"),
+    name,
     accountId: row.account_id ? str(row.account_id) : null,
-    accountName: accountNameOf(row),
+    accountName: accountName || "—",
     primaryContactId: row.primary_contact_id
       ? str(row.primary_contact_id)
       : null,

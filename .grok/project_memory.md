@@ -12,3 +12,4 @@
 - Ops auth: seat-picker + RBAC (Brayden CEO, Scott COO, Ryan CFO, Rem revenue/marketing, Will roadmap). Money: Brayden/Scott/Ryan only. Real auth deferred; URL trusted-team only. [2026-08-07]
 - Ops product contract Phase 0/1: Next=#1; Queue=top3; Complete toasts Linear truth; Plan=Gantt; Marketing=wedge + this-week ship strip (manual until Ayrshare); Care=KB-first; Brief=/brief Monday 3-min. External copy: staffing/front office/scale without payroll/control — never “agentic first” in public. [2026-08-07]
 - CRM LIVE path: requires SUPABASE_SERVICE_ROLE_KEY on rivvet-crm (copy from crm-rivvetai). Anon 401 on crm_opportunities. Same ops/command env-copy step as LINEAR_API_KEY. CRM_DATA_SOURCE=mock force removed. [2026-08-07]
+- CRM LIVE connected on rivvet-crm (2026-08-07): SUPABASE_SERVICE_ROLE_KEY on Vercel → hydrate shows real pipeline (leads 100 · accounts 150 · opps 18). Mock force removed. Same ops/command env-copy pattern.

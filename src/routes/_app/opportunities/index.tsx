@@ -32,17 +32,23 @@ export const Route = createFileRoute("/_app/opportunities/")({
 
 type LayoutMode = "board" | "list";
 
+function shortId(id: string) {
+  if (id.length <= 12) return id;
+  return id.includes("-") ? id.slice(0, 8) : id.slice(0, 8);
+}
+
 function applyLocalFilters(
   rows: Opportunity[],
   query: string,
   priority: PriorityFilter,
   owner: OwnerFilter,
+  now: number,
 ) {
   const q = query.trim().toLowerCase();
   return rows.filter((o) => {
     if (owner !== "all" && o.ownerId !== owner) return false;
     if (priority !== "all") {
-      if (oppPriority(o, DEMO_NOW).priority !== priority) return false;
+      if (oppPriority(o, now).priority !== priority) return false;
     }
     if (!q) return true;
     return (
@@ -56,19 +62,23 @@ function applyLocalFilters(
 
 function OppsPage() {
   const opportunities = useCrmStore((s) => s.opportunities);
-  const [view, setView] = useState<ListView>("my_open");
+  const dataSource = useCrmStore((s) => s.dataSource);
+  // Full pipeline by default — "My open" was only 2 QA-looking rows
+  const [view, setView] = useState<ListView>("all");
   const [layout, setLayout] = useState<LayoutMode>("board");
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState<PriorityFilter>("all");
   const [owner, setOwner] = useState<OwnerFilter>("all");
+
+  const now = dataSource === "live" ? Date.now() : DEMO_NOW;
 
   const base = useMemo(
     () => filterOpps(opportunities, view),
     [opportunities, view],
   );
   const rows = useMemo(
-    () => applyLocalFilters(base, query, priority, owner),
-    [base, query, priority, owner],
+    () => applyLocalFilters(base, query, priority, owner, now),
+    [base, query, priority, owner, now],
   );
   const filterIds = useMemo(() => new Set(rows.map((r) => r.id)), [rows]);
   const counts = useMemo(
@@ -91,7 +101,11 @@ function OppsPage() {
       <PageHeader
         eyebrow="Pipeline"
         title="Opportunities"
-        description="Board or list. Filters compose with saved views. Stage moves stay local."
+        description={
+          dataSource === "live"
+            ? "Live crm_opportunities · drag stages · send path locked."
+            : "Board or list. Filters compose with saved views. Stage moves stay local."
+        }
         action={
           <div className="flex rounded-lg border border-border-soft bg-card-soft p-0.5">
             <button
@@ -165,7 +179,7 @@ function OppsPage() {
                 </thead>
                 <tbody>
                   {rows.map((o) => {
-                    const pr = oppPriority(o, DEMO_NOW);
+                    const pr = oppPriority(o, now);
                     return (
                       <tr
                         key={o.id}
@@ -184,7 +198,7 @@ function OppsPage() {
                           </Link>
                           <p className="text-[11px] text-fg-subtle">
                             {o.accountName} ·{" "}
-                            <span className="font-mono">{o.id}</span>
+                            <span className="font-mono">{shortId(o.id)}</span>
                           </p>
                         </td>
                         <td className="px-4 py-3">
@@ -230,7 +244,7 @@ function OppsPage() {
                             {o.nextAction ?? "Set next step"}
                           </span>
                           <p className="font-mono text-[10px] text-fg-subtle">
-                            {formatRelative(o.lastTouch, DEMO_NOW)}
+                            {formatRelative(o.lastTouch, now)}
                           </p>
                         </td>
                         <td className="px-4 py-3 font-mono text-xs tabular text-fg-muted">

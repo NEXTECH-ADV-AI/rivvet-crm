@@ -7,7 +7,12 @@ import { seedOpportunities } from "../seed";
 import type { LostReason, OppStage, Opportunity } from "../types";
 import { filterOpps } from "../filters";
 import { getServerSupabaseConfig, isLiveWire } from "./config";
-import { mapOpportunityRow, mapOppStage, type ProdOppRow } from "./opportunity-map";
+import {
+  isPipelineJunk,
+  mapOpportunityRow,
+  mapOppStage,
+  type ProdOppRow,
+} from "./opportunity-map";
 import { parseTotal } from "./supabase-rest.server";
 
 const LIST_SELECT =
@@ -20,6 +25,8 @@ export type ListOppsInput = {
   owner?: string;
   limit?: number;
   offset?: number;
+  /** Include QA / smoke rows (default false for operator UI) */
+  includeTest?: boolean;
 };
 
 export type ListOppsResult = {
@@ -61,11 +68,13 @@ export async function listOpportunitiesService(
   }
 
   const { url, key } = getServerSupabaseConfig();
+  // Pull a full pipeline page then filter junk client-side (QA slips past is_test)
+  const fetchLimit = Math.min(200, Math.max(limit + offset, 100));
   const params = new URLSearchParams();
   params.set("select", LIST_SELECT);
   params.set("order", "updated_at.desc,opportunity_id.asc");
-  params.set("limit", String(limit));
-  params.set("offset", String(offset));
+  params.set("limit", String(fetchLimit));
+  params.set("offset", "0");
   params.set("is_test", "not.is.true");
 
   if (input.query?.trim()) {
@@ -76,7 +85,12 @@ export async function listOpportunitiesService(
     );
   }
   if (input.stage && input.stage !== "all") {
-    params.set("stage", `eq.${input.stage}`);
+    // Map UI stages to prod; proposal_out also covers proposal_contract
+    if (input.stage === "proposal_out") {
+      params.set("stage", "in.(proposal_out,proposal_contract,proposal,contract)");
+    } else {
+      params.set("stage", `eq.${input.stage}`);
+    }
   }
   if (input.owner && input.owner !== "all") {
     params.set("assigned_rep_email", `ilike.*${input.owner}*`);
@@ -89,18 +103,22 @@ export async function listOpportunitiesService(
         Authorization: `Bearer ${key}`,
         Accept: "application/json",
         Prefer: "count=exact",
-        Range: `${offset}-${offset + limit - 1}`,
+        Range: `0-${fetchLimit - 1}`,
       },
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`crm_opportunities ${res.status}: ${body.slice(0, 160)}`);
     }
-    const rows = (await res.json()) as ProdOppRow[];
-    const total = parseTotal(res.headers.get("content-range")) ?? rows.length;
+    const raw = (await res.json()) as ProdOppRow[];
+    const cleaned = input.includeTest
+      ? raw
+      : raw.filter((r) => !isPipelineJunk(r));
+    const mapped = cleaned.map(mapOpportunityRow);
+    const total = mapped.length;
     return {
       source: "live",
-      opportunities: rows.map(mapOpportunityRow),
+      opportunities: mapped.slice(offset, offset + limit),
       total,
       limit,
       offset,
@@ -122,7 +140,11 @@ export async function listOpportunitiesService(
 
 export async function getOpportunityService(
   opportunityId: string,
-): Promise<{ source: "mock" | "live"; opportunity: Opportunity | null; message?: string }> {
+): Promise<{
+  source: "mock" | "live";
+  opportunity: Opportunity | null;
+  message?: string;
+}> {
   if (!isLiveWire()) {
     return {
       source: "mock",
@@ -133,7 +155,7 @@ export async function getOpportunityService(
   const { url, key } = getServerSupabaseConfig();
   try {
     const res = await fetch(
-      `${url}/rest/v1/crm_opportunities?select=${encodeURIComponent(LIST_SELECT)}&opportunity_id=eq.${encodeURIComponent(opportunityId)}&is_test=not.is.true&limit=1`,
+      `${url}/rest/v1/crm_opportunities?select=${encodeURIComponent(LIST_SELECT)}&opportunity_id=eq.${encodeURIComponent(opportunityId)}&limit=1`,
       {
         headers: {
           apikey: key,
@@ -171,8 +193,11 @@ export async function patchOpportunityStageService(input: {
     };
   }
   const { url, key } = getServerSupabaseConfig();
+  // Write canonical stage; also map proposal_out → proposal_contract if prod uses that
+  const stageWrite =
+    input.stage === "proposal_out" ? "proposal_contract" : input.stage;
   const body: Record<string, unknown> = {
-    stage: input.stage,
+    stage: stageWrite,
     updated_at: new Date().toISOString(),
   };
   if (input.stage === "closed_lost" && input.lostReason) {

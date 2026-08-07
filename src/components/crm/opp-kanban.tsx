@@ -18,6 +18,11 @@ import { PriorityBadge } from "./priority-badge";
 import { cn } from "@/components/ui/cn";
 import { usePatchOpportunityStage } from "@/lib/crm/wire";
 
+function shortId(id: string) {
+  if (id.length <= 12) return id;
+  return id.includes("-") ? id.slice(0, 8) : id.slice(0, 8);
+}
+
 export function OppKanban({
   listView,
   filterIds,
@@ -32,6 +37,8 @@ export function OppKanban({
   const patchStage = usePatchOpportunityStage();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<OppStage | null>(null);
+
+  const now = dataSource === "live" ? Date.now() : DEMO_NOW;
 
   const filtered = useMemo(() => {
     let list = filterOpps(opportunities, listView);
@@ -48,15 +55,15 @@ export function OppKanban({
     }
     for (const s of KANBAN_STAGES) {
       map[s].sort((a, b) => {
-        const pa = oppPriority(a, DEMO_NOW);
-        const pb = oppPriority(b, DEMO_NOW);
+        const pa = oppPriority(a, now);
+        const pb = oppPriority(b, now);
         const r = priorityRank(pa.priority) - priorityRank(pb.priority);
         if (r !== 0) return r;
         return b.amount - a.amount;
       });
     }
     return map;
-  }, [filtered]);
+  }, [filtered, now]);
 
   function applyStage(id: string, stage: OppStage) {
     if (dataSource === "live") {
@@ -147,7 +154,7 @@ export function OppKanban({
                     </div>
                   )}
                   {cards.map((o) => {
-                    const pr = oppPriority(o, DEMO_NOW);
+                    const pr = oppPriority(o, now);
                     const dragging = dragId === o.id;
                     return (
                       <article
@@ -177,7 +184,7 @@ export function OppKanban({
                             <div className="flex items-center gap-1.5">
                               <PriorityBadge priority={pr.priority} />
                               <span className="font-mono text-[10px] text-fg-subtle">
-                                {o.id}
+                                {shortId(o.id)}
                               </span>
                             </div>
                             <Link
@@ -206,7 +213,7 @@ export function OppKanban({
                             <span className="text-danger">No next step</span>
                           )}
                           {" · "}
-                          {formatRelative(o.lastTouch, DEMO_NOW)}
+                          {formatRelative(o.lastTouch, now)}
                         </p>
                         <div className="mt-1.5 pl-4 sm:hidden">
                           <select
