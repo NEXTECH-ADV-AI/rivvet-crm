@@ -67,6 +67,8 @@ export interface WireStatus {
   tables: string[];
   locked: string[];
   message: string;
+  /** Why MOCK when LIVE is expected — Settings / banner */
+  blockReason?: string | null;
   env?: {
     host: "vercel" | "local";
     hasNextPublicSupabaseUrl: boolean;
@@ -74,5 +76,6 @@ export interface WireStatus {
     hasAnonKey: boolean;
     keyKind: "service_role" | "anon" | "none";
     projectHint: string;
+    supabaseHost: string;
   };
 }

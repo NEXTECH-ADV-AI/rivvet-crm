@@ -161,15 +161,20 @@ function SettingsPage() {
                 "rounded-lg border px-3 py-2.5",
                 wire.connected
                   ? "border-product-mint/40 bg-product-mint/10"
-                  : "border-border-soft bg-mist/60",
+                  : "border-warn/40 bg-warn/10",
               )}
             >
               <p className="text-sm font-semibold text-ink">
                 {wire.source === "live"
-                  ? "LIVE — Supabase REST"
-                  : "MOCK — seed (full UI E2E)"}
+                  ? "LIVE — Supabase REST (service_role)"
+                  : "MOCK — seed pipeline (not production opps)"}
               </p>
               <p className="mt-1 text-[12px] text-fg-muted">{wire.message}</p>
+              {wire.blockReason ? (
+                <p className="mt-1 font-mono text-[10px] text-warn">
+                  block: {wire.blockReason}
+                </p>
+              ) : null}
             </div>
 
             {wire.env && (
@@ -182,6 +187,7 @@ function SettingsPage() {
                     host: <strong>{wire.env.host}</strong>
                   </li>
                   <li>project: {wire.env.projectHint}</li>
+                  <li>supabase: {wire.env.supabaseHost}</li>
                   <li
                     className={
                       wire.env.hasNextPublicSupabaseUrl
@@ -200,7 +206,7 @@ function SettingsPage() {
                     }
                   >
                     SUPABASE_SERVICE_ROLE_KEY{" "}
-                    {wire.env.hasServiceRoleKey ? "✓" : "missing"}
+                    {wire.env.hasServiceRoleKey ? "✓" : "missing — required"}
                   </li>
                   <li
                     className={
@@ -216,6 +222,37 @@ function SettingsPage() {
                 </ul>
               </div>
             )}
+
+            <div className="rounded-lg border border-border-soft bg-deep-ink/5 px-3 py-2.5 text-[12px] text-fg-muted">
+              <p className="mb-1 font-sans text-[11px] font-semibold text-ink">
+                Connect LIVE (ops/command pattern — 2 minutes)
+              </p>
+              <ol className="list-decimal space-y-1 pl-4 text-[11px]">
+                <li>
+                  Vercel → <strong className="text-ink">crm-rivvetai</strong> →
+                  Settings → Environment Variables
+                </li>
+                <li>
+                  Copy <code className="text-ink">SUPABASE_SERVICE_ROLE_KEY</code>{" "}
+                  (and URL/anon if not already defaulted)
+                </li>
+                <li>
+                  Paste onto <strong className="text-ink">rivvet-crm</strong>{" "}
+                  (Production + Preview) — same as{" "}
+                  <code className="text-ink">LINEAR_API_KEY</code> for
+                  ops/command
+                </li>
+                <li>
+                  Do <strong className="text-ink">not</strong> set{" "}
+                  <code className="text-ink">CRM_DATA_SOURCE=mock</code>
+                </li>
+                <li>Redeploy Production → chip flips to LIVE</li>
+              </ol>
+              <p className="mt-2 font-mono text-[10px]">
+                Or paste SUPABASE_SERVICE_ROLE_KEY in chat once — we inject on
+                deploy (never commit).
+              </p>
+            </div>
 
             <div>
               <p className="mb-1 text-[11px] font-semibold text-fg-subtle">
@@ -241,15 +278,6 @@ function SettingsPage() {
                   <li key={l}>· {l}</li>
                 ))}
               </ul>
-            </div>
-            <div className="rounded-lg border border-border-soft bg-deep-ink/5 px-3 py-2 font-mono text-[10px] text-fg-muted">
-              <p className="mb-1 font-sans text-[11px] font-semibold text-ink">
-                For LIVE on rivvet-crm (optional)
-              </p>
-              <p>NEXT_PUBLIC_SUPABASE_URL=…</p>
-              <p>SUPABASE_SERVICE_ROLE_KEY=…</p>
-              <p>NEXT_PUBLIC_SUPABASE_ANON_KEY=…</p>
-              <p>CRM_BASE_URL=https://crm.rivvetai.com</p>
             </div>
             <div>
               <p className="mb-1 text-[11px] font-semibold text-fg-subtle">

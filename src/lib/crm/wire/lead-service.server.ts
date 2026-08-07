@@ -16,7 +16,12 @@ import {
   type SequenceListView,
 } from "../sequence-queries";
 import { filterLeads, applyLeadFilters, defaultLeadFilters } from "../filters";
-import { getServerSupabaseConfig, isLiveWire, isVercelRuntime } from "./config";
+import {
+  getServerSupabaseConfig,
+  isLiveWire,
+  isVercelRuntime,
+  PLATFORM_SUPABASE_URL,
+} from "./config";
 import { mapGtmLeadRow, type GtmLeadRow } from "./gtm-lead-map";
 import { parseTotal, restPatch } from "./supabase-rest.server";
 import { SEQUENCE_VERTICALS } from "../lead-model";
@@ -259,36 +264,68 @@ export function wireStatusService(): WireStatus {
   const cfg = getServerSupabaseConfig();
   const live = cfg.source === "live";
   const vercel = isVercelRuntime();
-  const hasUrl = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+  const hasUrlEnv = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.SUPABASE_URL ||
+      process.env.CRM_SUPABASE_URL,
   );
-  const hasService = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const hasAnon = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY,
+  const hasService = Boolean(
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.CRM_SUPABASE_SERVICE_ROLE_KEY,
   );
+  const hasAnonEnv = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.CRM_SUPABASE_ANON_KEY,
+  );
+
+  let message: string;
+  if (live) {
+    message = `LIVE — crm_opportunities · accounts · gtm_leads via service_role${vercel ? " on Vercel" : ""}.`;
+  } else if (cfg.blockReason === "CRM_DATA_SOURCE=mock") {
+    message =
+      "Forced MOCK (CRM_DATA_SOURCE=mock). Remove that env to allow LIVE.";
+  } else if (!hasService) {
+    message = vercel
+      ? "Blocked: SUPABASE_SERVICE_ROLE_KEY not on rivvet-crm — copy from crm-rivvetai (same as LINEAR_API_KEY for ops/command)."
+      : "Blocked: SUPABASE_SERVICE_ROLE_KEY missing — anon cannot read crm_opportunities (RLS).";
+  } else {
+    message = cfg.blockReason || "Mock seed — LIVE not active.";
+  }
+
+  let supabaseHost = "";
+  try {
+    supabaseHost = new URL(cfg.url || PLATFORM_SUPABASE_URL).host;
+  } catch {
+    supabaseHost = "jgsghtfpejxbcdmolvsp.supabase.co";
+  }
 
   return {
     source: live ? "live" : "mock",
     connected: live,
-    tables: ["gtm_leads", "accounts", "contacts", "crm_opportunities", "activities"],
+    tables: [
+      "gtm_leads",
+      "accounts",
+      "contacts",
+      "crm_opportunities",
+      "activities",
+    ],
     locked: [
       "Instantly Load GO (n8n)",
       "sendContract / PandaDoc",
       "Stripe checkout",
       "crm_create_contract_draft",
     ],
-    message: live
-      ? `Reading gtm_leads via Supabase REST (${cfg.keyKind})${vercel ? " on Vercel" : ""}.`
-      : vercel
-        ? "On Vercel but missing NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or ANON)."
-        : "Mock seed — same env names as production CRM (crm-rivvetai). Preview sandbox has no Vercel secrets.",
+    message,
+    blockReason: live ? null : cfg.blockReason,
     env: {
       host: vercel ? "vercel" : "local",
-      hasNextPublicSupabaseUrl: hasUrl,
+      hasNextPublicSupabaseUrl: hasUrlEnv || Boolean(cfg.url),
       hasServiceRoleKey: hasService,
-      hasAnonKey: hasAnon,
+      hasAnonKey: hasAnonEnv || Boolean(cfg.key),
       keyKind: cfg.keyKind,
-      projectHint: "crm-rivvetai · Rivvet CRM",
+      projectHint: "rivvet-crm · copy secrets from crm-rivvetai",
+      supabaseHost,
     },
   };
 }

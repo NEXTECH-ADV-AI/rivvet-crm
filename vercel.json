@@ -5,14 +5,6 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "regions": ["sfo1"],
-  "env": {
-    "CRM_DATA_SOURCE": "mock"
-  },
-  "build": {
-    "env": {
-      "CRM_DATA_SOURCE": "mock"
-    }
-  },
   "headers": [
     {
       "source": "/assets/(.*)",

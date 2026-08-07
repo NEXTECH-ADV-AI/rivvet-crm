@@ -6,3 +6,9 @@
 - Brand geometry locked to existing rivvet-ai-icon-transparent.svg + rivvet-ai-wordmark-transparent.svg (six-node hex + three-dot i). No node/line changes allowed.
 - Official colors from corrected kit: Ink #072336, Deep ink #050A14, Bright mint #00F0B5, Signal cyan #00C8FF, Product mint #00B089, Mist #EEF4F2
 - Logo rules: always keep three-dot i; no plain RIVVET; no Commerce-specific mark or palette.
+- Rivvet Ops Command is the internal ELT/operator OS at https://ops.rivvetai.com (canonical). Built as second Vercel project rivvet-ops-command (not old ops-rivvetai Executive console). Repo: NEXTECH-ADV-AI/rivvet-ops-command. [2026-08-07]
+- Ops standup path: prototype → Vercel rivvet-ops-command → GitHub main auto-deploy → team used *.vercel.app → DNS cutover: remove ops.rivvetai.com from ops-rivvetai, add to rivvet-ops-command (Brayden in Vercel dashboard; domain APIs not on Vercel MCP). [2026-08-07]
+- Ops integrations: pull-sync not live rewrite. Refresh = Linear + Stripe + shared done. Complete = ops_task_done (DATABASE_URL/Supabase) + Linear Done when LINEAR_API_KEY and RIV-###. Env/vault: Linear, Stripe restricted, Slack optional on rivvet-ops-command project. [2026-08-07]
+- Ops auth: seat-picker + RBAC (Brayden CEO, Scott COO, Ryan CFO, Rem revenue/marketing, Will roadmap). Money: Brayden/Scott/Ryan only. Real auth deferred; URL trusted-team only. [2026-08-07]
+- Ops product contract Phase 0/1: Next=#1; Queue=top3; Complete toasts Linear truth; Plan=Gantt; Marketing=wedge + this-week ship strip (manual until Ayrshare); Care=KB-first; Brief=/brief Monday 3-min. External copy: staffing/front office/scale without payroll/control — never “agentic first” in public. [2026-08-07]
+- CRM LIVE path: requires SUPABASE_SERVICE_ROLE_KEY on rivvet-crm (copy from crm-rivvetai). Anon 401 on crm_opportunities. Same ops/command env-copy step as LINEAR_API_KEY. CRM_DATA_SOURCE=mock force removed. [2026-08-07]

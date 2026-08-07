@@ -1,26 +1,4 @@
-# Vercel build settings — Rivvet CRM
-
-**Sibling project (new FE):** [`rivvet-crm`](https://vercel.com/rivvetai/rivvet-crm)  
-**Production (leave until cutover):** `crm-rivvetai`  
-**Cutover plan:** [VERCEL-CUTOVER.md](./VERCEL-CUTOVER.md)
-
-| | |
-|--|--|
-| Team | `rivvetai` |
-| New project ID | `prj_njbMjOT0iRhYwviTmJgUKZhTd9K8` |
-| Preview | https://rivvet-crm-rivvetai.vercel.app |
-
----
-
-## Build settings (`rivvet-crm`)
-
-| Setting | Value |
-|---------|--------|
-| Framework | **Vite** |
-| Build | `npm run build` |
-| Output | **empty** for full TanStack/Nitro app · bootstrap placeholder used `dist` |
-| Install | `npm install` |
-| Node | **22.x** |
+# Vercel build (rivvet-crm)
 
 In-repo: [`vercel.json`](../vercel.json)
 
@@ -28,4 +6,20 @@ In-repo: [`vercel.json`](../vercel.json)
 
 ## Env (copy from `crm-rivvetai`)
 
-`NEXT_PUBLIC_SUPABASE_URL` · `SUPABASE_SERVICE_ROLE_KEY` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` · `CRM_BASE_URL`
+| Name | Required |
+|------|----------|
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** for LIVE pipeline |
+| `NEXT_PUBLIC_SUPABASE_URL` | Optional (defaults to platform) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional (defaults to platform) |
+| `CRM_BASE_URL` | Optional (`https://crm.rivvetai.com`) |
+| `CRM_DATA_SOURCE` | Optional force `live` \| `mock` — leave unset |
+
+Do **not** force `CRM_DATA_SOURCE=mock` if you want real opps.
+
+Same pattern as ops/command: secrets on the Vercel project, never in git.
+
+---
+
+## Thin bootstrap deploy
+
+Vercel project may use a thin entry that clones GitHub `main` and builds. Source of truth is this repo’s `npm run build` → Nitro `.vercel/output`.
