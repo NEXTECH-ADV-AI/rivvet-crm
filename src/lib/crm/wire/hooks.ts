@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  getAccountFn,
+  getAccountsFunnelFn,
   getBookFn,
   getWireStatusFn,
+  listAccountsFn,
   listLeadsFn,
   patchLeadNextActionFn,
 } from "./server-fns";
-import type { ListLeadsInput } from "./types";
+import type { ListAccountsInput, ListLeadsInput } from "./types";
 import { DEFAULT_PAGE_LIMIT } from "../sequence-queries";
 
 export function useWireStatus() {
@@ -49,5 +52,37 @@ export function usePatchLeadNextAction() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["crm", "leads"] });
     },
+  });
+}
+
+export function useAccountsList(input: ListAccountsInput = {}) {
+  const limit = input.limit ?? 50;
+  const offset = input.offset ?? 0;
+  return useQuery({
+    queryKey: ["crm", "accounts", { ...input, limit, offset }],
+    queryFn: () =>
+      listAccountsFn({
+        data: { ...input, limit, offset },
+      }),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAccount(accountId: string | undefined) {
+  return useQuery({
+    queryKey: ["crm", "account", accountId],
+    queryFn: () =>
+      getAccountFn({ data: { accountId: accountId! } }),
+    enabled: Boolean(accountId),
+    staleTime: 15_000,
+  });
+}
+
+export function useAccountsFunnel() {
+  return useQuery({
+    queryKey: ["crm", "accounts-funnel"],
+    queryFn: () => getAccountsFunnelFn(),
+    staleTime: 60_000,
   });
 }

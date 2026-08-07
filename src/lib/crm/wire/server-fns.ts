@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { ListLeadsInput } from "./types";
+import type { ListAccountsInput, ListLeadsInput } from "./types";
 
 export const getWireStatusFn = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -34,3 +34,26 @@ export const patchLeadNextActionFn = createServerFn({ method: "POST" })
     );
     return patchLeadNextActionService(data);
   });
+
+export const listAccountsFn = createServerFn({ method: "GET" })
+  .validator((data: ListAccountsInput) => data ?? {})
+  .handler(async ({ data }) => {
+    const { listAccountsService } = await import("./account-service.server");
+    return listAccountsService(data ?? {});
+  });
+
+export const getAccountFn = createServerFn({ method: "GET" })
+  .validator((data: { accountId: string }) => data)
+  .handler(async ({ data }) => {
+    const { getAccountService } = await import("./account-service.server");
+    return getAccountService(data.accountId);
+  });
+
+export const getAccountsFunnelFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { getAccountsFunnelService } = await import(
+      "./account-service.server"
+    );
+    return getAccountsFunnelService();
+  },
+);

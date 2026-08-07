@@ -188,15 +188,29 @@ export type AccountStatus =
   | "at_risk"
   | "churned"
   | "customer";
+
+/** Production accounts.lifecycle_stage */
+export type AccountLifecycle =
+  | "prospect"
+  | "engaged"
+  | "opportunity"
+  | "customer"
+  | "churned";
+
 export type AccountHealth = "healthy" | "watch" | "risk";
 
 export interface Account {
   id: string;
+  /** UUID account_id when live */
+  accountId?: string;
   name: string;
   domain: string | null;
   industry: string;
+  vertical?: Vertical;
   status: AccountStatus;
+  lifecycleStage?: AccountLifecycle;
   ownerId: OwnerId;
+  ownerEmail?: string | null;
   arr: number;
   billingEmail: string | null;
   nextAction: string | null;
@@ -208,7 +222,17 @@ export interface Account {
   updatedAt: string;
   employeeBand: string | null;
   region: string;
+  city?: string | null;
+  state?: string | null;
   tags: string[];
+  qualificationScore?: number | null;
+  source?: string | null;
+  phone?: string | null;
+  primaryContactName?: string | null;
+  primaryContactEmail?: string | null;
+  primaryContactPhone?: string | null;
+  clientId?: string | null;
+  isTest?: boolean;
 }
 
 export interface Contact {
