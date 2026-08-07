@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
+import type { LostReason, OppStage } from "../types";
 
 export const getWireStatusFn = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -55,5 +56,54 @@ export const getAccountsFunnelFn = createServerFn({ method: "GET" }).handler(
       "./account-service.server"
     );
     return getAccountsFunnelService();
+  },
+);
+
+export const listOpportunitiesFn = createServerFn({ method: "GET" })
+  .validator(
+    (data: {
+      view?: string;
+      query?: string;
+      stage?: string;
+      owner?: string;
+      limit?: number;
+      offset?: number;
+    }) => data ?? {},
+  )
+  .handler(async ({ data }) => {
+    const { listOpportunitiesService } = await import(
+      "./opportunity-service.server"
+    );
+    return listOpportunitiesService(data ?? {});
+  });
+
+export const getOpportunityFn = createServerFn({ method: "GET" })
+  .validator((data: { opportunityId: string }) => data)
+  .handler(async ({ data }) => {
+    const { getOpportunityService } = await import(
+      "./opportunity-service.server"
+    );
+    return getOpportunityService(data.opportunityId);
+  });
+
+export const patchOpportunityStageFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      opportunityId: string;
+      stage: OppStage;
+      lostReason?: LostReason | null;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { patchOpportunityStageService } = await import(
+      "./opportunity-service.server"
+    );
+    return patchOpportunityStageService(data);
+  });
+
+export const hydrateCrmFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { hydrateCrmService } = await import("./hydrate-service.server");
+    return hydrateCrmService();
   },
 );

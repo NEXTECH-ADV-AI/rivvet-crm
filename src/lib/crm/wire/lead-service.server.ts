@@ -270,7 +270,7 @@ export function wireStatusService(): WireStatus {
   return {
     source: live ? "live" : "mock",
     connected: live,
-    tables: ["gtm_leads", "accounts", "contacts"],
+    tables: ["gtm_leads", "accounts", "contacts", "crm_opportunities", "activities"],
     locked: [
       "Instantly Load GO (n8n)",
       "sendContract / PandaDoc",

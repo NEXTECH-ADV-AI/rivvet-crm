@@ -8,7 +8,6 @@ import {
   seedPayments,
   seedSendDocuments,
   seedStageEvents,
-  users,
   DEMO_NOW,
 } from "./seed";
 import type {
@@ -26,7 +25,7 @@ import type {
   OppPatch,
   DealConfig,
   LostReason,
-  Vertical,
+  LeadLifecycle,
 } from "./types";
 import { STAGE_LABEL } from "./priority";
 import { priceDeal } from "./deal-catalog";
@@ -51,14 +50,26 @@ export interface CrmState {
   sendDocuments: SendDocumentMirror[];
   payments: PaymentMirror[];
   currentUserId: OwnerId;
-  /** last simulated GO log (sandbox) */
   lastLoadGo: {
     vertical: SequenceVertical;
     count: number;
     at: string;
     leadIds: string[];
   } | null;
+  /** mock | live after hydrate */
+  dataSource: "mock" | "live" | "seed";
+  hydrateMessage: string | null;
+  hydratedAt: string | null;
 
+  hydrateFromWire: (payload: {
+    source: "mock" | "live";
+    leads: Lead[];
+    accounts: Account[];
+    opportunities: Opportunity[];
+    contacts: Contact[];
+    activities: Activity[];
+    message: string;
+  }) => void;
   setLeadNextAction: (id: string, patch: NextActionPatch) => void;
   setAccountNextAction: (id: string, patch: NextActionPatch) => void;
   setOppNextAction: (id: string, patch: NextActionPatch) => void;
@@ -84,10 +95,6 @@ export interface CrmState {
     type: "call" | "email" | "meeting",
     subject: string,
   ) => void;
-  /**
-   * Sandbox-only: mirrors Instantly Load GO for a single vertical.
-   * Does NOT call Instantly/n8n. Max DEFAULT_GO_BATCH_SIZE.
-   */
   simulateLoadGo: (
     vertical: SequenceVertical,
     max?: number,
@@ -121,6 +128,26 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   payments: structuredClone(seedPayments),
   currentUserId: "usr_you",
   lastLoadGo: null,
+  dataSource: "seed",
+  hydrateMessage: null,
+  hydratedAt: null,
+
+  hydrateFromWire: (payload) => {
+    set({
+      leads: payload.leads.length ? payload.leads : get().leads,
+      accounts: payload.accounts.length ? payload.accounts : get().accounts,
+      opportunities: payload.opportunities.length
+        ? payload.opportunities
+        : get().opportunities,
+      contacts: payload.contacts.length ? payload.contacts : get().contacts,
+      activities: payload.activities.length
+        ? payload.activities
+        : get().activities,
+      dataSource: payload.source,
+      hydrateMessage: payload.message,
+      hydratedAt: new Date().toISOString(),
+    });
+  },
 
   setLeadNextAction: (id, patch) => {
     set((s) => ({
@@ -136,7 +163,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           subject: patch.nextAction
             ? `Next step set: ${patch.nextAction}`
             : "Next step cleared",
-          body: "Local sandbox mutation — mirrors gtm_leads next_action fields.",
+          body: "Local mutation — mirrors gtm_leads next_action fields.",
           relatedType: "lead" as const,
           relatedId: id,
           relatedName: s.leads.find((l) => l.id === id)?.name ?? id,
@@ -161,7 +188,13 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   },
 
   setOppNextAction: (id, patch) => {
-    get().patchOpp(id, patch);
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        o.id === id
+          ? { ...o, ...patch, updatedAt: touchNow(), lastTouch: touchNow() }
+          : o,
+      ),
+    }));
   },
 
   patchOpp: (id, patch) => {
@@ -217,25 +250,14 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           ? {
               ...o,
               stage: toStage,
-              stageEnteredAt: now.slice(0, 10),
               probability: STAGE_PROB[toStage],
               lostReason: toStage === "closed_lost" ? lostReason : null,
-              lastTouch: now,
+              stageEnteredAt: now,
               updatedAt: now,
+              lastTouch: now,
             }
           : o,
       ),
-      leads: state.leads.map((l) => {
-        if (l.id !== opp.sourceLeadId && l.convertedOppId !== id) return l;
-        const status = PROD_OPP_STATUS_WRITE[toStage] as Lead["lifecycle"];
-        return {
-          ...l,
-          lifecycle: status,
-          status,
-          updatedAt: now,
-          lastTouch: now,
-        };
-      }),
       stageEvents: [
         {
           id: `SE-${++stageSeq}`,
@@ -244,7 +266,9 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           toStage,
           at: now,
           byUserId: state.currentUserId,
-          note: "Stage change (sandbox only)",
+          note: `→ ${STAGE_LABEL[toStage] ?? toStage}${
+            toStage === "closed_lost" && lostReason ? ` (${lostReason})` : ""
+          }`,
           lostReason: toStage === "closed_lost" ? lostReason : null,
         },
         ...state.stageEvents,
@@ -254,7 +278,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           id: `T-${++seq}`,
           type: "stage_change" as const,
           subject: `Stage → ${STAGE_LABEL[toStage] ?? toStage}`,
-          body: `From ${STAGE_LABEL[fromStage] ?? fromStage}. Status write: ${PROD_OPP_STATUS_WRITE[toStage]}. Local only.`,
+          body: `Pipeline move from ${STAGE_LABEL[fromStage] ?? fromStage}. Status write target: ${PROD_OPP_STATUS_WRITE[toStage]}.`,
           relatedType: "opportunity" as const,
           relatedId: id,
           relatedName: opp.name,
@@ -265,6 +289,25 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         },
         ...state.activities,
       ],
+      leads:
+        opp.gtmLeadId || opp.sourceLeadId
+          ? state.leads.map((l) =>
+              l.id === opp.gtmLeadId ||
+              l.id === opp.sourceLeadId ||
+              l.gtmLeadId === opp.gtmLeadId
+                ? {
+                    ...l,
+                    lifecycle: (PROD_OPP_STATUS_WRITE[toStage] as LeadLifecycle) ||
+                      l.lifecycle,
+                    status:
+                      (PROD_OPP_STATUS_WRITE[toStage] as LeadLifecycle) ||
+                      l.status,
+                    updatedAt: now,
+                    lastTouch: now,
+                  }
+                : l,
+            )
+          : state.leads,
     }));
   },
 
@@ -277,7 +320,6 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   },
 
   addNote: (relatedType, relatedId, relatedName, subject, body) => {
-    const { currentUserId } = get();
     set((s) => ({
       activities: [
         {
@@ -288,7 +330,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           relatedType,
           relatedId,
           relatedName,
-          ownerId: currentUserId,
+          ownerId: s.currentUserId,
           dueAt: null,
           completedAt: touchNow(),
           createdAt: touchNow(),
@@ -299,38 +341,36 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   },
 
   logTouch: (relatedType, relatedId, relatedName, type, subject) => {
-    const { currentUserId } = get();
     const now = touchNow();
     set((s) => {
-      const activity: Activity = {
+      const base = {
         id: `T-${++seq}`,
         type,
         subject,
-        body: "Logged in sandbox (mirrors activities table).",
+        body: "Logged from CRM UI",
         relatedType,
         relatedId,
         relatedName,
-        ownerId: currentUserId,
+        ownerId: s.currentUserId,
         dueAt: null,
         completedAt: now,
         createdAt: now,
-      };
-      const base = { lastTouch: now, updatedAt: now };
+      } as Activity;
       return {
-        activities: [activity, ...s.activities],
+        activities: [base, ...s.activities],
         leads:
           relatedType === "lead"
             ? s.leads.map((l) =>
                 l.id === relatedId
                   ? {
                       ...l,
-                      ...base,
+                      lastTouch: now,
+                      lastHumanCallAt: type === "call" ? now : l.lastHumanCallAt,
                       humanCallAttempts:
                         type === "call"
                           ? (l.humanCallAttempts ?? 0) + 1
                           : l.humanCallAttempts,
-                      lastHumanCallAt:
-                        type === "call" ? now : l.lastHumanCallAt,
+                      updatedAt: now,
                     }
                   : l,
               )
@@ -338,50 +378,43 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         accounts:
           relatedType === "account"
             ? s.accounts.map((a) =>
-                a.id === relatedId ? { ...a, ...base } : a,
+                a.id === relatedId
+                  ? { ...a, lastTouch: now, updatedAt: now }
+                  : a,
               )
             : s.accounts,
         opportunities:
           relatedType === "opportunity"
-            ? s.opportunities.map((o) => {
-                if (o.id !== relatedId) return o;
-                const eng = { ...o.engagement };
-                if (type === "call") eng.calls = (eng.calls ?? 0) + 1;
-                return { ...o, ...base, engagement: eng };
-              })
+            ? s.opportunities.map((o) =>
+                o.id === relatedId
+                  ? { ...o, lastTouch: now, updatedAt: now }
+                  : o,
+              )
             : s.opportunities,
       };
     });
   },
 
   simulateLoadGo: (vertical, max = DEFAULT_GO_BATCH_SIZE) => {
+    const s = get();
     if (!isSequenceVertical(vertical)) {
-      return { ok: false, message: "Not a sequence vertical", count: 0 };
-    }
-    if (vertical === "hvac") {
-      return {
-        ok: false,
-        message:
-          "HVAC Nat'l is kill_candidate until RCA — pilot a non-HVAC vertical first",
-        count: 0,
-      };
+      return { ok: false, message: "Vertical not sequence-enabled", count: 0 };
     }
     const camp = INSTANTLY_CAMPAIGNS[vertical];
-    const s = get();
     const eligible = s.leads
-      .filter((l) => l.vertical === vertical && isLoadEligible(l))
-      .slice(0, Math.min(max, DEFAULT_GO_BATCH_SIZE));
-    if (eligible.length === 0) {
+      .filter((l) => isLoadEligible(l) && l.vertical === vertical)
+      .slice(0, max);
+    if (!eligible.length) {
       return {
         ok: false,
-        message: `No load-eligible ${vertical} leads in sample`,
+        message: `No load-eligible ${vertical} leads in book`,
         count: 0,
       };
     }
-    const ids = new Set(eligible.map((l) => l.id));
     const now = touchNow();
-    set((state) => ({
-      leads: state.leads.map((l) =>
+    const ids = new Set(eligible.map((l) => l.id));
+    set({
+      leads: s.leads.map((l) =>
         ids.has(l.id)
           ? {
               ...l,
@@ -389,9 +422,8 @@ export const useCrmStore = create<CrmState>((set, get) => ({
               status: "loaded_to_instantly" as const,
               instantlyCampaignId: camp.id,
               instantlyCampaignName: camp.name,
-              nextAction: `In ${camp.name} sequence`,
-              lastTouch: now,
               updatedAt: now,
+              lastTouch: now,
             }
           : l,
       ),
@@ -401,33 +433,11 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         at: now,
         leadIds: eligible.map((l) => l.id),
       },
-      activities: [
-        {
-          id: `T-${++seq}`,
-          type: "system" as const,
-          subject: `Load GO (sandbox): ${eligible.length} → ${camp.name}`,
-          body: `Simulated Instantly load for ${vertical}. Loader would deactivate after run. Not connected to n8n/Instantly.`,
-          relatedType: "lead" as const,
-          relatedId: eligible[0].id,
-          relatedName: camp.name,
-          ownerId: state.currentUserId,
-          dueAt: null,
-          completedAt: now,
-          createdAt: now,
-        },
-        ...state.activities,
-      ],
-    }));
+    });
     return {
       ok: true,
-      message: `Loaded ${eligible.length} → ${camp.name} (local only)`,
+      message: `Simulated Load GO · ${eligible.length} → ${camp.name}`,
       count: eligible.length,
     };
   },
 }));
-
-export function getUserLabel(id: OwnerId | string): string {
-  return users.find((u) => u.id === id)?.displayName ?? id;
-}
-
-export { users, DEMO_NOW };

@@ -16,6 +16,7 @@ import type { ListView, OppStage, Opportunity } from "@/lib/crm/types";
 import { filterOpps } from "@/lib/crm/filters";
 import { PriorityBadge } from "./priority-badge";
 import { cn } from "@/components/ui/cn";
+import { usePatchOpportunityStage } from "@/lib/crm/wire";
 
 export function OppKanban({
   listView,
@@ -27,6 +28,8 @@ export function OppKanban({
 }) {
   const opportunities = useCrmStore((s) => s.opportunities);
   const moveOppStage = useCrmStore((s) => s.moveOppStage);
+  const dataSource = useCrmStore((s) => s.dataSource);
+  const patchStage = usePatchOpportunityStage();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<OppStage | null>(null);
 
@@ -55,8 +58,16 @@ export function OppKanban({
     return map;
   }, [filtered]);
 
+  function applyStage(id: string, stage: OppStage) {
+    if (dataSource === "live") {
+      patchStage.mutate({ opportunityId: id, stage });
+    } else {
+      moveOppStage(id, stage);
+    }
+  }
+
   function onDrop(stage: OppStage) {
-    if (dragId) moveOppStage(dragId, stage);
+    if (dragId) applyStage(dragId, stage);
     setDragId(null);
     setOverStage(null);
   }
@@ -65,8 +76,16 @@ export function OppKanban({
     <div className="space-y-3">
       <p className="text-[11px] text-fg-subtle">
         Drag across stages.{" "}
-        <span className="font-medium text-ink">Local only</span> — no production
-        stage side-effects.
+        {dataSource === "live" ? (
+          <span className="font-medium text-product-mint">
+            LIVE — patches crm_opportunities.stage
+          </span>
+        ) : (
+          <span className="font-medium text-ink">
+            MOCK — local only (no prod side-effects)
+          </span>
+        )}
+        . Contract send stays locked.
       </p>
 
       <div className="-mx-1 overflow-x-auto pb-2">
@@ -193,7 +212,7 @@ export function OppKanban({
                           <select
                             value={o.stage}
                             onChange={(e) =>
-                              moveOppStage(o.id, e.target.value as OppStage)
+                              applyStage(o.id, e.target.value as OppStage)
                             }
                             className="w-full rounded-md border border-border-soft bg-card px-2 py-1 text-[11px] text-ink"
                           >

@@ -7,6 +7,10 @@ export {
   useAccountsList,
   useAccount,
   useAccountsFunnel,
+  useOpportunitiesList,
+  useOpportunity,
+  usePatchOpportunityStage,
+  useCrmHydrate,
 } from "./hooks";
 export {
   getWireStatusFn,
@@ -16,4 +20,8 @@ export {
   listAccountsFn,
   getAccountFn,
   getAccountsFunnelFn,
+  listOpportunitiesFn,
+  getOpportunityFn,
+  patchOpportunityStageFn,
+  hydrateCrmFn,
 } from "./server-fns";

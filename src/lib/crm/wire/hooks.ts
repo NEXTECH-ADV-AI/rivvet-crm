@@ -3,13 +3,20 @@ import {
   getAccountFn,
   getAccountsFunnelFn,
   getBookFn,
+  getOpportunityFn,
   getWireStatusFn,
+  hydrateCrmFn,
   listAccountsFn,
   listLeadsFn,
+  listOpportunitiesFn,
   patchLeadNextActionFn,
+  patchOpportunityStageFn,
 } from "./server-fns";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
+import type { LostReason, OppStage } from "../types";
 import { DEFAULT_PAGE_LIMIT } from "../sequence-queries";
+import { useCrmStore } from "../store";
+import { useEffect } from "react";
 
 export function useWireStatus() {
   return useQuery({
@@ -51,6 +58,7 @@ export function usePatchLeadNextAction() {
     }) => patchLeadNextActionFn({ data: vars }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["crm", "leads"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
     },
   });
 }
@@ -72,8 +80,7 @@ export function useAccountsList(input: ListAccountsInput = {}) {
 export function useAccount(accountId: string | undefined) {
   return useQuery({
     queryKey: ["crm", "account", accountId],
-    queryFn: () =>
-      getAccountFn({ data: { accountId: accountId! } }),
+    queryFn: () => getAccountFn({ data: { accountId: accountId! } }),
     enabled: Boolean(accountId),
     staleTime: 15_000,
   });
@@ -85,4 +92,78 @@ export function useAccountsFunnel() {
     queryFn: () => getAccountsFunnelFn(),
     staleTime: 60_000,
   });
+}
+
+export function useOpportunitiesList(
+  input: {
+    view?: string;
+    query?: string;
+    stage?: string;
+    owner?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+) {
+  return useQuery({
+    queryKey: ["crm", "opportunities", input],
+    queryFn: () => listOpportunitiesFn({ data: input }),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useOpportunity(opportunityId: string | undefined) {
+  return useQuery({
+    queryKey: ["crm", "opportunity", opportunityId],
+    queryFn: () =>
+      getOpportunityFn({ data: { opportunityId: opportunityId! } }),
+    enabled: Boolean(opportunityId),
+    staleTime: 15_000,
+  });
+}
+
+export function usePatchOpportunityStage() {
+  const qc = useQueryClient();
+  const moveOppStage = useCrmStore((s) => s.moveOppStage);
+  return useMutation({
+    mutationFn: async (vars: {
+      opportunityId: string;
+      stage: OppStage;
+      lostReason?: LostReason | null;
+    }) => {
+      // Always update local store for instant UI
+      moveOppStage(vars.opportunityId, vars.stage, vars.lostReason);
+      return patchOpportunityStageFn({ data: vars });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
+    },
+  });
+}
+
+/** Full-book hydrate into Zustand so Home / Kanban / Analytics stay functional E2E */
+export function useCrmHydrate() {
+  const hydrateFromWire = useCrmStore((s) => s.hydrateFromWire);
+  const q = useQuery({
+    queryKey: ["crm", "hydrate"],
+    queryFn: () => hydrateCrmFn(),
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (q.data) {
+      hydrateFromWire({
+        source: q.data.source,
+        leads: q.data.leads,
+        accounts: q.data.accounts,
+        opportunities: q.data.opportunities,
+        contacts: q.data.contacts,
+        activities: q.data.activities,
+        message: q.data.message,
+      });
+    }
+  }, [q.data, hydrateFromWire]);
+
+  return q;
 }

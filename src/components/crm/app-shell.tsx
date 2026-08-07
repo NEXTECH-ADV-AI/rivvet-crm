@@ -6,12 +6,15 @@ import { RivvetBrand, RivvetIcon, RivvetWordmark } from "./logo";
 import { CommandSearch } from "./command-search";
 import { AgentStrip } from "./agent-strip";
 import { WireBanner } from "./wire-banner";
+import { CrmHydrateBanner } from "./crm-hydrate";
 import { useWireStatus } from "@/lib/crm/wire";
+import { useCrmStore } from "@/lib/crm/store";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const { data: wire } = useWireStatus();
-  const live = wire?.source === "live";
+  const dataSource = useCrmStore((s) => s.dataSource);
+  const live = wire?.source === "live" || dataSource === "live";
 
   return (
     <div className="flex min-h-[calc(100dvh-var(--grok-banner-h,0px))] bg-mist">
@@ -36,6 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <CrmHydrateBanner />
         <header className="sticky top-[var(--grok-banner-h,0px)] z-20 border-b border-border-soft bg-card/95 backdrop-blur-md">
           <div className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
             <button
