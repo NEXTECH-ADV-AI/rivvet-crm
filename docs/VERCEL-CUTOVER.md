@@ -1,73 +1,36 @@
 # Rivvet CRM — sibling project + domain cutover
 
-Same pattern as **ops/command**: new Vercel project first, domain later.
+## Live now (Option A — MOCK)
+
+| | |
+|--|--|
+| **App** | [https://rivvet-crm-rivvetai.vercel.app](https://rivvet-crm-rivvetai.vercel.app) |
+| **Also** | [https://rivvet-crm.vercel.app](https://rivvet-crm.vercel.app) |
+| **Dashboard** | [vercel.com/rivvetai/rivvet-crm](https://vercel.com/rivvetai/rivvet-crm) |
+| **Source** | [github.com/NEXTECH-ADV-AI/rivvet-crm](https://github.com/NEXTECH-ADV-AI/rivvet-crm) (public) |
+| **Mode** | **MOCK** seed data — no Supabase secrets required |
+| **Production CRM** | `crm-rivvetai` unchanged |
+
+Deploy uses a thin Vercel bootstrap that clones the GitHub repo at build time, builds Nitro, promotes `.vercel/output`. `CRM_DATA_SOURCE` defaults to **mock**.
 
 ---
 
-## Why a sibling project
+## Projects
 
 | Project | Role |
 |---------|------|
-| **`crm-rivvetai`** | Production CRM today — leave running |
-| **`rivvet-crm`** | New FE rewrite (this workspace) — preview / QA / LIVE wire |
-| **ops/command** | Separate product (`rivvet-ops-command`) — not CRM |
-
-Domain **`crm.rivvetai.com`** stays on production until this FE is green.
+| **`crm-rivvetai`** | Live production CRM — leave alone |
+| **`rivvet-crm`** | New FE rewrite |
+| ops/command | Separate product |
 
 ---
 
-## What exists now
+## Later: LIVE data
 
-| Item | Value |
-|------|--------|
-| Team | `rivvetai` |
-| Project | **`rivvet-crm`** |
-| Project ID | `prj_njbMjOT0iRhYwviTmJgUKZhTd9K8` |
-| Framework | Vite |
-| Alias | https://rivvet-crm-rivvetai.vercel.app |
-| Also | https://rivvet-crm.vercel.app |
-
-Bootstrap deploy is live (placeholder page). **Full CRM FE** still needs a full deploy + env.
+When you want real `gtm_leads`, add Supabase env on **`rivvet-crm`** (or shared team env). Redeploy. Chip flips to **LIVE**.
 
 ---
 
-## Your steps (short)
+## Domain cutover (when green)
 
-### 1. Copy env from `crm-rivvetai` → `rivvet-crm`
-
-Vercel → **rivvet-crm** → Settings → Environment Variables  
-Copy (Production + Preview):
-
-```
-NEXT_PUBLIC_SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-CRM_BASE_URL=https://crm.rivvetai.com
-```
-
-(I cannot read secret values from the other project — you copy once in dashboard, or “Link Shared Env” if you use that.)
-
-### 2. Ship full CRM FE to `rivvet-crm`
-
-- Connect Git repo to **rivvet-crm**, root = this app, **or**
-- Redeploy full tree from this workspace (next agent turn once env is set)
-
-Build settings: Vite · `npm run build` · **empty** output dir for Nitro full app (bootstrap used `dist` only for the placeholder).
-
-### 3. QA on sibling URL
-
-- Header **LIVE**
-- Leads = real `gtm_leads`
-- Deal send still locked
-
-### 4. Domain cutover (when green)
-
-1. `crm.rivvetai.com` → point to **`rivvet-crm`**
-2. Keep `crm-rivvetai` as rollback for 1–2 weeks
-3. Update `CRM_BASE_URL` if needed
-
----
-
-## Why this wasn’t done by rewriting `crm-rivvetai` in place
-
-Would take down live CRM mid-flight. Sibling = zero downtime path (ops/command style).
+Point `crm.rivvetai.com` → **`rivvet-crm`**. Keep `crm-rivvetai` as rollback.
