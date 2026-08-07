@@ -1,0 +1,8 @@
+- Saved commerce-social-content-fuel.html — Content Doctrine architecture + Honest Fix DIY/Home Projects marketing upgrade + Nostaira social launch plan as engine fuel [2026-07-29]
+- Commerce social value prop: marketing/launch plans must translate into per-tenant Content Doctrine packs (voice, pillars, narrative banks, seasonal calendar, offer map, signal sources) that the social engine loads [2026-07-29]
+- Honest Fix content focus locked around DIY empowerment / Home Projects / Fixes / price honesty / hazard safety, expanding existing 7-pillar system [2026-07-29]
+- Nostaira is a commerce-relevant whole-home HVAC scent brand (starter ~$799, scent subscription); needs full social launch doctrine before public cadence [2026-07-29]
+- Saved rivvet-final-brand-kit/ — full production brand kit (SVG + PNG variants original/white/black/chrome, horizontal+stacked lockups, favicons, LinkedIn/X social, HTML showcase) + rivvet-final-brand-kit.zip [2026-08-06]
+- Brand geometry locked to existing rivvet-ai-icon-transparent.svg + rivvet-ai-wordmark-transparent.svg (six-node hex + three-dot i). No node/line changes allowed.
+- Official colors from corrected kit: Ink #072336, Deep ink #050A14, Bright mint #00F0B5, Signal cyan #00C8FF, Product mint #00B089, Mist #EEF4F2
+- Logo rules: always keep three-dot i; no plain RIVVET; no Commerce-specific mark or palette.

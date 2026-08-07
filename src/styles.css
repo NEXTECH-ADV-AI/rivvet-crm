@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --color-ink: #072336;
+  --color-deep-ink: #050a14;
+  --color-bright-mint: #00f0b5;
+  --color-signal-cyan: #00c8ff;
+  --color-product-mint: #00b089;
+  --color-mist: #eef4f2;
+  --color-border-soft: #d5e0dc;
+  --color-card: #ffffff;
+  --color-card-soft: #f6faf8;
+  --color-fg: #072336;
+  --color-fg-muted: #4a6470;
+  --color-fg-subtle: #7a929c;
+  --color-danger: #d64545;
+  --color-warn: #c9851a;
+  --color-p1: #d64545;
+  --color-p2: #c9851a;
+  --color-sidebar: #050a14;
+  --color-sidebar-fg: #e8eef2;
+  --color-sidebar-muted: #8a9bab;
+  --color-sidebar-active: #00f0b5;
+  --color-sidebar-hover: #0c1624;
+  --color-agent: #00c8ff;
+  --color-agent-soft: #e6f8ff;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-card: 0 1px 2px rgb(7 35 54 / 0.04), 0 4px 14px rgb(7 35 54 / 0.05);
+  --shadow-soft: 0 1px 2px rgb(7 35 54 / 0.05);
+  --shadow-float: 0 8px 28px rgb(7 35 54 / 0.1);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-base: 200ms;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border-soft);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-fg);
+    background: var(--color-mist);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01" on, "tnum" on;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-mist);
+    color: var(--color-fg);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal-cyan);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-bright-mint) 35%, white);
+    color: var(--color-deep-ink);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crm-surface {
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+
+  .crm-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+  }
+
+  /* Soft form controls (opp workspace) */
+  .field {
+    display: block;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-mist);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+    outline: none;
+  }
+  .field:focus {
+    border-color: color-mix(in oklab, var(--color-signal-cyan) 60%, white);
+    background: var(--color-card);
+  }
+  .field:read-only {
+    color: var(--color-fg-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
