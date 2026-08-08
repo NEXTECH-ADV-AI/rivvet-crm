@@ -51,7 +51,7 @@ function AnalyticsPage() {
       <PageHeader
         eyebrow="GTM"
         title="Analytics"
-        description="Sequence funnel first. Pipeline secondary. Sandbox mirrors prod-shaped book metrics."
+        description="Sequence funnel first. Pipeline and close velocity second."
         action={
           <Link
             to="/leads"
@@ -89,16 +89,16 @@ function AnalyticsPage() {
       </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-4">
-        <MiniStat label="Sample ready not loaded" value={kpis.readyNotLoaded} />
-        <MiniStat label="Sample needs enrich" value={kpis.needsEnrich} />
-        <MiniStat label="Sample needs verify" value={kpis.needsVerify} />
+        <MiniStat label="Ready, not loaded" value={kpis.readyNotLoaded} />
+        <MiniStat label="Needs enrich" value={kpis.needsEnrich} />
+        <MiniStat label="Needs verify" value={kpis.needsVerify} />
         <MiniStat label="Accounts at risk" value={kpis.atRisk} warn />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
           title="Instantly loads by campaign"
-          subtitle="Full-book mirror — idle = 0"
+          subtitle="Idle campaigns show 0"
         >
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -141,7 +141,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Pipeline by stage" subtitle="Amount">
+        <Panel title="Pipeline by stage" subtitle="Open amount">
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -176,7 +176,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Velocity (sandbox)" subtitle="Created / won / lost">
+        <Panel title="Velocity" subtitle="Created / won / lost">
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.weekly}>
@@ -224,7 +224,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Lead source mix (sample)" subtitle="Count">
+        <Panel title="Lead source mix" subtitle="By count">
           <div className="flex h-52 items-center gap-4">
             <div className="h-40 w-40 shrink-0">
               <ResponsiveContainer width="100%" height="100%">

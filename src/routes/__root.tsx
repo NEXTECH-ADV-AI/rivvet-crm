@@ -17,7 +17,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Rivvet CRM — actionable sales work queue sandbox",
+        content: "Rivvet CRM — sales work queue for Rivvet operators",
       },
       ...(ogImage
         ? [

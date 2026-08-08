@@ -198,7 +198,7 @@ export async function hydrateCrmService(opts?: {
       ? `${parts.join(" · ")} — ${warn}`
       : live
         ? `Hydrated LIVE · ${parts.join(" · ")}`
-        : `Hydrated MOCK seed · full UI E2E without Supabase secrets`,
+        : `Showing seed data — connect service role for the live pipeline`,
     counts: {
       leads: leadsR.total,
       accounts: accountsR.total,
