@@ -1,12 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
-import {
-  GROK_PROVIDERS,
-  authEnabled,
-  signIn,
-  requestMagicLink,
-} from "@/lib/auth/client";
+import { requestMagicLink } from "@/lib/auth/client";
 import { RivvetMark } from "@/components/crm/logo";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -18,31 +13,19 @@ function Login() {
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [emailed, setEmailed] = useState(false);
-  const [redirectHint, setRedirectHint] = useState<string | null>(null);
 
   async function onMagicSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setPreviewUrl(null);
-    setEmailed(false);
-    setRedirectHint(null);
     setStatus("sending");
     try {
       const result = await requestMagicLink(email, { callbackURL: "/home" });
       setPreviewUrl(result.previewUrl);
-      setEmailed(result.emailed);
-      if (result.rewritten || result.emailed) {
-        try {
-          setRedirectHint(new URL(result.redirectTo).origin);
-        } catch {
-          setRedirectHint(result.redirectTo);
-        }
-      }
       setStatus("sent");
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Could not send magic link");
+      setError(err instanceof Error ? err.message : "Could not send sign-in link");
     }
   }
 
@@ -61,11 +44,10 @@ function Login() {
           </div>
         </div>
         <p className="text-sm text-white/60">
-          Work email magic link (Supabase → Resend). Lands on this CRM — not
-          app.rivvetai.com. Platform Google / X optional.
+          Enter your Rivvet work email and we'll send a one-time sign-in
+          link.
         </p>
 
-        {/* Magic link is the primary Rivvet operator path — always shown */}
         <form onSubmit={onMagicSubmit} className="space-y-3">
           <label className="block space-y-1.5">
             <span className="font-mono text-[10px] tracking-wider text-white/40">
@@ -104,7 +86,7 @@ function Login() {
               </>
             ) : (
               <>
-                EMAIL ME A MAGIC LINK
+                EMAIL ME A SIGN-IN LINK
                 <ArrowRight className="size-3.5" aria-hidden />
               </>
             )}
@@ -116,26 +98,16 @@ function Login() {
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span>
                   {previewUrl
-                    ? "Link ready (sandbox preview — no email hop)."
-                    : emailed
-                      ? `Check ${email.trim()} — Supabase emailed your link via Resend.`
-                      : `Check ${email.trim()} for your sign-in link.`}
+                    ? "Your sign-in link is ready."
+                    : `Check ${email.trim()} for your sign-in link. It expires in a few minutes.`}
                 </span>
               </p>
-              {redirectHint && !previewUrl && (
-                <p className="text-xs text-white/55">
-                  After you click the email, you should land on{" "}
-                  <span className="font-mono text-white/80">{redirectHint}</span>
-                  {" "}→ /auth/callback. If you still hit app.rivvetai.com, the
-                  new deploy may not be live yet.
-                </p>
-              )}
               {previewUrl && (
                 <a
                   href={previewUrl}
                   className="block rounded-md border border-bright-mint/40 bg-deep-ink/40 px-3 py-2.5 text-center font-mono text-[11px] font-bold tracking-[0.12em] text-bright-mint transition hover:bg-deep-ink/70"
                 >
-                  OPEN MAGIC LINK →
+                  OPEN SIGN-IN LINK →
                 </a>
               )}
             </div>
@@ -163,26 +135,8 @@ function Login() {
           to="/home"
           className="flex w-full items-center justify-center rounded-md border border-white/15 bg-white/5 px-4 py-3 font-mono text-[11px] font-bold tracking-[0.14em] text-white/90 transition hover:bg-white/10"
         >
-          ENTER CRM SANDBOX
+          CONTINUE WITHOUT SIGNING IN
         </Link>
-
-        {authEnabled && (
-          <div className="space-y-2 border-t border-white/10 pt-4">
-            <p className="font-mono text-[10px] tracking-wider text-white/40">
-              PLATFORM AUTH
-            </p>
-            {GROK_PROVIDERS.map((p) => (
-              <button
-                key={p.providerId}
-                type="button"
-                onClick={() => signIn(p.providerId, { callbackURL: "/home" })}
-                className="w-full rounded-md border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white/90 hover:bg-white/10"
-              >
-                Continue with {p.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </main>
   );
