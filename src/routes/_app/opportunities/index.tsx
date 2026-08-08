@@ -174,7 +174,7 @@ function OppsPage() {
                     <th className="px-4 py-2.5 font-medium">Owner</th>
                     <th className="px-4 py-2.5 font-medium">Next action</th>
                     <th className="px-4 py-2.5 font-medium">Close</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Amount</th>
+                    <th className="px-4 py-2.5 font-medium text-right">MRR</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -251,7 +251,10 @@ function OppsPage() {
                           {formatDate(o.closeDate)}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-xs font-semibold tabular">
-                          {formatMoney(o.amount)}
+                          <div>{formatMoney(o.monthlyAmount ?? 0)}/mo</div>
+                          <div className="font-normal text-fg-subtle">
+                            {formatMoney(o.amount)} TCV
+                          </div>
                         </td>
                       </tr>
                     );
