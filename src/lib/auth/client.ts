@@ -154,7 +154,7 @@ export async function signIn(
 /**
  * Request a passwordless magic link via Supabase Auth.
  * Supabase emails the link (Resend is configured inside the Supabase project).
- * Redirect is forced onto rivvet-crm (never app.rivvetai.com Site URL).
+ * Redirect targets this CRM (crm.rivvetai.com) — never app.rivvetai.com Site URL.
  */
 export async function requestMagicLink(
   email: string,
@@ -170,11 +170,11 @@ export async function requestMagicLink(
     throw new Error("Enter a valid work email");
   }
   const callbackPath = opts.callbackURL ?? "/home";
-  // Preferred origin — server may rewrite sandbox → rivvet-crm public URL
+  // Preferred origin — server rewrites sandbox → crm.rivvetai.com
   const redirectTo =
     typeof window !== "undefined"
       ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackPath)}`
-      : `https://rivvet-crm-rivvetai.vercel.app/auth/callback?next=${encodeURIComponent(callbackPath)}`;
+      : `https://crm.rivvetai.com/auth/callback?next=${encodeURIComponent(callbackPath)}`;
 
   const result = await requestMagicLinkFn({
     data: { email: trimmed, redirectTo },

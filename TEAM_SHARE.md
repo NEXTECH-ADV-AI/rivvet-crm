@@ -1,75 +1,49 @@
 # Rivvet CRM — team share (LIVE data + magic link)
 
-Same ops/command standup path: sibling Vercel project → copy secrets → redeploy → E2E → DNS later.
+## Live project (DNS cut over)
 
-## Live project
-- **Vercel:** [rivvet-crm](https://vercel.com/rivvetai/rivvet-crm)
-- **URL:** https://rivvet-crm-rivvetai.vercel.app
-- **GitHub:** https://github.com/NEXTECH-ADV-AI/rivvet-crm
-- **Production CRM (leave alone):** crm-rivvetai / crm.rivvetai.com
-- **Do not confuse with:** app.rivvetai.com (other Rivvet product — Supabase Site URL)
+| | |
+|--|--|
+| **Canonical** | https://crm.rivvetai.com |
+| **Vercel** | [rivvet-crm](https://vercel.com/rivvetai/rivvet-crm) |
+| **Aliases** | https://rivvet-crm-rivvetai.vercel.app · https://rivvet-crm.vercel.app |
+| **GitHub** | https://github.com/NEXTECH-ADV-AI/rivvet-crm |
+| **Do not confuse with** | app.rivvetai.com (other product — Supabase Site URL) |
 
-## Wire real pipeline (2 minutes) — required for correct opps
+## Wire real pipeline (if opps look wrong)
 
-Seed opps (`O-881` Summit Fleet, etc.) are **MOCK**. Real `crm_opportunities` need **service_role**.
+Seed opps are **MOCK**. Real `crm_opportunities` need **service_role** on **rivvet-crm**:
 
-1. Vercel → **crm-rivvetai** → Settings → **Environment Variables**
-2. Copy:
-   - `SUPABASE_SERVICE_ROLE_KEY` ← **required**
-   - `NEXT_PUBLIC_SUPABASE_URL` (optional — platform default is fine)
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (optional — platform default is fine)
-3. Paste onto **rivvet-crm** (Production + Preview)
-4. Confirm **no** `CRM_DATA_SOURCE=mock` on rivvet-crm
-5. Redeploy Production
+1. Vercel → **crm-rivvetai** → Environment Variables  
+2. Copy `SUPABASE_SERVICE_ROLE_KEY` (and optional Supabase URL/anon)  
+3. Paste onto **rivvet-crm** (Production + Preview)  
+4. Confirm **no** `CRM_DATA_SOURCE=mock`  
+5. **Redeploy** Production  
 
-Same step as ops/command copying `LINEAR_API_KEY` from ops-rivvetai → rivvet-ops-command.
+## Magic link login
 
-## Magic link login (Supabase + Resend inside Supabase)
+Supabase Auth OTP → email via **Resend inside Supabase** (no `RESEND_API_KEY` on Vercel) → `/auth/callback` on **crm.rivvetai.com** → Better Auth session.
 
-Operators sign in with email magic link. **No `RESEND_API_KEY` on Vercel** — Resend is configured in the Supabase project (Auth → SMTP / email).
-
-Flow: app → Supabase OTP (`?redirect_to=`) → Supabase emails via Resend → `/auth/callback` on **rivvet-crm** → Better Auth session.
-
-### Why the email opened app.rivvetai.com (fixed in app)
-
-1. GoTrue only honors **`redirect_to` as a query param** on `/auth/v1/otp`. Body fields are ignored.
-2. If redirect is missing or **not on the allowlist**, Supabase falls back to project **Site URL** (= app.rivvetai.com).
-3. The app now always bakes  
-   `https://rivvet-crm-rivvetai.vercel.app/auth/callback?next=/home`  
-   (or the current rivvet-crm / localhost origin when trusted). Sandbox origins are rewritten so they never fall through to Site URL.
-
-### Supabase Auth URL allowlist (required — do this once)
+### Supabase Redirect URLs (required)
 
 Project `jgsghtfpejxbcdmolvsp` → Authentication → URL configuration:
 
-| Field | Value |
-|---|---|
-| **Redirect URLs** (add all) | `https://rivvet-crm-rivvetai.vercel.app/auth/callback` |
-| | `https://rivvet-crm-rivvetai.vercel.app/auth/callback/**` |
-| | `https://rivvet-crm.vercel.app/auth/callback` |
-| | `https://rivvet-crm.vercel.app/auth/callback/**` |
-| | `https://crm.rivvetai.com/auth/callback` |
-| | `https://crm.rivvetai.com/auth/callback/**` |
-| | `http://localhost:8080/auth/callback` |
-| | `http://localhost:8080/auth/callback/**` |
+- `https://crm.rivvetai.com/auth/callback`
+- `https://crm.rivvetai.com/auth/callback/**`
+- `https://rivvet-crm-rivvetai.vercel.app/auth/callback`
+- `https://rivvet-crm-rivvetai.vercel.app/auth/callback/**`
+- `https://rivvet-crm.vercel.app/auth/callback`
+- `https://rivvet-crm.vercel.app/auth/callback/**`
+- `http://localhost:8080/auth/callback`
+- `http://localhost:8080/auth/callback/**`
 
-**Do not** change Site URL away from app.rivvetai.com if other products need it — just keep the redirects above. After allowlisting, request a **new** magic link (old emails still point at the old redirect).
+Optional on Vercel env: `BETTER_AUTH_URL=https://crm.rivvetai.com` and `CRM_PUBLIC_URL=https://crm.rivvetai.com`.
 
-### Email template (if links still ignore redirect)
+### After code ships
 
-Auth → Email templates → Magic Link / Confirm signup: the button must use  
-`{{ .ConfirmationURL }}` (includes `redirect_to`), **not** a hard-coded `{{ .SiteURL }}` only.
+Login must show **WORK EMAIL** + **EMAIL ME A MAGIC LINK**. If you only see “ENTER CRM SANDBOX” + Google/X, production is still on an **old deploy** — Redeploy `main` on rivvet-crm.
 
-Optional: show `{{ .RedirectTo }}` in the body for debugging.
-
-### Sandbox preview links
-
-When `SUPABASE_SERVICE_ROLE_KEY` is available outside Vercel production, the login UI can generate an action link (no email hop). Production always emails.
-
-## Why MOCK still shows in Grok / sibling
-- Anon key gets **401** on `crm_opportunities` / `accounts` (RLS)
-- Sandbox has **no** Vercel secrets
-- Vercel MCP cannot set env vars — only dashboard (or paste key in chat once)
+Request a **new** magic link after each allowlist/deploy change (old emails keep the old redirect).
 
 ## Sacred (never reimplement)
 Instantly Load GO (n8n) · PandaDoc send · Stripe · `crm_create_contract_draft`

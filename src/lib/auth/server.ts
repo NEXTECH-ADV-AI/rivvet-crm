@@ -102,25 +102,44 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
+// Rivvet CRM production hosts (DNS cutover + Vercel aliases). Always trusted so
+// magic-link / session cookie auth works without BETTER_AUTH_URL being set.
+const CRM_PRODUCTION_ORIGINS: string[] = [
+  "https://crm.rivvetai.com",
+  "https://rivvet-crm-rivvetai.vercel.app",
+  "https://rivvet-crm.vercel.app",
+];
+const CRM_PRODUCTION_HOSTS: string[] = [
+  "crm.rivvetai.com",
+  "rivvet-crm-rivvetai.vercel.app",
+  "rivvet-crm.vercel.app",
+];
 const baseURL = explicitBaseURL ?? {
   // Include loopback hosts so dynamic baseURL resolves for local email/password
-  // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
+  // (not only the preview wildcard). Production CRM hosts for cutover domain.
+  allowedHosts: [
+    ...previewAllowedHosts,
+    ...CRM_PRODUCTION_HOSTS,
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+  ],
   // `auto` → trust both http:// and https:// expansions of allowedHosts
   // (preview is https; local dev is http).
   protocol: "auto" as const,
-  fallback: "http://localhost:8080",
+  fallback: "https://crm.rivvetai.com",
 };
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
 const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
+  ? [explicitBaseURL, ...CRM_PRODUCTION_ORIGINS, ...LOCAL_DEV_ORIGINS]
   : [
       // Host wildcards (matched against Origin's host)
       ...previewAllowedHosts,
       // Full-origin wildcards (matched against Origin)
       ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+      ...CRM_PRODUCTION_ORIGINS,
       ...LOCAL_DEV_ORIGINS,
     ];
 

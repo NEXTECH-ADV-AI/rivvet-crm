@@ -6,8 +6,8 @@
  *   - GoTrue takes `redirect_to` as a **query param** on `/auth/v1/otp`, not a
  *     body field. Missing/invalid redirects fall back to the project Site URL
  *     (currently app.rivvetai.com — the old app).
- *   - Sandbox / unknown origins are rewritten to the rivvet-crm public URL so
- *     emailed links always land on this CRM, not Site URL.
+ *   - Sandbox / unknown origins are rewritten to the CRM public URL so emailed
+ *     links always land on this CRM, not Site URL.
  */
 import { setCookie } from "@tanstack/react-start/server";
 import {
@@ -16,9 +16,11 @@ import {
 } from "@/lib/crm/wire/config";
 import { auth, SESSION_TOKEN_COOKIE } from "./server";
 
-/** Live sibling deploy — default destination for magic links from sandbox. */
-export const DEFAULT_CRM_PUBLIC_ORIGIN =
-  "https://rivvet-crm-rivvetai.vercel.app";
+/**
+ * Canonical production CRM (DNS cut over to rivvet-crm).
+ * Sandbox magic links rewrite here so Supabase never falls back to Site URL.
+ */
+export const DEFAULT_CRM_PUBLIC_ORIGIN = "https://crm.rivvetai.com";
 
 function env(key: string): string | undefined {
   const v = process.env[key]?.trim();
@@ -117,21 +119,23 @@ export function resolveMagicLinkRedirect(requestedRedirectTo: string): {
     /* ignore — use defaults */
   }
 
+  // Prefer explicit public CRM URL, then cutover domain, then Vercel URLs.
   const configured =
-    firstEnv("CRM_PUBLIC_URL", "BETTER_AUTH_URL") ||
+    firstEnv("CRM_PUBLIC_URL", "BETTER_AUTH_URL", "CRM_BASE_URL") ||
+    DEFAULT_CRM_PUBLIC_ORIGIN ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : "") ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-    DEFAULT_CRM_PUBLIC_ORIGIN;
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
   const publicOrigin = configured.replace(/\/$/, "");
 
   let origin = publicOrigin;
   let rewritten = true;
   if (requestedOrigin && isTrustedCrmOrigin(requestedOrigin)) {
+    // Prefer staying on the host the operator opened (crm.rivvetai.com or vercel)
     origin = requestedOrigin;
-    rewritten = origin !== requestedOrigin;
+    rewritten = false;
   }
 
   // Path only + next query — allowlist both exact and /** in Supabase
@@ -315,7 +319,7 @@ export type RequestMagicLinkResult = {
   emailed: boolean;
   /** Final redirect target baked into the email (for UI copy). */
   redirectTo: string;
-  /** True when we rewrote sandbox/unknown origin → rivvet-crm public URL. */
+  /** True when we rewrote sandbox/unknown origin → CRM public URL. */
   rewritten: boolean;
 };
 
