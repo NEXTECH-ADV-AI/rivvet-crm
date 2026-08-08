@@ -3,6 +3,7 @@
  *
  * Pre-wired for live preview + deploy — do not rewrite this file. To enable
  * local email/password, flip the flag in `./email-password` only (see auth skill).
+ * Magic-link uses Supabase Auth + Resend (inside Supabase) — see `./magic-link`.
  *
  * The app runs its own Better Auth at `/api/auth/*`, so the session cookie stays
  * on this app's own origin. Sign-in federates to the shared **Grok auth broker**
@@ -191,7 +192,10 @@ export const auth = betterAuth({
     encryptOAuthTokens: true,
     accountLinking: {
       enabled: true,
-      trustedProviders: GROK_PROVIDERS.map((p) => p.providerId),
+      trustedProviders: [
+        ...GROK_PROVIDERS.map((p) => p.providerId),
+        "supabase",
+      ],
       // X's synthetic email is never "verified", so don't gate linking on the
       // local user's email-verified state.
       requireLocalEmailVerified: false,

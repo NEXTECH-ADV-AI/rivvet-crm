@@ -1,6 +1,11 @@
 import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { GROK_PROVIDERS } from "./providers";
+import {
+  completeMagicLinkCodeFn,
+  completeMagicLinkFn,
+  requestMagicLinkFn,
+} from "./magic-link";
 
 /**
  * Better Auth client for this React SPA (browser-side).
@@ -144,6 +149,76 @@ export async function signIn(
   });
   if (error) throw new Error(error.message ?? "Sign-in failed");
   if (data?.url) window.location.href = data.url;
+}
+
+/**
+ * Request a passwordless magic link via Supabase Auth.
+ * Supabase emails the link (Resend is configured inside the Supabase project).
+ * Redirect is forced onto rivvet-crm (never app.rivvetai.com Site URL).
+ */
+export async function requestMagicLink(
+  email: string,
+  opts: { callbackURL?: string } = {},
+): Promise<{
+  previewUrl: string | null;
+  emailed: boolean;
+  redirectTo: string;
+  rewritten: boolean;
+}> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !trimmed.includes("@")) {
+    throw new Error("Enter a valid work email");
+  }
+  const callbackPath = opts.callbackURL ?? "/home";
+  // Preferred origin — server may rewrite sandbox → rivvet-crm public URL
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackPath)}`
+      : `https://rivvet-crm-rivvetai.vercel.app/auth/callback?next=${encodeURIComponent(callbackPath)}`;
+
+  const result = await requestMagicLinkFn({
+    data: { email: trimmed, redirectTo },
+  });
+  return {
+    previewUrl: result.previewUrl,
+    emailed: result.emailed,
+    redirectTo: result.redirectTo,
+    rewritten: result.rewritten,
+  };
+}
+
+/**
+ * Finish magic-link sign-in after Supabase redirects to /auth/callback.
+ * Accepts either an access_token (hash fragment flow) or a PKCE code.
+ */
+export async function completeMagicLink(opts: {
+  accessToken?: string | null;
+  code?: string | null;
+}): Promise<void> {
+  let token: string | null = null;
+  if (opts.accessToken) {
+    const res = await completeMagicLinkFn({
+      data: { accessToken: opts.accessToken },
+    });
+    token = res.token;
+  } else if (opts.code) {
+    const res = await completeMagicLinkCodeFn({ data: { code: opts.code } });
+    token = res.token;
+  } else {
+    throw new Error("Missing magic-link credentials");
+  }
+
+  // Live preview: cookies are partitioned — store bearer like OAuth popup.
+  // Also stash bearer after cookie set as a same-tab fallback.
+  if (token) {
+    setBearerToken(token);
+  }
+
+  try {
+    await authClient.getSession();
+  } catch {
+    /* session store refreshes on next useSession */
+  }
 }
 
 /**

@@ -17,6 +17,7 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppSequencesRouteImport } from './routes/_app/sequences'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AppAccountsIndexRouteImport } from './routes/_app/accounts/index'
 import { Route as AppAccountsAccountIdRouteImport } from './routes/_app/accounts/$accountId'
 import { Route as AppLeadsIndexRouteImport } from './routes/_app/leads/index'
@@ -67,6 +68,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppAccountsIndexRoute = AppAccountsIndexRouteImport.update({
   id: '/accounts/',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AppHomeRoute
   '/sequences': typeof AppSequencesRoute
   '/settings': typeof AppSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/leads/$leadId': typeof AppLeadsLeadIdRoute
   '/opportunities/$oppId': typeof AppOpportunitiesOppIdRouteWithChildren
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/home': typeof AppHomeRoute
   '/sequences': typeof AppSequencesRoute
   '/settings': typeof AppSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/leads/$leadId': typeof AppLeadsLeadIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/_app/home': typeof AppHomeRoute
   '/_app/sequences': typeof AppSequencesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/_app/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/_app/leads/$leadId': typeof AppLeadsLeadIdRoute
   '/_app/opportunities/$oppId': typeof AppOpportunitiesOppIdRouteWithChildren
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/sequences'
     | '/settings'
+    | '/auth/callback'
     | '/accounts/$accountId'
     | '/leads/$leadId'
     | '/opportunities/$oppId'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/sequences'
     | '/settings'
+    | '/auth/callback'
     | '/accounts/$accountId'
     | '/leads/$leadId'
     | '/api/auth/$'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/_app/home'
     | '/_app/sequences'
     | '/_app/settings'
+    | '/auth/callback'
     | '/_app/accounts/$accountId'
     | '/_app/leads/$leadId'
     | '/_app/opportunities/$oppId'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCrmBookRoute: typeof ApiCrmBookRoute
 }
@@ -316,6 +329,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/accounts/': {
       id: '/_app/accounts/'
@@ -448,6 +468,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCrmBookRoute: ApiCrmBookRoute,
 }
