@@ -131,12 +131,22 @@ export function usePatchOpportunityStage() {
       stage: OppStage;
       lostReason?: LostReason | null;
     }) => {
-      // Always update local store for instant UI
+      // Optimistic local update so the toggle feels instant
       moveOppStage(vars.opportunityId, vars.stage, vars.lostReason);
-      return patchOpportunityStageFn({ data: vars });
+      const result = await patchOpportunityStageFn({ data: vars });
+      if (!result.ok && result.source === "live") {
+        throw new Error(result.message || "Stage update failed");
+      }
+      return result;
     },
     onSuccess: () => {
+      // Refresh lists but keep optimistic stage (mapped again from server)
       void qc.invalidateQueries({ queryKey: ["crm", "opportunities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
+    },
+    onError: (err) => {
+      console.error("[crm] stage patch failed", err);
+      // Force re-hydrate so UI snaps back to server truth
       void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
     },
   });

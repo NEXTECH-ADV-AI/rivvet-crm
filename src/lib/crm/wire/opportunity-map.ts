@@ -1,9 +1,11 @@
 /**
  * Map production crm_opportunities → Opportunity.
- * @see packages/ops-hub/lib/crm/read-adapters.ts pipelineDirectoryPath
+ * Open deals with $0 amount get default Rivvet AI base pricing so pipeline MRR
+ * is accurate (Unlimited plan monthly × term + setup).
  */
 
-import { emptyDealDraft } from "../deal-catalog";
+import { emptyDealDraft, priceDeal } from "../deal-catalog";
+import { SERVICE_SETUP_FEE } from "../prod-mirror";
 import type {
   ForecastCategory,
   LockedPaymentState,
@@ -61,7 +63,6 @@ function ownerFromEmail(email: string | null): OwnerId {
   const e = email.toLowerCase();
   if (e.includes("maya")) return "usr_maya";
   if (e.includes("jordan")) return "usr_jordan";
-  // Real reps / founders map to "you" for My open
   if (
     e.includes("brayden") ||
     e.includes("scott") ||
@@ -125,10 +126,55 @@ export function isPipelineJunk(row: ProdOppRow): boolean {
   );
 }
 
+/**
+ * Resolve amount + monthly (MRR) for pipeline display.
+ * Production often leaves amount null/0 until closed-won — apply Rivvet AI
+ * Unlimited base package so open pipeline MRR is accurate.
+ */
+function resolvePricing(
+  stage: OppStage,
+  rawAmount: number,
+  start: string,
+): {
+  amount: number;
+  monthlyAmount: number | null;
+  deal: ReturnType<typeof emptyDealDraft>;
+} {
+  const deal = emptyDealDraft(start);
+  deal.setupFee = SERVICE_SETUP_FEE;
+  deal.termMonths = 12;
+  deal.freeMonths = 0;
+
+  if (rawAmount > 0) {
+    // Infer plan from contract value (Unlimited ≈ $48k+ TCV)
+    deal.productId = rawAmount >= 30_000 ? "unlimited" : "value_based";
+    const priced = priceDeal(deal);
+    // Keep DB amount as TCV when present; MRR from base plan rates
+    return {
+      amount: rawAmount,
+      monthlyAmount: priced.monthly,
+      deal,
+    };
+  }
+
+  // Open (or won with missing $) → base Unlimited MRR + TCV
+  if (stage !== "closed_lost") {
+    deal.productId = "unlimited";
+    const priced = priceDeal(deal);
+    return {
+      amount: priced.tcv,
+      monthlyAmount: priced.monthly,
+      deal,
+    };
+  }
+
+  return { amount: 0, monthlyAmount: null, deal };
+}
+
 export function mapOpportunityRow(row: ProdOppRow): Opportunity {
   const id = str(row.opportunity_id || row.deal_id || row.id);
   const stage = mapOppStage(row.stage);
-  const amount = num(row.amount ?? row.contract_value);
+  const rawAmount = num(row.amount ?? row.contract_value);
   const updated = str(
     row.updated_at || row.created_at,
     new Date().toISOString(),
@@ -142,10 +188,11 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
       ? str(row.owner_email)
       : null;
   const start = closeDate || new Date().toISOString().slice(0, 10);
-  const deal = emptyDealDraft(start);
-  if (amount > 0) {
-    deal.productId = amount >= 30000 ? "unlimited" : "value_based";
-  }
+  const { amount, monthlyAmount, deal } = resolvePricing(
+    stage,
+    rawAmount,
+    start,
+  );
 
   const gtm = row.source_gtm_lead_id
     ? str(row.source_gtm_lead_id)
@@ -155,7 +202,6 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
 
   const accountName = accountNameOf(row);
   const rawName = str(row.opportunity_name || row.company_name, "");
-  // Prefer human name; never fall back to empty (UUID shows separately as short id)
   const name =
     rawName ||
     accountName ||
@@ -173,7 +219,7 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
       : null,
     stage,
     amount,
-    monthlyAmount: amount > 0 ? Math.round(amount / 12) : null,
+    monthlyAmount,
     currency: "USD",
     ownerId: ownerFromEmail(ownerEmail),
     closeDate,
@@ -191,7 +237,12 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
     deal,
     lockedSendState: "none" as LockedSendState,
     lockedPaymentState: "none" as LockedPaymentState,
-    packageSku: null,
+    packageSku:
+      deal.productId === "unlimited"
+        ? "rivvet_ai_unlimited"
+        : deal.productId === "value_based"
+          ? "rivvet_ai_value_based"
+          : null,
     createdAt: str(row.created_at, updated),
     updatedAt: updated,
     sourceLeadId: gtm,

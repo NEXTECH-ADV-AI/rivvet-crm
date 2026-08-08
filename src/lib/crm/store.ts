@@ -233,12 +233,13 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     const opp = s.opportunities.find((o) => o.id === id);
     if (!opp || opp.stage === toStage) return;
 
+    // closed_lost needs a reason for audit — default when UI omits one
     if (toStage === "closed_lost") {
       if (
         !lostReason ||
         !(PROD_LOST_REASONS as readonly string[]).includes(lostReason)
       ) {
-        return;
+        lostReason = "timing";
       }
     }
 

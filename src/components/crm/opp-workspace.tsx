@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCrmStore } from "@/lib/crm/store";
+import { usePatchOpportunityStage } from "@/lib/crm/wire";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { activitiesForEntity } from "@/lib/crm/filters";
 import {
@@ -61,6 +62,8 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
   const patchOpp = useCrmStore((s) => s.patchOpp);
   const setDealConfig = useCrmStore((s) => s.setDealConfig);
   const moveOppStage = useCrmStore((s) => s.moveOppStage);
+  const dataSource = useCrmStore((s) => s.dataSource);
+  const patchStage = usePatchOpportunityStage();
   const completeActivity = useCrmStore((s) => s.completeActivity);
   const logTouch = useCrmStore((s) => s.logTouch);
 
@@ -92,6 +95,32 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
   );
 
   if (!opp) return null;
+  const current = opp;
+
+  function applyStage(stage: OppStage) {
+    let lostReason: LostReason | null = null;
+    if (stage === "closed_lost") {
+      const pick = window.prompt(
+        "Lost reason (no-show, no-fit, price, timing):",
+        current.lostReason || "timing",
+      );
+      if (pick === null) return;
+      const normalized = pick.trim().toLowerCase().replace(/\s+/g, "-");
+      const allowed = ["no-show", "no-fit", "price", "timing"] as const;
+      lostReason = (allowed as readonly string[]).includes(normalized)
+        ? (normalized as LostReason)
+        : "timing";
+    }
+    if (dataSource === "live") {
+      patchStage.mutate({
+        opportunityId: current.id,
+        stage,
+        lostReason,
+      });
+    } else {
+      moveOppStage(current.id, stage, lostReason);
+    }
+  }
 
   const p = oppPriority(opp, DEMO_NOW);
   const priced = priceDeal(opp.deal);
@@ -117,8 +146,9 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
             </h1>
             <select
               value={opp.stage}
-              onChange={(e) => moveOppStage(opp.id, e.target.value as OppStage)}
-              className="rounded-full border border-border-soft bg-card px-2.5 py-0.5 text-xs font-medium text-ink"
+              onChange={(e) => applyStage(e.target.value as OppStage)}
+              disabled={patchStage.isPending}
+              className="rounded-full border border-border-soft bg-card px-2.5 py-0.5 text-xs font-medium text-ink disabled:opacity-60"
             >
               {KANBAN_STAGES.map((s) => (
                 <option key={s} value={s}>
@@ -126,6 +156,11 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
                 </option>
               ))}
             </select>
+            {patchStage.isError && (
+              <span className="text-[11px] text-danger">
+                Could not save stage — try again
+              </span>
+            )}
             <select
               value={opp.vertical}
               onChange={(e) =>
@@ -154,13 +189,22 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Kpi
-          label="Monthly"
-          value={opp.monthlyAmount ? formatMoney(opp.monthlyAmount) : "—"}
+          label="MRR"
+          value={formatMoney(
+            opp.monthlyAmount ?? priced.monthly ?? 0,
+          )}
         />
-        <Kpi label="TCV" value={opp.amount ? formatMoney(opp.amount) : "—"} />
+        <Kpi
+          label="TCV"
+          value={formatMoney(opp.amount || priced.tcv || 0)}
+        />
         <Kpi
           label="Weighted"
-          value={opp.amount ? formatMoney(weighted) : "—"}
+          value={formatMoney(
+            Math.round(
+              (opp.amount || priced.tcv || 0) * (opp.probability / 100),
+            ),
+          )}
         />
         <Kpi label="Win prob" value={`${opp.probability}%`} />
         <Kpi

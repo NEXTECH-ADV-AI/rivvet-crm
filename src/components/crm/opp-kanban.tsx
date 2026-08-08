@@ -202,7 +202,10 @@ export function OppKanban({
                         </div>
                         <div className="flex items-center justify-between gap-2 pl-4">
                           <span className="font-mono text-xs font-semibold tabular text-ink">
-                            {formatMoney(o.amount)}
+                            {formatMoney(o.monthlyAmount ?? o.amount)}
+                            {o.monthlyAmount ? (
+                              <span className="font-normal text-fg-subtle">/mo</span>
+                            ) : null}
                           </span>
                           <span className="font-mono text-[10px] tabular text-fg-subtle">
                             {formatDate(o.closeDate)}
