@@ -1,11 +1,12 @@
 /**
- * Server-only: Supabase Auth magic-link + Better Auth session bridge.
+ * Server-only: passwordless magic-link + Better Auth session bridge.
  * Do not import from client components — use createServerFn wrappers in magic-link.ts.
  *
  * Redirect rules:
  *   - GoTrue takes `redirect_to` as a **query param** on `/auth/v1/otp`.
- *   - Missing/invalid redirects fall back to Supabase Site URL (other product).
- *   - Production always uses https://crm.rivvetai.com for emailed links.
+ *   - Production emails always use https://crm.rivvetai.com/auth/callback (no query
+ *     string — query defaults on the callback route were 307-rewriting the URL and
+ *     stripping the #access_token hash from Supabase).
  */
 import { setCookie } from "@tanstack/react-start/server";
 import {
@@ -14,7 +15,6 @@ import {
 } from "@/lib/crm/wire/config";
 import { auth, SESSION_TOKEN_COOKIE } from "./server";
 
-/** Canonical production CRM (DNS cut over to rivvet-crm). */
 export const DEFAULT_CRM_PUBLIC_ORIGIN = "https://crm.rivvetai.com";
 
 function env(key: string): string | undefined {
@@ -88,24 +88,19 @@ function isTrustedCrmOrigin(origin: string): boolean {
 }
 
 /**
- * Where the email link should open.
- * Production / Vercel aliases → always crm.rivvetai.com so operators land on
- * the canonical host. Localhost stays localhost for dev.
+ * Canonical callback path with NO query string.
+ * Query defaults on the SPA route were causing a 307 that dropped #access_token.
  */
 export function resolveMagicLinkRedirect(requestedRedirectTo: string): {
   redirectTo: string;
   rewritten: boolean;
   publicOrigin: string;
 } {
-  let next = "/home";
   let requestedOrigin = "";
   try {
-    const u = new URL(requestedRedirectTo);
-    requestedOrigin = u.origin;
-    const n = u.searchParams.get("next");
-    if (n && n.startsWith("/")) next = n;
+    requestedOrigin = new URL(requestedRedirectTo).origin;
   } catch {
-    /* defaults */
+    /* ignore */
   }
 
   const canonical = (
@@ -129,13 +124,13 @@ export function resolveMagicLinkRedirect(requestedRedirectTo: string): {
       origin = requestedOrigin;
       rewritten = false;
     } else if (isTrustedCrmOrigin(requestedOrigin)) {
-      // Always prefer canonical production domain over *.vercel.app aliases
       origin = canonical;
       rewritten = requestedOrigin !== canonical;
     }
   }
 
-  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+  // No ?next= — destination after sign-in is hard-coded to /home in the callback.
+  const redirectTo = `${origin}/auth/callback`;
   return { redirectTo, rewritten, publicOrigin: origin };
 }
 
@@ -229,7 +224,7 @@ async function generateMagicLink(
       return u.toString();
     }
   } catch {
-    /* raw link */
+    /* raw */
   }
   return link;
 }
@@ -363,28 +358,74 @@ export async function completeMagicLinkWithToken(accessToken: string) {
 }
 
 export async function completeMagicLinkWithCode(code: string) {
-  const result = await supabaseAuthFetch("/auth/v1/token?grant_type=pkce", {
+  // Try PKCE then authorization_code grant shapes GoTrue accepts
+  const attempts: Array<{ path: string; body: Record<string, string> }> = [
+    { path: "/auth/v1/token?grant_type=pkce", body: { auth_code: code } },
+    {
+      path: "/auth/v1/token?grant_type=authorization_code",
+      body: { auth_code: code, code },
+    },
+  ];
+  let accessToken: string | undefined;
+  for (const attempt of attempts) {
+    const result = await supabaseAuthFetch(attempt.path, {
+      method: "POST",
+      key: anonKey(),
+      body: attempt.body,
+    });
+    if (result.ok) {
+      accessToken = (result.json as { access_token?: string } | null)
+        ?.access_token;
+      if (accessToken) break;
+    }
+  }
+  if (!accessToken) {
+    throw new Error("Could not complete sign-in — request a new link");
+  }
+  return completeMagicLinkWithToken(accessToken);
+}
+
+/**
+ * Email-template / older flows pass token_hash + type instead of access_token.
+ * POST /auth/v1/verify exchanges them for a session.
+ */
+export async function completeMagicLinkWithTokenHash(input: {
+  tokenHash: string;
+  type?: string;
+}) {
+  const type = input.type || "magiclink";
+  const result = await supabaseAuthFetch("/auth/v1/verify", {
     method: "POST",
     key: anonKey(),
-    body: { auth_code: code },
+    body: {
+      type,
+      token_hash: input.tokenHash,
+    },
   });
-  let accessToken: string | undefined;
-  if (result.ok) {
-    accessToken = (result.json as { access_token?: string } | null)?.access_token;
-  } else {
-    const alt = await supabaseAuthFetch(
-      "/auth/v1/token?grant_type=authorization_code",
-      {
-        method: "POST",
-        key: anonKey(),
-        body: { auth_code: code, code },
-      },
-    );
-    if (!alt.ok) {
-      throw new Error("Could not complete sign-in — request a new link");
+  if (!result.ok) {
+    // Some projects use type "email" for magic links
+    if (type !== "email") {
+      return completeMagicLinkWithTokenHash({
+        tokenHash: input.tokenHash,
+        type: "email",
+      });
     }
-    accessToken = (alt.json as { access_token?: string } | null)?.access_token;
+    const msg =
+      (result.json as { msg?: string; error_description?: string } | null)
+        ?.error_description ||
+      (result.json as { msg?: string } | null)?.msg ||
+      "Sign-in link expired or invalid — request a new one";
+    throw new Error(msg);
   }
-  if (!accessToken) throw new Error("Could not complete sign-in");
+  const accessToken = (result.json as { access_token?: string } | null)
+    ?.access_token;
+  if (!accessToken) {
+    // verify may return { access_token } or nested session
+    const nested = (
+      result.json as { session?: { access_token?: string } } | null
+    )?.session?.access_token;
+    if (!nested) throw new Error("Could not complete sign-in");
+    return completeMagicLinkWithToken(nested);
+  }
   return completeMagicLinkWithToken(accessToken);
 }

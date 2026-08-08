@@ -1,9 +1,6 @@
 /**
- * Passwordless magic-link via Supabase Auth (Resend is configured inside Supabase).
- *
- * Server implementation lives in `magic-link.server.ts` so the client never
- * pulls Better Auth server / pg. These createServerFn wrappers are safe to
- * import from the browser.
+ * Passwordless magic-link — client-safe createServerFn wrappers.
+ * Server logic lives in magic-link.server.ts.
  */
 import { createServerFn } from "@tanstack/react-start";
 
@@ -11,23 +8,12 @@ export const magicLinkEnabled = true;
 
 export type RequestMagicLinkResult = {
   ok: true;
-  /** Present when sandbox preview path generated the link (no email sent). */
   previewUrl: string | null;
-  /** True when Supabase emailed the link via Resend. */
   emailed: boolean;
-  /** Final redirect baked into the email. */
   redirectTo: string;
-  /** True when sandbox/unknown origin was rewritten to rivvet-crm. */
   rewritten: boolean;
 };
 
-/**
- * Client-callable: start magic-link sign-in.
- * - Production (Vercel): Supabase sends email (Resend inside Supabase).
- * - Sandbox with service_role: returns action_link for in-UI open.
- * - Untrusted origins (e.g. grok sandbox) rewrite redirect → rivvet-crm deploy
- *   so Supabase does not fall back to Site URL (app.rivvetai.com).
- */
 export const requestMagicLinkFn = createServerFn({ method: "POST" })
   .inputValidator((input: { email: string; redirectTo: string }) => {
     const email = String(input?.email ?? "")
@@ -48,11 +34,6 @@ export const requestMagicLinkFn = createServerFn({ method: "POST" })
     return requestMagicLinkServer(data);
   });
 
-/**
- * Client-callable after Supabase redirects to /auth/callback with tokens.
- * Verifies the Supabase JWT, mints a Better Auth session cookie, returns
- * bearer token for live-preview (partitioned cookies).
- */
 export const completeMagicLinkFn = createServerFn({ method: "POST" })
   .inputValidator((input: { accessToken: string }) => {
     const accessToken = String(input?.accessToken ?? "").trim();
@@ -64,9 +45,6 @@ export const completeMagicLinkFn = createServerFn({ method: "POST" })
     return completeMagicLinkWithToken(data.accessToken);
   });
 
-/**
- * Exchange a Supabase auth `code` (PKCE) for a session, then mint app session.
- */
 export const completeMagicLinkCodeFn = createServerFn({ method: "POST" })
   .inputValidator((input: { code: string }) => {
     const code = String(input?.code ?? "").trim();
@@ -76,4 +54,18 @@ export const completeMagicLinkCodeFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { completeMagicLinkWithCode } = await import("./magic-link.server");
     return completeMagicLinkWithCode(data.code);
+  });
+
+export const completeMagicLinkTokenHashFn = createServerFn({ method: "POST" })
+  .inputValidator((input: { tokenHash: string; type?: string }) => {
+    const tokenHash = String(input?.tokenHash ?? "").trim();
+    if (!tokenHash) throw new Error("Missing token hash");
+    const type = input?.type ? String(input.type).trim() : undefined;
+    return { tokenHash, type };
+  })
+  .handler(async ({ data }) => {
+    const { completeMagicLinkWithTokenHash } = await import(
+      "./magic-link.server"
+    );
+    return completeMagicLinkWithTokenHash(data);
   });
