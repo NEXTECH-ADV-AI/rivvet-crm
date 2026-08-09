@@ -1,11 +1,11 @@
 /**
  * Map production crm_opportunities → Opportunity.
- * Open deals with $0 amount get default Rivvet AI base pricing so pipeline MRR
- * is accurate (Unlimited plan monthly × term + setup).
+ * Open deals with $0 amount get Rivvet AI value-based base MRR ($500/mo)
+ * so pipeline isn't inflated by Unlimited ($4k) rates.
  */
 
 import { emptyDealDraft, priceDeal } from "../deal-catalog";
-import { SERVICE_SETUP_FEE } from "../prod-mirror";
+import { SERVICE_SETUP_FEE, SERVICE_VALUE_PRICE } from "../prod-mirror";
 import type {
   ForecastCategory,
   LockedPaymentState,
@@ -17,6 +17,9 @@ import type {
 } from "../types";
 
 export type ProdOppRow = Record<string, unknown>;
+
+/** Default open-pipeline MRR when CRM has no amount (value-based base). */
+export const DEFAULT_PIPELINE_MRR = SERVICE_VALUE_PRICE; // $500/mo
 
 function str(v: unknown, fallback = ""): string {
   if (v == null) return fallback;
@@ -128,8 +131,7 @@ export function isPipelineJunk(row: ProdOppRow): boolean {
 
 /**
  * Resolve amount + monthly (MRR) for pipeline display.
- * Production often leaves amount null/0 until closed-won — apply Rivvet AI
- * Unlimited base package so open pipeline MRR is accurate.
+ * Missing amounts on open deals → value-based base ($500/mo), not Unlimited $4k.
  */
 function resolvePricing(
   stage: OppStage,
@@ -146,24 +148,33 @@ function resolvePricing(
   deal.freeMonths = 0;
 
   if (rawAmount > 0) {
-    // Infer plan from contract value (Unlimited ≈ $48k+ TCV)
-    deal.productId = rawAmount >= 30_000 ? "unlimited" : "value_based";
-    const priced = priceDeal(deal);
-    // Keep DB amount as TCV when present; MRR from base plan rates
+    // Small values (≤ $2k) look like monthly MRR already ($500 / $750)
+    if (rawAmount <= 2000) {
+      deal.productId = "value_based";
+      const monthly = rawAmount;
+      const tcv = SERVICE_SETUP_FEE + monthly * deal.termMonths;
+      return { amount: tcv, monthlyAmount: monthly, deal };
+    }
+    // Larger values are TCV — derive MRR from term (12 mo default), not Unlimited SKU
+    deal.productId = "value_based";
+    const monthly = Math.round(
+      Math.max(0, rawAmount - SERVICE_SETUP_FEE) / deal.termMonths,
+    );
     return {
       amount: rawAmount,
-      monthlyAmount: priced.monthly,
+      monthlyAmount: monthly > 0 ? monthly : DEFAULT_PIPELINE_MRR,
       deal,
     };
   }
 
-  // Open (or won with missing $) → base Unlimited MRR + TCV
+  // Open (or won with missing $) → value-based base $500/mo
   if (stage !== "closed_lost") {
-    deal.productId = "unlimited";
+    deal.productId = "value_based";
     const priced = priceDeal(deal);
+    // priceDeal uses SERVICE_VALUE_PRICE ($500)
     return {
       amount: priced.tcv,
-      monthlyAmount: priced.monthly,
+      monthlyAmount: priced.monthly || DEFAULT_PIPELINE_MRR,
       deal,
     };
   }
