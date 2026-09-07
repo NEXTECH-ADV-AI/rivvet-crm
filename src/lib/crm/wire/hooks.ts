@@ -3,6 +3,7 @@ import {
   getAccountFn,
   getAccountsFunnelFn,
   getBookFn,
+  getMissionLineageFn,
   getOpportunityFn,
   getWireStatusFn,
   hydrateCrmFn,
@@ -176,4 +177,24 @@ export function useCrmHydrate() {
   }, [q.data, hydrateFromWire]);
 
   return q;
+}
+
+/**
+ * Canonical commercial-continuity lineage for an account or opportunity:
+ * exactly-once activity timeline, GTM mission touch/conversion chips, trial
+ * state. Scope by accountId (account detail) or gtmLeadId (opportunity
+ * detail via opp.gtmLeadId); pass clientId when known for trial linkage.
+ */
+export function useMissionLineage(input: {
+  accountId?: string | null;
+  gtmLeadId?: string | null;
+  clientId?: string | null;
+}) {
+  const enabled = Boolean(input.accountId || input.gtmLeadId);
+  return useQuery({
+    queryKey: ["crm", "lineage", input],
+    queryFn: () => getMissionLineageFn({ data: input }),
+    enabled,
+    staleTime: 30_000,
+  });
 }

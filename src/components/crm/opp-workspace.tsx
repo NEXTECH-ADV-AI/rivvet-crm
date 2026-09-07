@@ -53,6 +53,7 @@ import type {
 } from "@/lib/crm/types";
 import { Timeline } from "./timeline";
 import { StatusChip } from "./status-chip";
+import { MissionLineagePanel } from "./mission-lineage-panel";
 import { cn } from "@/components/ui/cn";
 
 export function OppWorkspace({ oppId }: { oppId: string }) {
@@ -428,6 +429,11 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
               onComplete={completeActivity}
             />
           </Card>
+
+          <MissionLineagePanel
+            accountId={opp.accountId}
+            gtmLeadId={opp.gtmLeadId}
+          />
         </div>
 
         <div className="space-y-3 xl:col-span-4">

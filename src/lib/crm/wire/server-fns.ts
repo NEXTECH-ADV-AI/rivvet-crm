@@ -107,3 +107,18 @@ export const hydrateCrmFn = createServerFn({ method: "GET" }).handler(
     return hydrateCrmService();
   },
 );
+
+export const getMissionLineageFn = createServerFn({ method: "GET" })
+  .validator(
+    (data: {
+      accountId?: string | null;
+      gtmLeadId?: string | null;
+      clientId?: string | null;
+    }) => data ?? {},
+  )
+  .handler(async ({ data }) => {
+    const { getMissionLineageService } = await import(
+      "./activity-service.server"
+    );
+    return getMissionLineageService(data ?? {});
+  });
