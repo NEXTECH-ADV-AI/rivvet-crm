@@ -6,6 +6,7 @@ import { Timeline } from "@/components/crm/timeline";
 import { NextActionEditor } from "@/components/crm/next-action-editor";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { MetaPanel, MetaRow, TagList } from "@/components/crm/meta-panel";
+import { MissionLineagePanel } from "@/components/crm/mission-lineage-panel";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { activitiesForEntity } from "@/lib/crm/filters";
@@ -233,6 +234,11 @@ function AccountDetail() {
           <MetaPanel title="Activity timeline">
             <Timeline items={timeline} onComplete={completeActivity} />
           </MetaPanel>
+          <MissionLineagePanel
+            accountId={account.id}
+            clientId={account.clientId}
+            showTrial
+          />
         </div>
       </div>
     </div>

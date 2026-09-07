@@ -11,6 +11,7 @@ export {
   useOpportunity,
   usePatchOpportunityStage,
   useCrmHydrate,
+  useMissionLineage,
 } from "./hooks";
 export {
   getWireStatusFn,
@@ -24,4 +25,15 @@ export {
   getOpportunityFn,
   patchOpportunityStageFn,
   hydrateCrmFn,
+  getMissionLineageFn,
 } from "./server-fns";
+export type { LineageInput, LineageServiceResult } from "./activity-service.server";
+export type {
+  CanonicalActivitiesResult,
+  CanonicalActivity,
+  DuplicateFlag,
+  MissionChip,
+  MissionLineageResult,
+  TrialState,
+  UnavailableResult,
+} from "./mission-lineage-map";
