@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/crm/page-header";
 import { ViewTabs } from "@/components/crm/view-tabs";
 import {
   FilterBar,
-  type OwnerFilter,
   type PriorityFilter,
 } from "@/components/crm/filter-bar";
 import { PriorityBadge } from "@/components/crm/priority-badge";
@@ -21,7 +20,6 @@ import {
   formatRelative,
   formatDate,
   oppPriority,
-  OWNER_LABEL,
   STAGE_LABEL,
 } from "@/lib/crm/priority";
 import type { ListView, Opportunity } from "@/lib/crm/types";
@@ -42,12 +40,10 @@ function applyLocalFilters(
   rows: Opportunity[],
   query: string,
   priority: PriorityFilter,
-  owner: OwnerFilter,
   now: number,
 ) {
   const q = query.trim().toLowerCase();
   return rows.filter((o) => {
-    if (owner !== "all" && o.ownerId !== owner) return false;
     if (priority !== "all") {
       if (oppPriority(o, now).priority !== priority) return false;
     }
@@ -69,7 +65,6 @@ function OppsPage() {
   const [layout, setLayout] = useState<LayoutMode>("board");
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState<PriorityFilter>("all");
-  const [owner, setOwner] = useState<OwnerFilter>("all");
   const [creating, setCreating] = useState(false);
 
   const now = dataSource === "live" ? Date.now() : DEMO_NOW;
@@ -79,13 +74,12 @@ function OppsPage() {
     [opportunities, view],
   );
   const rows = useMemo(
-    () => applyLocalFilters(base, query, priority, owner, now),
-    [base, query, priority, owner, now],
+    () => applyLocalFilters(base, query, priority, now),
+    [base, query, priority, now],
   );
   const filterIds = useMemo(() => new Set(rows.map((r) => r.id)), [rows]);
   const counts = useMemo(
     () => ({
-      my_open: filterOpps(opportunities, "my_open").length,
       stale_7d: filterOpps(opportunities, "stale_7d").length,
       closing_month: filterOpps(opportunities, "closing_month").length,
       all: filterOpps(opportunities, "all").length,
@@ -158,8 +152,6 @@ function OppsPage() {
           onQuery={setQuery}
           priority={priority}
           onPriority={setPriority}
-          owner={owner}
-          onOwner={setOwner}
           resultCount={rows.length}
         />
       </div>
@@ -185,7 +177,6 @@ function OppsPage() {
                     <th className="px-4 py-2.5 font-medium">Opportunity</th>
                     <th className="px-4 py-2.5 font-medium">Stage</th>
                     <th className="px-4 py-2.5 font-medium">Send</th>
-                    <th className="px-4 py-2.5 font-medium">Owner</th>
                     <th className="px-4 py-2.5 font-medium">Next action</th>
                     <th className="px-4 py-2.5 font-medium">Close</th>
                     <th className="px-4 py-2.5 font-medium text-right">MRR</th>
@@ -243,9 +234,6 @@ function OppsPage() {
                           ) : (
                             <span className="text-xs text-fg-subtle">—</span>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-fg-muted">
-                          {OWNER_LABEL[o.ownerId]}
                         </td>
                         <td className="max-w-[160px] truncate px-4 py-3">
                           <span

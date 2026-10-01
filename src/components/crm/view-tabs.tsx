@@ -1,11 +1,11 @@
 import type { ListView } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
 
+// Opportunities. No "My open": opportunities have no owners yet (founder, 2026-10-01).
 const DEFAULT_VIEWS: { id: ListView; label: string }[] = [
-  { id: "my_open", label: "My open" },
-  { id: "stale_7d", label: "Stale >7d" },
-  { id: "closing_month", label: "Closing this month" },
   { id: "all", label: "All" },
+  { id: "stale_7d", label: "No touch in 7 days" },
+  { id: "closing_month", label: "Closing this month" },
 ];
 
 // ponytail: no "My queue" until owners are real people (identity slice).
