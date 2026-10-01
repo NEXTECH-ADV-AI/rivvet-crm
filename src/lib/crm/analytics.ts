@@ -1,4 +1,4 @@
-import { DEMO_NOW, leadBookSnapshot } from "./seed";
+import { DEMO_NOW } from "./seed";
 import {
   daysUntil,
   formatMoney,
@@ -7,7 +7,7 @@ import {
   KANBAN_STAGES,
   OWNER_LABEL,
 } from "./priority";
-import type { Account, Activity, Lead, Opportunity } from "./types";
+import type { Account, Activity, Lead, LeadBookSnapshot, Opportunity } from "./types";
 import {
   isInInstantly,
   isSequenceReady,
@@ -25,6 +25,7 @@ export function buildGtmAnalytics(
   leads: Lead[],
   accounts: Account[],
   activities: Activity[],
+  book?: LeadBookSnapshot | null,
 ) {
   const open = opportunities.filter(openOpp);
   const won = opportunities.filter((o) => o.stage === "closed_won");
@@ -80,14 +81,27 @@ export function buildGtmAnalytics(
   }
   const byOwner = [...byOwnerMap.values()].sort((a, b) => b.amount - a.amount);
 
-  const weekly = [
-    { week: "W-5", created: 3, won: 1, lost: 0 },
-    { week: "W-4", created: 4, won: 0, lost: 1 },
-    { week: "W-3", created: 2, won: 1, lost: 0 },
-    { week: "W-2", created: 5, won: 1, lost: 1 },
-    { week: "W-1", created: 3, won: 0, lost: 0 },
-    { week: "This", created: 2, won: 0, lost: 0 },
-  ];
+  // Last six weeks from real opportunity dates (was a hardcoded series).
+  const WEEK = 7 * 86400000;
+  const weekIndex = (iso: string | null | undefined) => {
+    const t = iso ? new Date(iso).getTime() : NaN;
+    if (!Number.isFinite(t)) return -1;
+    const ago = Math.floor((DEMO_NOW - t) / WEEK);
+    return ago >= 0 && ago < 6 ? 5 - ago : -1;
+  };
+  const weekly = ["W-5", "W-4", "W-3", "W-2", "W-1", "This"].map((week) => ({
+    week,
+    created: 0,
+    won: 0,
+    lost: 0,
+  }));
+  for (const o of opportunities) {
+    const c = weekIndex(o.createdAt);
+    if (c >= 0) weekly[c].created += 1;
+    const closedAt = weekIndex(o.updatedAt);
+    if (closedAt >= 0 && o.stage === "closed_won") weekly[closedAt].won += 1;
+    if (closedAt >= 0 && o.stage === "closed_lost") weekly[closedAt].lost += 1;
+  }
 
   const sourceMix = [
     {
@@ -121,9 +135,7 @@ export function buildGtmAnalytics(
 
   const closedTotal = won.length + lost.length;
   const winRate =
-    closedTotal > 0 ? Math.round((won.length / closedTotal) * 100) : 100;
-
-  const book = leadBookSnapshot;
+    closedTotal > 0 ? Math.round((won.length / closedTotal) * 100) : null;
 
   return {
     kpis: {
@@ -141,21 +153,21 @@ export function buildGtmAnalytics(
       needsEnrich: leads.filter(needsEnrich).length,
       needsVerify: leads.filter(needsEmailVerify).length,
       workableLeads: leads.filter(isWorkableLead).length,
-      bookTotal: book.total,
-      bookSequenceReady: book.sequenceReady,
-      bookValidEmail: book.validEmail,
-      bookInInstantly: book.inInstantly,
+      bookTotal: book?.total ?? null,
+      bookSequenceReady: book?.sequenceReady ?? null,
+      bookValidEmail: book?.validEmail ?? null,
+      bookInInstantly: book?.inInstantly ?? null,
       atRisk: atRisk.length,
       openTasks: openTasks.length,
       winRate,
       avgDeal: open.length ? Math.round(pipeline / open.length) : 0,
-      hvacShare: book.hvacSharePct,
+      hvacShare: book?.hvacSharePct ?? null,
     },
     byStage,
     byOwner,
     weekly,
     sourceMix,
-    campaignLoads: book.byCampaignLoads,
+    campaignLoads: book?.byCampaignLoads ?? {},
     topDeals: [...open]
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)

@@ -26,6 +26,7 @@ export {
   patchOpportunityStageFn,
   hydrateCrmFn,
   getMissionLineageFn,
+  completeTaskFn,
 } from "./server-fns";
 export type { LineageInput, LineageServiceResult } from "./activity-service.server";
 export type {

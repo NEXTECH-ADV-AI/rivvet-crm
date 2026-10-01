@@ -76,13 +76,8 @@ function LeadsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
-        eyebrow={`gtm_leads · ${source}`}
         title="Leads"
-        description={
-          source === "live"
-            ? "Paginated server read of load-eligible filters. Instantly Load stays on n8n."
-            : `Default: load-eligible — not ${(book?.total ?? 53531).toLocaleString()} scrapes. Wire: set SUPABASE_URL + key.`
-        }
+        description="Every lead, live. Pick a view or search."
         action={
           <button
             type="button"

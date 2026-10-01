@@ -17,6 +17,7 @@ import {
 import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
+import { useLeadBook } from "@/lib/crm/wire";
 import { buildGtmAnalytics, formatMoney } from "@/lib/crm/analytics";
 import { formatDate } from "@/lib/crm/priority";
 
@@ -35,23 +36,20 @@ function AnalyticsPage() {
   const leads = useCrmStore((s) => s.leads);
   const accounts = useCrmStore((s) => s.accounts);
   const activities = useCrmStore((s) => s.activities);
+  const book = useLeadBook().data?.book ?? null;
 
   const data = useMemo(
-    () => buildGtmAnalytics(opportunities, leads, accounts, activities),
-    [opportunities, leads, accounts, activities],
+    () => buildGtmAnalytics(opportunities, leads, accounts, activities, book),
+    [opportunities, leads, accounts, activities, book],
   );
+  const n = (v: number | null) => (v == null ? "–" : v.toLocaleString());
   const { kpis } = data;
-
-  const campaignBars = Object.entries(data.campaignLoads ?? {}).map(
-    ([name, count]) => ({ name, count: count ?? 0 }),
-  );
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
-        eyebrow="GTM"
         title="Analytics"
-        description="Sequence funnel first. Pipeline and close velocity second."
+        description="Live lead book and pipeline."
         action={
           <Link
             to="/leads"
@@ -64,20 +62,19 @@ function AnalyticsPage() {
 
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi
-          label="Book sequence-ready"
-          value={String(kpis.bookSequenceReady)}
-          sub={`${kpis.bookValidEmail} valid email`}
+          label="Sequence-ready"
+          value={n(kpis.bookSequenceReady)}
+          sub={`${n(kpis.bookValidEmail)} valid email`}
           accent
         />
         <Kpi
-          label="Book in Instantly"
-          value={String(kpis.bookInInstantly)}
-          sub="mostly HVAC Nat'l"
+          label="In a campaign"
+          value={n(kpis.bookInInstantly)}
+          sub={`of ${n(kpis.bookTotal)} leads`}
         />
         <Kpi
           label="HVAC share"
-          value={`${kpis.hvacShare}%`}
-          warn={kpis.hvacShare > 40}
+          value={kpis.hvacShare == null ? "–" : `${kpis.hvacShare}%`}
         />
         <Kpi label="Pipeline" value={formatMoney(kpis.pipeline)} />
         <Kpi label="Weighted" value={formatMoney(kpis.weighted)} />
@@ -96,50 +93,6 @@ function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel
-          title="Instantly loads by campaign"
-          subtitle="Idle campaigns show 0"
-        >
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={campaignBars}
-                margin={{ top: 4, right: 8, left: 0, bottom: 40 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#d5e0dc"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: CHART_MUTED, fontSize: 9 }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                  angle={-25}
-                  textAnchor="end"
-                  height={50}
-                />
-                <YAxis
-                  tick={{ fill: CHART_MUTED, fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={32}
-                />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {campaignBars.map((e, i) => (
-                    <Cell
-                      key={e.name}
-                      fill={e.count === 0 ? "#c9851a" : CHART_MINT}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Panel>
 
         <Panel title="Pipeline by stage" subtitle="Open amount">
           <div className="h-56">

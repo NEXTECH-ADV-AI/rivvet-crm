@@ -8,7 +8,7 @@
  */
 
 import { seedLeads, leadBookSnapshot } from "../seed";
-import type { Lead, LeadBookSnapshot, ListView } from "../types";
+import type { Lead, LeadBookSnapshot, ListView, Vertical } from "../types";
 import {
   DEFAULT_PAGE_LIMIT,
   MAX_PAGE_LIMIT,
@@ -25,7 +25,7 @@ import {
 } from "./config";
 import { mapGtmLeadRow, type GtmLeadRow } from "./gtm-lead-map";
 import { parseTotal, restPatch } from "./supabase-rest.server";
-import { SEQUENCE_VERTICALS } from "../lead-model";
+import { LIFECYCLE_ORDER, SEQUENCE_VERTICALS } from "../lead-model";
 import type {
   BookResult,
   ListLeadsInput,
@@ -111,6 +111,10 @@ export async function listLeadsService(
   const params = new URLSearchParams();
   params.set("select", "*");
   params.set("order", "updated_at.desc");
+  params.set("is_test", "not.is.true");
+  // View and search each add an or-group; a second params.set("or") used to
+  // overwrite the first, so searching inside a view searched the whole table.
+  const orGroups: string[] = [];
 
   if (seqView === "load_eligible" || seqView === "high_icp") {
     params.set("vertical", `in.(${SEQUENCE_VERTICALS.join(",")})`);
@@ -120,19 +124,18 @@ export async function listLeadsService(
       "status",
       "not.in.(disqualified,closed_lost,loaded_to_instantly)",
     );
+    // Same exclusions as the sequence loader query: never DNC or paused.
+    params.set("dnc_flag", "not.is.true");
+    params.set("marketing_paused", "not.is.true");
   } else if (seqView === "sequence_ready") {
     params.set("vertical", `in.(${SEQUENCE_VERTICALS.join(",")})`);
     params.set("email_verification_status", "eq.valid");
   } else if (seqView === "in_instantly") {
-    params.set(
-      "or",
-      "(instantly_campaign_id.not.is.null,status.eq.loaded_to_instantly)",
-    );
+    orGroups.push("(instantly_campaign_id.not.is.null,status.eq.loaded_to_instantly)");
   } else if (seqView === "needs_enrich") {
-    params.set("or", "(status.eq.scraped,status.eq.enrich_failed)");
+    orGroups.push("(status.eq.scraped,status.eq.enrich_failed)");
   } else if (seqView === "needs_verify") {
-    params.set(
-      "or",
+    orGroups.push(
       "(email_verification_status.eq.pending,email_verification_status.eq.unknown,status.eq.enriched)",
     );
   }
@@ -151,11 +154,12 @@ export async function listLeadsService(
   }
   if (input.query?.trim()) {
     const t = input.query.trim().replace(/[%_,.()]/g, "");
-    params.set(
-      "or",
+    orGroups.push(
       `(business_name.ilike.*${t}*,owner_name.ilike.*${t}*,owner_email.ilike.*${t}*,general_email.ilike.*${t}*)`,
     );
   }
+  if (orGroups.length === 1) params.set("or", orGroups[0]);
+  if (orGroups.length > 1) params.set("and", `(${orGroups.map((g) => `or${g}`).join(",")})`);
 
   const res = await fetch(`${url}/rest/v1/gtm_leads?${params}`, {
     headers: {
@@ -206,24 +210,53 @@ export async function getBookService(): Promise<BookResult> {
     return parseTotal(res.headers.get("content-range")) ?? 0;
   }
 
-  const total = await count("");
-  const validEmail = await count("email_verification_status=eq.valid");
-  const sequenceReady = await count(
-    `email_verification_status=eq.valid&vertical=in.(${SEQUENCE_VERTICALS.join(",")})`,
-  );
-  const inInstantly = await count(
-    "or=(instantly_campaign_id.not.is.null,status.eq.loaded_to_instantly)",
-  );
+  // Every figure is a live count. The lifecycle, trade and campaign panels
+  // used to be filled from the static August snapshot even on live, which
+  // showed 48 demos booked against 2 real ones (RIV-1534).
+  const live = "is_test=not.is.true";
+  const verticalSlugs: Partial<Record<Vertical, string>> = {
+    hvac: "hvac",
+    plumbing: "plumbing",
+    roofing: "roofing",
+    pest: "pest_control",
+    electrical: "electrical",
+    landscaping: "landscaping",
+    pool: "pool_service",
+    cleaning: "cleaning",
+  };
+  const verticalKeys = Object.keys(verticalSlugs) as Vertical[];
+  const [total, validEmail, sequenceReady, inInstantly, lifecycleCounts, verticalCounts, loadedStates] =
+    await Promise.all([
+      count(live),
+      count(`${live}&email_verification_status=eq.valid`),
+      count(
+        `${live}&email_verification_status=eq.valid&vertical=in.(${SEQUENCE_VERTICALS.join(",")})`,
+      ),
+      count(`${live}&or=(instantly_campaign_id.not.is.null,status.eq.loaded_to_instantly)`),
+      Promise.all(LIFECYCLE_ORDER.map((st) => count(`${live}&status=eq.${st}`))),
+      Promise.all(verticalKeys.map((v) => count(`${live}&vertical=eq.${verticalSlugs[v]}`))),
+      fetch(`${url}/rest/v1/gtm_leads?select=state&${live}&status=eq.loaded_to_instantly&state=not.is.null`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      })
+        .then((r) => (r.ok ? (r.json() as Promise<{ state: string }[]>) : []))
+        .catch(() => [] as { state: string }[]),
+    ]);
 
+  const byLifecycle = Object.fromEntries(LIFECYCLE_ORDER.map((st, i) => [st, lifecycleCounts[i]]));
+  const byVertical = Object.fromEntries(verticalKeys.map((v, i) => [v, verticalCounts[i]]));
   const book: LeadBookSnapshot = {
-    ...leadBookSnapshot,
     total,
     validEmail,
     sequenceReady,
     inInstantly,
+    hvacSharePct: total > 0 ? Math.round(((byVertical.hvac ?? 0) / total) * 100) : 0,
+    statesInLoads: new Set(loadedStates.map((r) => r.state.trim().toUpperCase())).size,
+    byLifecycle,
+    byVertical,
+    // gtm_leads stores campaign ids only; per-campaign sends live in Instantly.
+    byCampaignLoads: {},
     asOf: new Date().toISOString().slice(0, 10),
-    notes:
-      "Live aggregates from gtm_leads (lifecycle/vertical mix partially mirrored until rollup RPC).",
+    notes: "Live counts from gtm_leads, test rows excluded.",
   };
 
   return { source: "live", book };

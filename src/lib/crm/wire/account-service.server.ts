@@ -346,8 +346,10 @@ export async function getAccountsFunnelService(): Promise<AccountsFunnel> {
       body: "{}",
     });
     if (rpc.ok) {
-      const data = (await rpc.json()) as Record<string, unknown>;
-      // shape may vary
+      // The RPC RETURNS TABLE, so PostgREST sends a one-row array. Reading it
+      // as an object made every count 0 (RIV-1534 pass).
+      const raw = (await rpc.json()) as unknown;
+      const data = ((Array.isArray(raw) ? raw[0] : raw) ?? {}) as Record<string, unknown>;
       return {
         source: "live",
         total: num(data.total ?? data.all),

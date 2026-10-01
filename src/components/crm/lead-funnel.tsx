@@ -3,7 +3,6 @@ import {
   LIFECYCLE_LABEL,
   LIFECYCLE_ORDER,
   VERTICAL_LABEL,
-  LEAD_OPS_PLAYBOOK,
   isSequenceVertical,
 } from "@/lib/crm/lead-model";
 import { formatPct } from "@/lib/crm/priority";
@@ -32,11 +31,11 @@ export function LeadBookFunnel({
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         <Stat
           label="Book size"
           value={s.total.toLocaleString()}
-          sub="scrapes ≠ pipeline"
+          sub="all sources"
         />
         <Stat
           label="Valid email"
@@ -46,36 +45,27 @@ export function LeadBookFunnel({
         <Stat
           label="Sequence-ready"
           value={s.sequenceReady.toLocaleString()}
-          sub={`${formatPct(readyRate)} · north star`}
+          sub={`${formatPct(readyRate)} of book`}
           accent
         />
         <Stat
           label="In Instantly"
           value={s.inInstantly.toLocaleString()}
-          sub={`${formatPct(loadRate)} of ready`}
+          sub="loaded to a campaign"
         />
         <Stat
           label="HVAC share"
           value={`${hvacPct}%`}
-          sub={hvacPct > 40 ? "Rebalance loads" : "OK mix"}
-          warn={hvacPct > 40}
+          sub="share of all leads"
         />
         <Stat
           label="States in loads"
           value={String(s.statesInLoads)}
-          sub="geo breadth"
-        />
-        <Stat
-          label="Idle campaigns"
-          value={String(
-            Object.values(s.byCampaignLoads).filter((n) => (n ?? 0) === 0)
-              .length,
-          )}
-          sub="of 6 vertical camps"
-          warn
+          sub="among loaded leads"
         />
       </div>
 
+      {Object.keys(s.byCampaignLoads).length > 0 && (
       <div className="crm-surface p-3 sm:p-4">
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-ink">
@@ -115,6 +105,7 @@ export function LeadBookFunnel({
           })}
         </ul>
       </div>
+      )}
 
       <div className="crm-surface p-3 sm:p-4">
         <div className="mb-2 flex items-baseline justify-between">
@@ -154,9 +145,9 @@ export function LeadBookFunnel({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-5">
-        <div className="crm-surface p-3 lg:col-span-3">
+        <div className="crm-surface p-3 lg:col-span-5">
           <h2 className="mb-2 text-sm font-semibold text-ink">
-            Vertical mix — scrapes vs sequence campaigns
+            Leads by trade
           </h2>
           <ul className="space-y-1.5">
             {(Object.entries(s.byVertical) as [Vertical, number][])
@@ -206,20 +197,6 @@ export function LeadBookFunnel({
           </ul>
         </div>
 
-        <div className="crm-surface p-3 lg:col-span-2">
-          <h2 className="mb-2 text-sm font-semibold text-ink">
-            Operating rules
-          </h2>
-          <p className="mb-2 text-[11px] text-fg-subtle">{s.notes}</p>
-          <ul className="space-y-2">
-            {LEAD_OPS_PLAYBOOK.map((item) => (
-              <li key={item.title} className="text-[12px] leading-snug">
-                <p className="font-semibold text-ink">{item.title}</p>
-                <p className="text-fg-muted">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </div>
   );
