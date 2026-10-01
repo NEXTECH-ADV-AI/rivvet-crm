@@ -39,7 +39,14 @@ export function startCrmSession(email: string): void {
 }
 
 export function readCrmSession(): { email: string } | null {
-  const email = verifySession(getCookie(CRM_SESSION_COOKIE), secret(), Date.now(), extra());
+  let key: string;
+  try {
+    key = secret();
+  } catch {
+    // No key on this deploy (previews): nobody is signed in, so send them to /login.
+    return null;
+  }
+  const email = verifySession(getCookie(CRM_SESSION_COOKIE), key, Date.now(), extra());
   return email ? { email } : null;
 }
 
