@@ -1,75 +1,40 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Building2,
-  Mail,
-  Target,
-  Users,
-  BarChart3,
-  Layers,
-} from "lucide-react";
+import { ArrowRight, BarChart3, Building2, Target } from "lucide-react";
 import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { useLeadBook, useLeadsList } from "@/lib/crm/wire";
-import { queueAccounts, queueLeads, queueOpps } from "@/lib/crm/filters";
+import { queueAccounts, queueOpps } from "@/lib/crm/filters";
 import {
   accountPriority,
   formatMoney,
-  formatPct,
   formatRelative,
-  leadPriority,
   oppPriority,
   STAGE_LABEL,
 } from "@/lib/crm/priority";
-import {
-  SEQUENCE_VERTICALS,
-  VERTICAL_LABEL,
-  needsEmailVerify,
-  needsEnrich,
-  sequenceStats,
-} from "@/lib/crm/lead-model";
-import { isLoadEligible } from "@/lib/crm/sequence-queries";
 import type { Priority } from "@/lib/crm/types";
-import { buildGtmAnalytics } from "@/lib/crm/analytics";
-import { useMemo } from "react";
 
 export const Route = createFileRoute("/_app/home")({
   component: HomePage,
 });
 
 function HomePage() {
-  const leads = useCrmStore((s) => s.leads);
   const opportunities = useCrmStore((s) => s.opportunities);
   const accounts = useCrmStore((s) => s.accounts);
-  const activities = useCrmStore((s) => s.activities);
 
-  const leadQ = queueLeads(leads);
   const oppQ = queueOpps(opportunities);
   const acctQ = queueAccounts(accounts);
-  const stats = useMemo(() => sequenceStats(leads), [leads]);
-  const loadEligible = useMemo(
-    () => leads.filter(isLoadEligible).length,
-    [leads],
-  );
   const bookQ = useLeadBook();
   const callQ = useLeadsList({ view: "call_queue", limit: 1, offset: 0 });
   const book = bookQ.data?.book;
-
-  const gtm = useMemo(
-    () => buildGtmAnalytics(opportunities, leads, accounts, activities, book),
-    [opportunities, leads, accounts, activities, book],
-  );
-
-  const enrichQ = leads.filter(needsEnrich).slice(0, 5);
-  const verifyQ = leads.filter(needsEmailVerify).slice(0, 5);
+  const fmt = (n: number | undefined) => (n == null ? "…" : n.toLocaleString());
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="What needs you"
-        description="Who to call, then the live lead book."
+        description="Who to call, then how outreach is doing."
       />
 
       <Link
@@ -80,123 +45,55 @@ function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-product-mint">Call queue</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">
             {callQ.data ? callQ.data.total.toLocaleString() : "…"}
-            <span className="ml-2 text-sm font-normal text-fg-muted">openers with a phone, ready to call</span>
+            <span className="ml-2 text-sm font-normal text-fg-muted">people who opened an email and have a phone</span>
           </p>
         </div>
-        <span className="text-sm font-semibold text-ink">Start calling →</span>
+        <span className="shrink-0 text-sm font-semibold text-ink">Start calling →</span>
       </Link>
 
-      <div className="mb-4 rounded-xl border border-border-soft bg-card p-3 shadow-soft sm:p-4">
+      <div className="mb-5 rounded-xl border border-border-soft bg-card p-3 shadow-soft sm:p-4">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">
-            Lead book
-          </h2>
-          <div className="flex gap-3">
-            <Link
-              to="/analytics"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-muted hover:underline"
-            >
-              <BarChart3 className="size-3" /> Analytics
-            </Link>
-          </div>
+          <h2 className="text-sm font-semibold text-ink">Outreach</h2>
+          <Link
+            to="/analytics"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-muted hover:underline"
+          >
+            <BarChart3 className="size-3" /> Analytics
+          </Link>
         </div>
         {!book ? (
-          <p className="text-xs text-fg-muted">{bookQ.isError ? "Couldn't load the lead book." : "Loading the lead book…"}</p>
+          <p className="text-xs text-fg-muted">{bookQ.isError ? "Couldn't load the totals. Refresh to try again." : "Loading totals…"}</p>
         ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          <Kpi label="Leads" value={book.total.toLocaleString()} hint="all sources" />
-          <Kpi
-            label="Valid email"
-            value={book.validEmail.toLocaleString()}
-            hint={book.total ? formatPct((book.validEmail / book.total) * 100) : "0%"}
-          />
-          <Kpi
-            label="Sequence-ready"
-            value={book.sequenceReady.toLocaleString()}
-            hint="valid email, active trade"
-            accent
-          />
-          <Kpi
-            label="In Instantly"
-            value={book.inInstantly.toLocaleString()}
-            hint="loaded to a campaign"
-          />
-          <Kpi
-            label="HVAC of book"
-            value={`${book.hvacSharePct}%`}
-            hint="share of all leads"
-          />
-        </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <Kpi label="Leads" value={fmt(book.total)} />
+            <Kpi label="In a campaign" value={fmt(book.inInstantly)} />
+            <Kpi label="Opened" value={fmt(book.opened)} accent />
+            <Kpi label="Replied" value={fmt(book.replied)} hint="out-of-office not counted" />
+            <Kpi label="Demos booked" value={fmt(book.demosBooked)} hint="all sources" />
+          </div>
         )}
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <Stat label="Load-eligible" value={loadEligible} tone="danger" />
-        <Stat label="Needs enrich" value={stats.needsEnrich} tone="warn" />
-        <Stat label="Needs verify" value={stats.needsVerify} tone="warn" />
-        <Stat label="Opps needing action" value={oppQ.length} tone="mint" />
-      </div>
-
-      <div className="mb-5 crm-surface p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <Layers className="size-4 text-fg-muted" />
-          <h2 className="text-sm font-semibold text-ink">
-            Sample load-eligible by vertical
-          </h2>
-          <span className="text-[11px] text-fg-subtle">
-            Non-HVAC first · HVAC = RCA hold
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {SEQUENCE_VERTICALS.map((v) => {
-            const n = stats.byVerticalReady[v] ?? 0;
-            return (
-              <Link
-                key={v}
-                to="/sequences"
-                className="rounded-md border border-border-soft bg-mist/50 px-2.5 py-1.5 text-[11px] hover:border-product-mint/40"
-              >
-                <span className="font-medium text-ink">
-                  {VERTICAL_LABEL[v]}
-                </span>
-                <span className="ml-1.5 font-mono font-semibold tabular text-product-mint">
-                  {n}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-2">
-        <QueuePanel
-          title="Load-eligible → Instantly"
-          icon={Mail}
-          to="/leads"
-        >
-          {leadQ.length === 0 ? (
-            <p className="text-xs text-fg-muted">
-              No load-eligible in sample. Open Needs enrich / Needs verify or
-              Sequences.
-            </p>
+        <QueuePanel title="Deals needing a next step" icon={Target} to="/opportunities">
+          {oppQ.length === 0 ? (
+            <p className="text-xs text-fg-muted">Every open deal has a next step.</p>
           ) : (
-            leadQ.slice(0, 6).map((l) => {
-              const p = leadPriority(l, DEMO_NOW);
+            oppQ.slice(0, 5).map((o) => {
+              const p = oppPriority(o, DEMO_NOW);
               return (
                 <Link
-                  key={l.id}
-                  to="/leads/$leadId"
-                  params={{ leadId: l.id }}
+                  key={o.id}
+                  to="/opportunities/$oppId"
+                  params={{ oppId: o.id }}
                   className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
                 >
                   <QueueBody
-                    title={l.name}
-                    meta={`${VERTICAL_LABEL[l.vertical]} · ${l.state ?? "—"} · valid email`}
-                    next={
-                      l.nextAction ?? `Load to ${l.vertical} campaign`
-                    }
+                    title={o.name}
+                    meta={`${STAGE_LABEL[o.stage]} · ${formatRelative(o.lastTouch, DEMO_NOW)}`}
+                    next={o.nextAction ?? "Set next step"}
                     priority={p.priority}
-                    amount={l.amountHint ? formatMoney(l.amountHint) : null}
+                    amount={formatMoney(o.amount)}
                   />
                 </Link>
               );
@@ -204,78 +101,11 @@ function HomePage() {
           )}
         </QueuePanel>
 
-        <QueuePanel
-          title="Opportunities needing action"
-          icon={Target}
-          to="/opportunities"
-        >
-          {oppQ.slice(0, 5).map((o) => {
-            const p = oppPriority(o, DEMO_NOW);
-            return (
-              <Link
-                key={o.id}
-                to="/opportunities/$oppId"
-                params={{ oppId: o.id }}
-                className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
-              >
-                <QueueBody
-                  title={o.name}
-                  meta={`${STAGE_LABEL[o.stage]} · ${formatRelative(o.lastTouch, DEMO_NOW)}`}
-                  next={o.nextAction ?? "Set next step"}
-                  priority={p.priority}
-                  amount={formatMoney(o.amount)}
-                />
-              </Link>
-            );
-          })}
-        </QueuePanel>
-
-        <QueuePanel title="Enrich backlog" icon={Users} to="/leads">
-          {enrichQ.map((l) => (
-            <Link
-              key={l.id}
-              to="/leads/$leadId"
-              params={{ leadId: l.id }}
-              className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
-            >
-              <QueueBody
-                title={l.company}
-                meta={`${VERTICAL_LABEL[l.vertical]} · ${l.state ?? "—"} · ${l.websiteUrl ? "has site" : "no site"}`}
-                next="Run S2 enrich"
-                priority={leadPriority(l, DEMO_NOW).priority}
-                amount={null}
-              />
-            </Link>
-          ))}
-        </QueuePanel>
-
-        <QueuePanel title="Email verify queue" icon={Mail} to="/leads">
-          {verifyQ.map((l) => (
-            <Link
-              key={l.id}
-              to="/leads/$leadId"
-              params={{ leadId: l.id }}
-              className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
-            >
-              <QueueBody
-                title={l.company}
-                meta={`${l.email || "no email"} · ${l.emailVerificationStatus}`}
-                next="NeverBounce / S4"
-                priority={leadPriority(l, DEMO_NOW).priority}
-                amount={null}
-              />
-            </Link>
-          ))}
-        </QueuePanel>
-
-        <QueuePanel
-          title="Accounts at risk"
-          icon={Building2}
-          to="/accounts"
-          className="lg:col-span-2"
-        >
-          <div className="grid gap-2 sm:grid-cols-2">
-            {acctQ.slice(0, 4).map((a) => {
+        <QueuePanel title="Accounts to check on" icon={Building2} to="/accounts">
+          {acctQ.length === 0 ? (
+            <p className="text-xs text-fg-muted">No account needs attention.</p>
+          ) : (
+            acctQ.slice(0, 5).map((a) => {
               const p = accountPriority(a, DEMO_NOW);
               return (
                 <Link
@@ -289,12 +119,12 @@ function HomePage() {
                     meta={`${a.health === "risk" || a.status === "at_risk" ? "At risk" : "High value"} · ${formatRelative(a.lastTouch, DEMO_NOW)}`}
                     next={a.nextAction ?? "Set next step"}
                     priority={p.priority}
-                    amount={a.arr ? formatMoney(a.arr) + " ARR" : null}
+                    amount={a.arr ? `${formatMoney(a.arr)} a year` : null}
                   />
                 </Link>
               );
-            })}
-          </div>
+            })
+          )}
         </QueuePanel>
       </div>
     </div>
@@ -306,50 +136,23 @@ function Kpi({
   value,
   hint,
   accent,
-  warn,
 }: {
   label: string;
   value: string;
   hint?: string;
   accent?: boolean;
-  warn?: boolean;
 }) {
   return (
     <div>
       <p className="crm-label">{label}</p>
       <p
         className={`mt-0.5 font-mono text-lg font-semibold tabular ${
-          warn ? "text-warn" : accent ? "text-product-mint" : "text-ink"
+          accent ? "text-product-mint" : "text-ink"
         }`}
       >
         {value}
       </p>
       {hint && <p className="text-[10px] text-fg-subtle">{hint}</p>}
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "danger" | "warn" | "mint";
-}) {
-  const color =
-    tone === "danger"
-      ? "text-danger"
-      : tone === "warn"
-        ? "text-warn"
-        : "text-product-mint";
-  return (
-    <div className="crm-surface px-3 py-3">
-      <p className="crm-label">{label}</p>
-      <p className={`mt-1 font-mono text-2xl font-semibold tabular ${color}`}>
-        {value}
-      </p>
     </div>
   );
 }
@@ -362,8 +165,8 @@ function QueuePanel({
   className,
 }: {
   title: string;
-  icon: typeof Users;
-  to: "/leads" | "/accounts" | "/opportunities" | "/sequences";
+  icon: typeof Target;
+  to: "/accounts" | "/opportunities";
   children: React.ReactNode;
   className?: string;
 }) {

@@ -14,7 +14,7 @@ import {
   STAGE_LABEL,
 } from "@/lib/crm/priority";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
-import { useAccountsFunnel, useAccountsList, useWireStatus } from "@/lib/crm/wire";
+import { useAccountsFunnel, useAccountsList } from "@/lib/crm/wire";
 import type { AccountLifecycle, Vertical } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
 
@@ -41,7 +41,6 @@ function AccountsPage() {
   const [sort, setSort] = useState<"recent" | "name" | "score">("recent");
   const [page, setPage] = useState(0);
 
-  const wire = useWireStatus();
   const funnelQ = useAccountsFunnel();
   const listInput = useMemo(
     () => ({
@@ -191,8 +190,8 @@ function AccountsPage() {
             title="No accounts match"
             body={
               source === "mock"
-                ? "Mock seed only — connect Supabase for production accounts."
-                : "Adjust filters or clear search."
+                ? "Not connected to live data."
+                : "Try other filters or clear the search."
             }
           />
         ) : (
@@ -286,10 +285,9 @@ function AccountsPage() {
         {total > 0 && (
           <div className="flex items-center justify-between border-t border-border-soft px-4 py-2.5 text-xs text-fg-muted">
             <span className="font-mono tabular">
-              {page * PAGE_SIZE + 1}–
+              {page * PAGE_SIZE + 1} to{" "}
               {Math.min((page + 1) * PAGE_SIZE, total)} of{" "}
               {total.toLocaleString()}
-              {wire.data?.source ? ` · ${wire.data.source}` : ""}
             </span>
             <div className="flex gap-1">
               <button

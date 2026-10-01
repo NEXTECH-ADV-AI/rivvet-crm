@@ -42,27 +42,27 @@ function AnalyticsPage() {
     () => buildGtmAnalytics(opportunities, leads, accounts, activities, book),
     [opportunities, leads, accounts, activities, book],
   );
-  const n = (v: number | null) => (v == null ? "–" : v.toLocaleString());
+  const n = (v: number | null) => (v == null ? "…" : v.toLocaleString());
   const { kpis } = data;
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Analytics"
-        description="Live lead book and pipeline."
+        description="Leads, outreach and deals, from live data."
         action={
           <Link
             to="/leads"
             className="rounded-md border border-border-soft bg-card px-3 py-2 text-xs font-semibold shadow-soft hover:bg-mist"
           >
-            Sequence-ready queue
+            Email readiness
           </Link>
         }
       />
 
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi
-          label="Sequence-ready"
+          label="Ready for email"
           value={n(kpis.bookSequenceReady)}
           sub={`${n(kpis.bookValidEmail)} valid email`}
           accent
@@ -74,21 +74,21 @@ function AnalyticsPage() {
         />
         <Kpi
           label="HVAC share"
-          value={kpis.hvacShare == null ? "–" : `${kpis.hvacShare}%`}
+          value={kpis.hvacShare == null ? "…" : `${kpis.hvacShare}%`}
         />
         <Kpi label="Pipeline" value={formatMoney(kpis.pipeline)} />
         <Kpi label="Weighted" value={formatMoney(kpis.weighted)} />
         <Kpi
-          label="Close ≤30d"
+          label="Closing in 30 days"
           value={formatMoney(kpis.closing30Amt)}
           sub={`${kpis.closing30Count} deals`}
         />
       </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-4">
-        <MiniStat label="Ready, not loaded" value={kpis.readyNotLoaded} />
-        <MiniStat label="Needs enrich" value={kpis.needsEnrich} />
-        <MiniStat label="Needs verify" value={kpis.needsVerify} />
+        <MiniStat label="Ready, not in a campaign" value={kpis.readyNotLoaded} />
+        <MiniStat label="Missing details" value={kpis.needsEnrich} />
+        <MiniStat label="Email not checked" value={kpis.needsVerify} />
         <MiniStat label="Accounts at risk" value={kpis.atRisk} warn />
       </div>
 
@@ -129,7 +129,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Velocity" subtitle="Created / won / lost">
+        <Panel title="Velocity" subtitle="Created, won and lost">
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.weekly}>

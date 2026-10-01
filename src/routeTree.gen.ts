@@ -15,7 +15,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppActivitiesRouteImport } from './routes/_app/activities'
 import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
-import { Route as AppSequencesRouteImport } from './routes/_app/sequences'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AppAccountsIndexRouteImport } from './routes/_app/accounts/index'
@@ -55,11 +54,6 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
   path: '/home',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSequencesRoute = AppSequencesRouteImport.update({
-  id: '/sequences',
-  path: '/sequences',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -127,7 +121,6 @@ export interface FileRoutesByFullPath {
   '/activities': typeof AppActivitiesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/home': typeof AppHomeRoute
-  '/sequences': typeof AppSequencesRoute
   '/settings': typeof AppSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
@@ -146,7 +139,6 @@ export interface FileRoutesByTo {
   '/activities': typeof AppActivitiesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/home': typeof AppHomeRoute
-  '/sequences': typeof AppSequencesRoute
   '/settings': typeof AppSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
@@ -166,7 +158,6 @@ export interface FileRoutesById {
   '/_app/activities': typeof AppActivitiesRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/home': typeof AppHomeRoute
-  '/_app/sequences': typeof AppSequencesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/accounts/$accountId': typeof AppAccountsAccountIdRoute
@@ -187,7 +178,6 @@ export interface FileRouteTypes {
     | '/activities'
     | '/analytics'
     | '/home'
-    | '/sequences'
     | '/settings'
     | '/auth/callback'
     | '/accounts/$accountId'
@@ -206,7 +196,6 @@ export interface FileRouteTypes {
     | '/activities'
     | '/analytics'
     | '/home'
-    | '/sequences'
     | '/settings'
     | '/auth/callback'
     | '/accounts/$accountId'
@@ -225,7 +214,6 @@ export interface FileRouteTypes {
     | '/_app/activities'
     | '/_app/analytics'
     | '/_app/home'
-    | '/_app/sequences'
     | '/_app/settings'
     | '/auth/callback'
     | '/_app/accounts/$accountId'
@@ -288,13 +276,6 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AppHomeRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/sequences': {
-      id: '/_app/sequences'
-      path: '/sequences'
-      fullPath: '/sequences'
-      preLoaderRoute: typeof AppSequencesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -398,7 +379,6 @@ interface AppRouteChildren {
   AppActivitiesRoute: typeof AppActivitiesRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppHomeRoute: typeof AppHomeRoute
-  AppSequencesRoute: typeof AppSequencesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppAccountsAccountIdRoute: typeof AppAccountsAccountIdRoute
   AppLeadsLeadIdRoute: typeof AppLeadsLeadIdRoute
@@ -412,7 +392,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppActivitiesRoute: AppActivitiesRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppHomeRoute: AppHomeRoute,
-  AppSequencesRoute: AppSequencesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppAccountsAccountIdRoute: AppAccountsAccountIdRoute,
   AppLeadsLeadIdRoute: AppLeadsLeadIdRoute,

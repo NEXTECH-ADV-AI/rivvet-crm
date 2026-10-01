@@ -1,4 +1,4 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Link, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { CreatedWithGrokBanner } from "@/components/created-with-grok-banner";
 import appCss from "../styles.css?url";
@@ -17,7 +17,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Rivvet CRM — sales work queue for Rivvet operators",
+        content: "Rivvet CRM: the sales work queue for the Rivvet team",
       },
       ...(ogImage
         ? [
@@ -36,7 +36,20 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootDocument,
+  notFoundComponent: NotFound,
 });
+
+function NotFound() {
+  return (
+    <main className="mx-auto max-w-md px-4 py-24 text-center">
+      <h1 className="text-lg font-semibold text-ink">This page doesn't exist</h1>
+      <p className="mt-1 text-sm text-fg-muted">It may have been moved or retired.</p>
+      <Link to="/home" className="mt-4 inline-block text-sm font-semibold text-product-mint hover:underline">
+        Go to Home
+      </Link>
+    </main>
+  );
+}
 
 function RootDocument() {
   return (

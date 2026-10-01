@@ -7,24 +7,17 @@ import {
   ListTodo,
   BarChart3,
   Settings,
-  Mail,
 } from "lucide-react";
 import { RivvetIcon, RivvetWordmarkOnDark } from "./logo";
 import { cn } from "@/components/ui/cn";
 import { useCrmStore } from "@/lib/crm/store";
-import { queueLeads, queueOpps, queueAccounts } from "@/lib/crm/filters";
-import { isLoadEligible } from "@/lib/crm/sequence-queries";
+import { queueOpps, queueAccounts } from "@/lib/crm/filters";
+import { useLeadsList } from "@/lib/crm/wire";
 import { useMemo } from "react";
 
 const NAV = [
-  { to: "/home", label: "Home", icon: Home, badge: "queue" as const },
-  { to: "/leads", label: "Leads", icon: Users, badge: "leads" as const },
-  {
-    to: "/sequences",
-    label: "Sequences",
-    icon: Mail,
-    badge: "eligible" as const,
-  },
+  { to: "/home", label: "Home", icon: Home, badge: null },
+  { to: "/leads", label: "Leads", icon: Users, badge: "calls" as const },
   { to: "/accounts", label: "Accounts", icon: Building2, badge: "accounts" as const },
   {
     to: "/opportunities",
@@ -38,21 +31,21 @@ const NAV = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const leads = useCrmStore((s) => s.leads);
+  // Same query as Home's call queue card, so it shares the cache.
+  const callQ = useLeadsList({ view: "call_queue", limit: 1, offset: 0 });
+  const calls = callQ.data?.total ?? 0;
   const opps = useCrmStore((s) => s.opportunities);
   const accounts = useCrmStore((s) => s.accounts);
   const activities = useCrmStore((s) => s.activities);
 
   const badges = useMemo(
     () => ({
-      queue: queueLeads(leads).length + queueOpps(opps).length,
-      leads: queueLeads(leads).length,
-      eligible: leads.filter(isLoadEligible).length,
+      calls,
       accounts: queueAccounts(accounts).length,
       opps: queueOpps(opps).length,
       tasks: activities.filter((a) => a.type === "task" && !a.completedAt).length,
     }),
-    [leads, opps, accounts, activities],
+    [calls, opps, accounts, activities],
   );
 
   return (
@@ -71,9 +64,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </Link>
 
-      <p className="px-4 pb-2 font-mono text-[9px] tracking-[0.14em] text-sidebar-muted">
-        REVENUE EXECUTION
-      </p>
 
       <nav className="flex-1 space-y-0.5 px-2" aria-label="Primary">
         {NAV.map((item) => {

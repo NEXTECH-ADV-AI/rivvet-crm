@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/crm/page-header";
@@ -28,7 +28,8 @@ import {
 } from "@/lib/crm/lead-model";
 import type { ListView } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
-import { useLeadBook, useLeadsList, useWireStatus } from "@/lib/crm/wire";
+import { useLeadBook, useLeadsList } from "@/lib/crm/wire";
+import { useCrmStore } from "@/lib/crm/store";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/crm/sequence-queries";
 
 export const Route = createFileRoute("/_app/leads/")({
@@ -41,7 +42,6 @@ function LeadsPage() {
   const [showBook, setShowBook] = useState(false);
   const [page, setPage] = useState(0);
 
-  const wire = useWireStatus();
   const bookQ = useLeadBook();
   const book = bookQ.data?.book;
 
@@ -61,6 +61,10 @@ function LeadsPage() {
 
   const listQ = useLeadsList(listInput);
   const rows = listQ.data?.leads ?? [];
+  const rememberLeads = useCrmStore((s) => s.rememberLeads);
+  useEffect(() => {
+    if (listQ.data?.leads) rememberLeads(listQ.data.leads);
+  }, [listQ.data, rememberLeads]);
   const total = listQ.data?.total ?? 0;
   const source = listQ.data?.source ?? "mock";
   const pageCount = Math.max(1, Math.ceil(total / DEFAULT_PAGE_LIMIT));
@@ -78,14 +82,14 @@ function LeadsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Leads"
-        description="Every lead, live. Pick a view or search."
+        description="Start with the call queue, or pick another view."
         action={
           <button
             type="button"
             onClick={() => setShowBook((v) => !v)}
             className="rounded-md border border-border-soft bg-card px-3 py-2 text-xs font-semibold shadow-soft hover:bg-mist"
           >
-            {showBook ? "Hide book health" : "Show book health"}
+            {showBook ? "Hide totals" : "Show totals"}
           </button>
         }
       />
@@ -133,9 +137,6 @@ function LeadsPage() {
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-subtle">
         <p>
           {listQ.isFetching ? "Loading…" : `${total.toLocaleString()} matches`}
-          {wire.data && (
-            <span className="ml-2 font-mono uppercase">{wire.data.source}</span>
-          )}
           {" · page "}
           {page + 1}/{pageCount}
         </p>
@@ -183,16 +184,16 @@ function LeadsPage() {
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className="border-b border-border-soft bg-card-soft text-[10px] uppercase tracking-wider text-fg-subtle">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">P</th>
+                  <th className="px-3 py-2.5 font-medium">Priority</th>
                   <th className="px-3 py-2.5 font-medium">Lead</th>
-                  <th className="px-3 py-2.5 font-medium">Vertical</th>
+                  <th className="px-3 py-2.5 font-medium">Trade</th>
                   <th className="px-3 py-2.5 font-medium">State</th>
                   <th className="px-3 py-2.5 font-medium">Email</th>
                   <th className="px-3 py-2.5 font-medium">Stage</th>
-                  <th className="px-3 py-2.5 font-medium">Instantly</th>
-                  <th className="px-3 py-2.5 font-medium">ICP</th>
+                  <th className="px-3 py-2.5 font-medium">Campaign</th>
+                  <th className="px-3 py-2.5 font-medium">Fit</th>
                   <th className="px-3 py-2.5 font-medium">Next</th>
-                  <th className="px-3 py-2.5 font-medium text-right">$</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,11 +281,7 @@ function LeadsPage() {
                       <td className="max-w-[160px] truncate px-3 py-2.5 text-xs">
                         <span className="text-ink">
                           {l.nextAction ??
-                            (seq
-                              ? "Load to campaign"
-                              : l.lifecycle === "scraped"
-                                ? "Enrich first"
-                                : "—")}
+                            (seq ? "Ready for email" : "—")}
                         </span>
                         <p className="font-mono text-[10px] text-fg-subtle">
                           {formatRelative(l.lastTouch, DEMO_NOW)} ·{" "}
