@@ -24,7 +24,7 @@ import {
   PLATFORM_SUPABASE_URL,
 } from "./config";
 import { mapGtmLeadRow, type GtmLeadRow } from "./gtm-lead-map";
-import { parseTotal, restPatch } from "./supabase-rest.server";
+import { parseTotal } from "./supabase-rest.server";
 import { LIFECYCLE_ORDER, SEQUENCE_VERTICALS } from "../lead-model";
 import type {
   BookResult,
@@ -280,38 +280,6 @@ export async function getBookService(): Promise<BookResult> {
   };
 
   return { source: "live", book };
-}
-
-export async function patchLeadNextActionService(input: {
-  gtmLeadId: string;
-  nextAction: string | null;
-  nextActionDue: string | null;
-}): Promise<{ source: "mock" | "live"; ok: boolean; message: string }> {
-  if (!isLiveWire()) {
-    return {
-      source: "mock",
-      ok: true,
-      message: "Mock mode — use local store for next action",
-    };
-  }
-  try {
-    await restPatch(
-      "/gtm_leads",
-      { gtm_lead_id: `eq.${input.gtmLeadId}` },
-      {
-        next_action: input.nextAction,
-        next_action_due: input.nextActionDue,
-        updated_at: new Date().toISOString(),
-      },
-    );
-    return { source: "live", ok: true, message: "Patched next_action" };
-  } catch (e) {
-    return {
-      source: "live",
-      ok: false,
-      message: e instanceof Error ? e.message : "patch failed",
-    };
-  }
 }
 
 export function wireStatusService(): WireStatus {

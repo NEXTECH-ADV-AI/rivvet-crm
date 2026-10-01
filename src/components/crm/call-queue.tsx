@@ -32,7 +32,7 @@ export function CallQueue({ leads }: { leads: Lead[] }) {
   );
 }
 
-function CallRow({ lead }: { lead: Lead }) {
+export function CallRow({ lead }: { lead: Lead }) {
   const qc = useQueryClient();
   const [outcome, setOutcome] = useState<CallOutcome | "">("");
   const [note, setNote] = useState("");
@@ -57,6 +57,7 @@ function CallRow({ lead }: { lead: Lead }) {
       });
       setState("saved");
       void qc.invalidateQueries({ queryKey: ["crm", "leads"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "record-activities"] });
     } catch (e) {
       setState("error");
       setError(e instanceof Error ? e.message : "Couldn't save the call. Try again.");

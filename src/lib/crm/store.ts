@@ -54,8 +54,6 @@ export interface CrmState {
     activities: Activity[];
     message: string;
   }) => void;
-  setLeadNextAction: (id: string, patch: NextActionPatch) => void;
-  setAccountNextAction: (id: string, patch: NextActionPatch) => void;
   setOppNextAction: (id: string, patch: NextActionPatch) => void;
   patchOpp: (id: string, patch: OppPatch) => void;
   setDealConfig: (id: string, deal: Partial<DealConfig>) => void;
@@ -133,44 +131,6 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       hydrateMessage: payload.message,
       hydratedAt: new Date().toISOString(),
     });
-  },
-
-  setLeadNextAction: (id, patch) => {
-    set((s) => ({
-      leads: s.leads.map((l) =>
-        l.id === id
-          ? { ...l, ...patch, updatedAt: touchNow(), lastTouch: touchNow() }
-          : l,
-      ),
-      activities: [
-        {
-          id: `T-${++seq}`,
-          type: "system" as const,
-          subject: patch.nextAction
-            ? `Next step set: ${patch.nextAction}`
-            : "Next step cleared",
-          body: "Local mutation — mirrors gtm_leads next_action fields.",
-          relatedType: "lead" as const,
-          relatedId: id,
-          relatedName: s.leads.find((l) => l.id === id)?.name ?? id,
-          ownerId: s.currentUserId,
-          dueAt: patch.nextActionDue,
-          completedAt: touchNow(),
-          createdAt: touchNow(),
-        },
-        ...s.activities,
-      ],
-    }));
-  },
-
-  setAccountNextAction: (id, patch) => {
-    set((s) => ({
-      accounts: s.accounts.map((a) =>
-        a.id === id
-          ? { ...a, ...patch, updatedAt: touchNow(), lastTouch: touchNow() }
-          : a,
-      ),
-    }));
   },
 
   setOppNextAction: (id, patch) => {

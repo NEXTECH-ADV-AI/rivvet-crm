@@ -3,7 +3,12 @@ export {
   useWireStatus,
   useLeadBook,
   useLeadsList,
-  usePatchLeadNextAction,
+  useLead,
+  useRecordActivities,
+  useNextAction,
+  useSetNextAction,
+  useLogTouch,
+  useCompleteTask,
   useAccountsList,
   useAccount,
   useAccountsFunnel,
@@ -17,7 +22,6 @@ export {
   getWireStatusFn,
   listLeadsFn,
   getBookFn,
-  patchLeadNextActionFn,
   listAccountsFn,
   getAccountFn,
   getAccountsFunnelFn,
@@ -29,6 +33,7 @@ export {
   completeTaskFn,
   logCallFn,
 } from "./server-fns";
+export type { RecordRef } from "./hooks";
 export type { LineageInput, LineageServiceResult } from "./activity-service.server";
 export type {
   CanonicalActivitiesResult,

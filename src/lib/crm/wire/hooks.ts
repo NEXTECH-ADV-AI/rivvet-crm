@@ -10,7 +10,12 @@ import {
   listAccountsFn,
   listLeadsFn,
   listOpportunitiesFn,
-  patchLeadNextActionFn,
+  getLeadFn,
+  getNextActionFn,
+  getRecordActivitiesFn,
+  setNextActionFn,
+  logTouchFn,
+  completeTaskFn,
   patchOpportunityStageFn,
 } from "./server-fns";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
@@ -46,21 +51,6 @@ export function useLeadsList(input: ListLeadsInput) {
       }),
     staleTime: 15_000,
     placeholderData: (prev) => prev,
-  });
-}
-
-export function usePatchLeadNextAction() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (vars: {
-      gtmLeadId: string;
-      nextAction: string | null;
-      nextActionDue: string | null;
-    }) => patchLeadNextActionFn({ data: vars }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["crm", "leads"] });
-      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
-    },
   });
 }
 
@@ -198,3 +188,52 @@ export function useMissionLineage(input: {
     staleTime: 30_000,
   });
 }
+
+/** One lead or one account, by its uuid (RIV-1542). */
+export type RecordRef = { gtmLeadId?: string; accountId?: string };
+const refKey = (r: RecordRef) => r.gtmLeadId ?? r.accountId ?? "";
+
+export function useLead(leadId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["crm", "lead", leadId],
+    queryFn: () => getLeadFn({ data: { leadId } }),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useRecordActivities(ref: RecordRef, routeId: string) {
+  return useQuery({
+    queryKey: ["crm", "record-activities", refKey(ref)],
+    queryFn: () => getRecordActivitiesFn({ data: { ...ref, routeId } }),
+    enabled: Boolean(refKey(ref)),
+    staleTime: 15_000,
+  });
+}
+
+export function useNextAction(ref: RecordRef) {
+  return useQuery({
+    queryKey: ["crm", "next-action", refKey(ref)],
+    queryFn: () => getNextActionFn({ data: ref }),
+    enabled: Boolean(refKey(ref)),
+  });
+}
+
+/** Every write here refreshes the record's next step, its timeline and the Activities page. */
+function useRecordWrite<V>(fn: (vars: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["crm", "next-action"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "record-activities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
+    },
+  });
+}
+
+export const useSetNextAction = () =>
+  useRecordWrite((v: RecordRef & { title: string | null; dueDate: string | null }) => setNextActionFn({ data: v }));
+export const useLogTouch = () =>
+  useRecordWrite((v: RecordRef & { type: "call" | "email"; note?: string }) => logTouchFn({ data: v }));
+export const useCompleteTask = () => useRecordWrite((taskId: string) => completeTaskFn({ data: { taskId } }));

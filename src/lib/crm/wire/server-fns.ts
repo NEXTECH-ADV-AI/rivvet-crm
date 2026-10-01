@@ -22,21 +22,6 @@ export const getBookFn = createServerFn({ method: "GET" }).middleware([requireCr
   return getBookService();
 });
 
-export const patchLeadNextActionFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
-  .validator(
-    (data: {
-      gtmLeadId: string;
-      nextAction: string | null;
-      nextActionDue: string | null;
-    }) => data,
-  )
-  .handler(async ({ data }) => {
-    const { patchLeadNextActionService } = await import(
-      "./lead-service.server"
-    );
-    return patchLeadNextActionService(data);
-  });
-
 export const listAccountsFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator((data: ListAccountsInput) => data ?? {})
   .handler(async ({ data }) => {
@@ -153,4 +138,60 @@ export const logCallFn = createServerFn({ method: "POST" }).middleware([requireC
   .handler(async ({ data, context }) => {
     const { logCallService } = await import("./call-service.server");
     return logCallService({ ...data, repEmail: context.crmUser.email });
+  });
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Exactly one of gtmLeadId / accountId, each a uuid: these ids go into PostgREST paths. */
+function target(data: { gtmLeadId?: string | null; accountId?: string | null }) {
+  const gtmLeadId = data?.gtmLeadId ? String(data.gtmLeadId) : undefined;
+  const accountId = data?.accountId ? String(data.accountId) : undefined;
+  if (Boolean(gtmLeadId) === Boolean(accountId)) throw new Error("Pick one lead or one account");
+  if (!UUID.test(gtmLeadId ?? accountId ?? "")) throw new Error("Invalid record id");
+  return gtmLeadId ? { gtmLeadId } : { accountId };
+}
+
+export const getLeadFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
+  .validator((data: { leadId: string }) => ({ leadId: String(data?.leadId ?? "").slice(0, 40) }))
+  .handler(async ({ data }) => {
+    const { getLeadService } = await import("./record-service.server");
+    return getLeadService(data.leadId);
+  });
+
+export const getRecordActivitiesFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
+  .validator((data: { gtmLeadId?: string; accountId?: string; routeId: string }) => ({
+    target: target(data),
+    routeId: String(data?.routeId ?? "").slice(0, 60),
+  }))
+  .handler(async ({ data }) => {
+    const { getRecordActivitiesService } = await import("./record-service.server");
+    return getRecordActivitiesService(data.target, data.routeId);
+  });
+
+export const getNextActionFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
+  .validator((data: { gtmLeadId?: string; accountId?: string }) => target(data))
+  .handler(async ({ data }) => {
+    const { getNextActionService } = await import("./record-service.server");
+    return getNextActionService(data);
+  });
+
+export const setNextActionFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: { gtmLeadId?: string; accountId?: string; title: string | null; dueDate: string | null }) => ({
+    target: target(data),
+    title: data.title == null ? null : String(data.title).slice(0, 200),
+    dueDate: data.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(data.dueDate) ? data.dueDate : null,
+  }))
+  .handler(async ({ data }) => {
+    const { setNextActionService } = await import("./record-service.server");
+    return setNextActionService(data.target, data);
+  });
+
+export const logTouchFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: { gtmLeadId?: string; accountId?: string; type: string; note?: string }) => {
+    if (data?.type !== "call" && data?.type !== "email") throw new Error("Unknown log type");
+    return { target: target(data), type: data.type as "call" | "email", note: String(data.note ?? "").slice(0, 2000) };
+  })
+  .handler(async ({ data, context }) => {
+    const { logTouchService } = await import("./record-service.server");
+    return logTouchService(data.target, { type: data.type, note: data.note, repEmail: context.crmUser.email });
   });
