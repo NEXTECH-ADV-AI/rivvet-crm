@@ -4,7 +4,7 @@
  * so pipeline isn't inflated by Unlimited ($4k) rates.
  */
 
-import { emptyDealDraft, priceDeal } from "../deal-catalog";
+import { emptyDealDraft } from "../deal-catalog";
 import { SERVICE_SETUP_FEE, SERVICE_VALUE_PRICE } from "../prod-mirror";
 import type {
   ForecastCategory,
@@ -167,19 +167,9 @@ function resolvePricing(
     };
   }
 
-  // Open (or won with missing $) → value-based base $500/mo
-  if (stage !== "closed_lost") {
-    deal.productId = "value_based";
-    const priced = priceDeal(deal);
-    // priceDeal uses SERVICE_VALUE_PRICE ($500)
-    return {
-      amount: priced.tcv,
-      monthlyAmount: priced.monthly || DEFAULT_PIPELINE_MRR,
-      deal,
-    };
-  }
-
-  return { amount: 0, monthlyAmount: null, deal };
+  // No amount on the row shows $0 (founder, 2026-10-01); the deal draft still starts value-based.
+  if (stage !== "closed_lost") deal.productId = "value_based";
+  return { amount: 0, monthlyAmount: 0, deal };
 }
 
 export function mapOpportunityRow(row: ProdOppRow): Opportunity {
