@@ -69,3 +69,16 @@ export const completeMagicLinkTokenHashFn = createServerFn({ method: "POST" })
     );
     return completeMagicLinkWithTokenHash(data);
   });
+
+export const completeEmailCodeFn = createServerFn({ method: "POST" })
+  .inputValidator((input: { email: string; code: string }) => {
+    const email = String(input?.email ?? "").trim().toLowerCase();
+    const code = String(input?.code ?? "").replace(/\s+/g, "");
+    if (!email.includes("@")) throw new Error("Enter a valid work email");
+    if (!/^\d{6,10}$/.test(code)) throw new Error("Enter the code from the email");
+    return { email, code };
+  })
+  .handler(async ({ data }) => {
+    const { completeMagicLinkWithEmailCode } = await import("./magic-link.server");
+    return completeMagicLinkWithEmailCode(data);
+  });

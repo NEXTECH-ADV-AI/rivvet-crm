@@ -1,142 +1,149 @@
-import { useState, type FormEvent } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mail, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { requestMagicLink } from "@/lib/auth/client";
-import { RivvetMark } from "@/components/crm/logo";
+import { completeEmailCodeFn } from "@/lib/auth/magic-link";
+import { listenForSignIn } from "@/lib/auth/auth-channel";
+import { RivvetBrand } from "@/components/crm/logo";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
+const goHome = () => window.location.replace("/home");
+
 function Login() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "sending" | "sent" | "error"
-  >("idle");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  async function onMagicSubmit(e: FormEvent) {
-    e.preventDefault();
+  // Tapping the email link signs in another tab; this tab follows it to Home (RIV-1544).
+  useEffect(() => (step === "code" ? listenForSignIn(goHome) : undefined), [step]);
+
+  async function send(e?: FormEvent) {
+    e?.preventDefault();
     setError(null);
-    setPreviewUrl(null);
-    setStatus("sending");
+    setBusy(true);
     try {
       const result = await requestMagicLink(email, { callbackURL: "/home" });
       setPreviewUrl(result.previewUrl);
-      setStatus("sent");
+      setCode("");
+      setStep("code");
     } catch (err) {
-      setStatus("error");
-      setError(err instanceof Error ? err.message : "Could not send sign-in link");
+      setError(err instanceof Error ? err.message : "Couldn't send the email. Try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
+  async function verify(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await completeEmailCodeFn({ data: { email, code } });
+      goHome();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That code didn't work. Try again.");
+      setBusy(false);
+    }
+  }
+
+  const field =
+    "w-full rounded-md border border-border-soft bg-card px-3 py-3 text-sm text-ink placeholder:text-fg-subtle outline-none transition focus:border-product-mint";
+  const button =
+    "flex w-full items-center justify-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <main className="grid min-h-[calc(100dvh-var(--grok-banner-h,0px))] place-items-center bg-deep-ink px-4 py-10 text-white">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="flex items-center gap-3">
-          <RivvetMark className="size-11" />
+    <main className="grid min-h-dvh place-items-center bg-mist px-4 py-10">
+      <div className="w-full max-w-sm">
+        <RivvetBrand className="mb-6 justify-center" />
+        <div className="crm-surface space-y-5 p-6">
           <div>
-            <p className="font-display text-[10px] font-semibold tracking-[0.16em] text-bright-mint">
-              SIGN IN
-            </p>
-            <h1 className="font-display text-2xl font-bold tracking-tight">
-              Rivvet CRM.
+            <p className="crm-label">Rivvet CRM</p>
+            <h1 className="mt-1 text-xl font-semibold text-ink">
+              {step === "email" ? "Sign in" : "Check your email"}
             </h1>
+            <p className="mt-1 text-sm text-fg-muted">
+              {step === "email"
+                ? "Use your Rivvet work email. We'll send you a sign-in code."
+                : `We sent a code to ${email.trim()}. Type it here, or tap the button in the email.`}
+            </p>
           </div>
-        </div>
-        <p className="text-sm text-white/60">
-          Enter your Rivvet work email and we'll send a one-time sign-in
-          link.
-        </p>
 
-        <form onSubmit={onMagicSubmit} className="space-y-3">
-          <label className="block space-y-1.5">
-            <span className="font-mono text-[10px] tracking-wider text-white/40">
-              WORK EMAIL
-            </span>
-            <div className="relative">
-              <Mail
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/35"
-                aria-hidden
-              />
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (status === "sent" || status === "error") setStatus("idle");
-                }}
-                placeholder="you@rivvetai.com"
-                className="w-full rounded-md border border-white/15 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-bright-mint/50 focus:bg-white/8"
-              />
-            </div>
-          </label>
-
-          <button
-            type="submit"
-            disabled={status === "sending" || !email.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-bright-mint px-4 py-3 font-mono text-[11px] font-bold tracking-[0.14em] text-deep-ink transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {status === "sending" ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                SENDING LINK…
-              </>
-            ) : (
-              <>
-                EMAIL ME A SIGN-IN LINK
-                <ArrowRight className="size-3.5" aria-hidden />
-              </>
-            )}
-          </button>
-
-          {status === "sent" && (
-            <div className="space-y-2 rounded-md border border-bright-mint/25 bg-bright-mint/10 px-3 py-3 text-sm">
-              <p className="flex items-start gap-2 text-bright-mint">
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-                <span>
-                  {previewUrl
-                    ? "Your sign-in link is ready."
-                    : `Check ${email.trim()} for your sign-in link. It expires in a few minutes.`}
-                </span>
-              </p>
-              {previewUrl && (
-                <a
-                  href={previewUrl}
-                  className="block rounded-md border border-bright-mint/40 bg-deep-ink/40 px-3 py-2.5 text-center font-mono text-[11px] font-bold tracking-[0.12em] text-bright-mint transition hover:bg-deep-ink/70"
+          {step === "email" ? (
+            <form onSubmit={send} className="space-y-3">
+              <label className="block space-y-1.5">
+                <span className="crm-label">Work email</span>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@rivvetai.com"
+                  className={field}
+                />
+              </label>
+              <button type="submit" disabled={busy || !email.trim()} className={button}>
+                {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                {busy ? "Sending…" : "Email me a code"}
+                {!busy && <ArrowRight className="size-4" aria-hidden />}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={verify} className="space-y-3">
+              <label className="block space-y-1.5">
+                <span className="crm-label">Sign-in code</span>
+                <input
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  required
+                  maxLength={10}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="12345678"
+                  className={`${field} text-center font-mono text-lg tracking-[0.3em] tabular-nums`}
+                />
+              </label>
+              <button type="submit" disabled={busy || code.length < 6} className={button}>
+                {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                {busy ? "Signing in…" : "Sign in"}
+              </button>
+              <div className="flex justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("email");
+                    setError(null);
+                  }}
+                  className="text-fg-muted hover:text-ink"
                 >
-                  OPEN SIGN-IN LINK →
+                  Use a different email
+                </button>
+                <button type="button" disabled={busy} onClick={() => void send()} className="font-semibold text-product-mint hover:underline">
+                  Send a new code
+                </button>
+              </div>
+              {previewUrl && (
+                <a href={previewUrl} className="block text-center text-xs font-semibold text-product-mint hover:underline">
+                  Local dev: open the sign-in link
                 </a>
               )}
-            </div>
+            </form>
           )}
 
-          {status === "error" && error && (
-            <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          {error && (
+            <p role="alert" className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
               {error}
             </p>
           )}
-        </form>
-
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center" aria-hidden>
-            <div className="w-full border-t border-white/10" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-deep-ink px-3 font-mono text-[9px] tracking-[0.16em] text-white/35">
-              OR
-            </span>
-          </div>
         </div>
-
-        <Link
-          to="/home"
-          className="flex w-full items-center justify-center rounded-md border border-white/15 bg-white/5 px-4 py-3 font-mono text-[11px] font-bold tracking-[0.14em] text-white/90 transition hover:bg-white/10"
-        >
-          CONTINUE WITHOUT SIGNING IN
-        </Link>
+        <p className="mt-4 text-center text-xs text-fg-subtle">Codes and links expire after 1 hour and work once.</p>
       </div>
     </main>
   );

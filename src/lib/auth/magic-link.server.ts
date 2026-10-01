@@ -385,3 +385,19 @@ export async function completeMagicLinkWithTokenHash(input: {
   }
   return completeMagicLinkWithToken(accessToken);
 }
+
+/** The code printed in the sign-in email, typed into the tab that asked for it,
+ *  so signing in never opens a second tab (RIV-1544). */
+export async function completeMagicLinkWithEmailCode(input: { email: string; code: string }) {
+  if (!crmEmailAllowed(input.email)) throw new Error("Use your Rivvet work email");
+  const result = await supabaseAuthFetch("/auth/v1/verify", {
+    method: "POST",
+    key: anonKey(),
+    body: { type: "email", email: input.email, token: input.code },
+  });
+  const accessToken = (result.json as { access_token?: string } | null)?.access_token;
+  if (!result.ok || !accessToken) {
+    throw new Error("That code didn't work. Check it, or send a new one.");
+  }
+  return completeMagicLinkWithToken(accessToken);
+}
