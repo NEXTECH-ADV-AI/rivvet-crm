@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Columns3, List, Target } from "lucide-react";
+import { Columns3, List, Plus, Target } from "lucide-react";
+import { NewOpportunityForm } from "@/components/crm/create-opportunity";
 import { PageHeader } from "@/components/crm/page-header";
 import { ViewTabs } from "@/components/crm/view-tabs";
 import {
@@ -69,6 +70,7 @@ function OppsPage() {
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState<PriorityFilter>("all");
   const [owner, setOwner] = useState<OwnerFilter>("all");
+  const [creating, setCreating] = useState(false);
 
   const now = dataSource === "live" ? Date.now() : DEMO_NOW;
 
@@ -103,10 +105,20 @@ function OppsPage() {
         title="Opportunities"
         description={
           dataSource === "live"
-            ? "Live crm_opportunities · drag stages · send path locked."
+            ? "Every opportunity. Drag a card to change its stage."
             : "Board or list. Filters compose with saved views. Stage moves stay local."
         }
         action={
+          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            disabled={creating || dataSource !== "live"}
+            className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
+          >
+            <Plus className="size-3.5" aria-hidden />
+            New opportunity
+          </button>
           <div className="flex rounded-lg border border-border-soft bg-card-soft p-0.5">
             <button
               type="button"
@@ -135,8 +147,10 @@ function OppsPage() {
               List
             </button>
           </div>
+          </div>
         }
       />
+      {creating && <NewOpportunityForm onCancel={() => setCreating(false)} />}
       <div className="space-y-2.5">
         <ViewTabs value={view} onChange={setView} counts={counts} />
         <FilterBar

@@ -15,6 +15,7 @@ export {
   useOpportunitiesList,
   useOpportunity,
   usePatchOpportunityStage,
+  useCreateOpportunity,
   useCrmHydrate,
   useMissionLineage,
 } from "./hooks";

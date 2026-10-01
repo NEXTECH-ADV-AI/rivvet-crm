@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireCrmSession } from "@/lib/auth/crm-session";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
 import type { LostReason, OppStage } from "../types";
+import { parseCreateOpportunity } from "../opportunity-create";
 
 export const getWireStatusFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
@@ -87,7 +88,14 @@ export const patchOpportunityStageFn = createServerFn({ method: "POST" }).middle
     return patchOpportunityStageService(data);
   });
 
-export const hydrateCrmFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
+export const createOpportunityFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: unknown) => parseCreateOpportunity(data))
+  .handler(async ({ data, context }) => {
+    const { createOpportunityService } = await import("./opportunity-create.server");
+    return createOpportunityService(data, context.crmUser.email);
+  });
+
+export const hydrateCrmFn =createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
     const { hydrateCrmService } = await import("./hydrate-service.server");
     return hydrateCrmService();

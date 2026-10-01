@@ -45,6 +45,8 @@ export interface CrmState {
 
   /** Keep leads a list page showed, so their detail page can open (RIV-1541). */
   rememberLeads: (leads: Lead[]) => void;
+  /** A just-created Opportunity, so its page opens before the next hydrate (RIV-1555). */
+  rememberOpportunity: (opp: Opportunity) => void;
   hydrateFromWire: (payload: {
     source: "mock" | "live";
     leads: Lead[];
@@ -115,6 +117,8 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   rememberLeads: (leads) => {
     if (leads.length) set((s) => ({ leads: mergeById(leads, s.leads) }));
   },
+
+  rememberOpportunity: (opp) => set((s) => ({ opportunities: mergeById([opp], s.opportunities) })),
 
   hydrateFromWire: (payload) => {
     set({

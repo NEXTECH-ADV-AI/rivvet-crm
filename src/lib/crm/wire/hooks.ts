@@ -17,8 +17,10 @@ import {
   logTouchFn,
   completeTaskFn,
   patchOpportunityStageFn,
+  createOpportunityFn,
 } from "./server-fns";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
+import type { CreateOpportunityInput } from "../opportunity-create";
 import type { LostReason, OppStage } from "../types";
 import { DEFAULT_PAGE_LIMIT } from "../sequence-queries";
 import { useCrmStore } from "../store";
@@ -237,3 +239,17 @@ export const useSetNextAction = () =>
 export const useLogTouch = () =>
   useRecordWrite((v: RecordRef & { type: "call" | "email"; note?: string }) => logTouchFn({ data: v }));
 export const useCompleteTask = () => useRecordWrite((taskId: string) => completeTaskFn({ data: { taskId } }));
+
+/** Create (or reopen) an Opportunity, keep it in the store so its page opens at once (RIV-1555). */
+export function useCreateOpportunity() {
+  const qc = useQueryClient();
+  const rememberOpportunity = useCrmStore((s) => s.rememberOpportunity);
+  return useMutation({
+    mutationFn: (input: CreateOpportunityInput) => createOpportunityFn({ data: input }),
+    onSuccess: (r) => {
+      if (r.opportunity) rememberOpportunity(r.opportunity);
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunities"] });
+    },
+  });
+}

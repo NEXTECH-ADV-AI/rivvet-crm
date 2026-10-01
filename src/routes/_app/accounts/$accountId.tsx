@@ -7,6 +7,7 @@ import { NextActionEditor } from "@/components/crm/next-action-editor";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { MetaPanel, MetaRow, TagList } from "@/components/crm/meta-panel";
 import { MissionLineagePanel } from "@/components/crm/mission-lineage-panel";
+import { CreateOpportunityButton } from "@/components/crm/create-opportunity";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { activitiesForEntity } from "@/lib/crm/filters";
@@ -105,6 +106,13 @@ function AccountDetail() {
         priority={p.priority}
         reasons={p.reasons}
         actions={
+          <>
+          {live && (
+            <CreateOpportunityButton
+              record={{ accountId: account.id }}
+              existingId={opps.find((o) => o.stage !== "closed_won" && o.stage !== "closed_lost")?.id}
+            />
+          )}
           <button
             type="button"
             disabled={!live || logTouch.isPending || logTouch.isSuccess}
@@ -113,6 +121,7 @@ function AccountDetail() {
           >
             {logTouch.isSuccess ? "Call logged" : logTouch.isError ? "Couldn't log. Retry" : "Log a call"}
           </button>
+          </>
         }
       />
 
@@ -185,7 +194,7 @@ function AccountDetail() {
           <MetaPanel title="Opportunities">
             {opps.length === 0 ? (
               <p className="text-sm text-fg-muted">
-                No deals linked to this account.
+                No opportunities on this account yet.
               </p>
             ) : (
               <ul className="space-y-2">
