@@ -1,5 +1,5 @@
 /**
- * Server-only: passwordless magic-link + Better Auth session bridge.
+ * Server-only: passwordless magic-link + signed CRM session (RIV-1534).
  * Do not import from client components — use createServerFn wrappers in magic-link.ts.
  *
  * Redirect rules:
@@ -8,12 +8,11 @@
  *     string — query defaults on the callback route were 307-rewriting the URL and
  *     stripping the #access_token hash from Supabase).
  */
-import { setCookie } from "@tanstack/react-start/server";
 import {
   PLATFORM_SUPABASE_ANON_KEY,
   PLATFORM_SUPABASE_URL,
 } from "@/lib/crm/wire/config";
-import { auth, SESSION_TOKEN_COOKIE } from "./server";
+import { crmEmailAllowed, startCrmSession } from "./crm-session.server";
 
 export const DEFAULT_CRM_PUBLIC_ORIGIN = "https://crm.rivvetai.com";
 
@@ -65,11 +64,10 @@ function displayNameFromEmail(email: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Returning a sign-in link in the response is local-dev only: on any Vercel
+ *  deploy it would hand a session to whoever typed the email (RIV-1534). */
 function preferPreviewLink(): boolean {
-  if (env("CRM_MAGIC_LINK_PREVIEW") === "1") return true;
-  if (env("CRM_MAGIC_LINK_PREVIEW") === "0") return false;
-  if (process.env.VERCEL_ENV === "production") return false;
-  return Boolean(serviceRoleKey());
+  return env("CRM_MAGIC_LINK_PREVIEW") === "1" && !process.env.VERCEL;
 }
 
 function isTrustedCrmOrigin(origin: string): boolean {
@@ -239,62 +237,13 @@ async function verifySupabaseAccessToken(accessToken: string): Promise<{
     accessToken,
   });
   if (!result.ok) {
-    throw new Error("Sign-in link expired or invalid — request a new one");
+    throw new Error("Sign-in link expired or invalid. Request a new one.");
   }
   const user = result.json as { id?: string; email?: string } | null;
   if (!user?.id || !user.email) {
     throw new Error("Could not verify sign-in");
   }
   return { id: user.id, email: user.email.trim().toLowerCase() };
-}
-
-async function establishAppSession(supabaseUser: {
-  id: string;
-  email: string;
-}): Promise<{ token: string; userId: string; email: string; name: string }> {
-  const ctx = await auth.$context;
-  const email = supabaseUser.email.trim().toLowerCase();
-  const name = displayNameFromEmail(email);
-
-  const existing = await ctx.internalAdapter.findUserByEmail(email);
-  let userId: string;
-  if (existing?.user?.id) {
-    userId = existing.user.id;
-    if (!existing.user.emailVerified) {
-      await ctx.internalAdapter.updateUser(userId, { emailVerified: true });
-    }
-  } else {
-    const created = await ctx.internalAdapter.createUser({
-      email,
-      name,
-      emailVerified: true,
-    });
-    userId = created.id;
-    try {
-      await ctx.internalAdapter.createAccount({
-        userId,
-        providerId: "supabase",
-        accountId: supabaseUser.id,
-      });
-    } catch {
-      /* optional */
-    }
-  }
-
-  const session = await ctx.internalAdapter.createSession(userId);
-  if (!session?.token) {
-    throw new Error("Could not create session");
-  }
-
-  setCookie(SESSION_TOKEN_COOKIE, session.token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  return { token: session.token, userId, email, name };
 }
 
 export type RequestMagicLinkResult = {
@@ -309,6 +258,9 @@ export async function requestMagicLinkServer(input: {
   email: string;
   redirectTo: string;
 }): Promise<RequestMagicLinkResult> {
+  if (!crmEmailAllowed(input.email)) {
+    throw new Error("Use your Rivvet work email");
+  }
   const resolved = resolveMagicLinkRedirect(input.redirectTo);
   console.info(
     `[auth] magic-link email=${input.email} redirect_to=${resolved.redirectTo}` +
@@ -347,13 +299,16 @@ export async function requestMagicLinkServer(input: {
 }
 
 export async function completeMagicLinkWithToken(accessToken: string) {
-  const sbUser = await verifySupabaseAccessToken(accessToken);
-  const session = await establishAppSession(sbUser);
+  const { email } = await verifySupabaseAccessToken(accessToken);
+  // Checked again here: the link request check alone is bypassable by anyone
+  // holding a valid Platform Supabase token for some other address.
+  if (!crmEmailAllowed(email)) throw new Error("Use your Rivvet work email");
+  startCrmSession(email);
   return {
     ok: true as const,
-    token: session.token,
-    email: session.email,
-    name: session.name,
+    token: "",
+    email,
+    name: displayNameFromEmail(email),
   };
 }
 
@@ -380,7 +335,7 @@ export async function completeMagicLinkWithCode(code: string) {
     }
   }
   if (!accessToken) {
-    throw new Error("Could not complete sign-in — request a new link");
+    throw new Error("Could not complete sign-in. Request a new link.");
   }
   return completeMagicLinkWithToken(accessToken);
 }
@@ -414,7 +369,7 @@ export async function completeMagicLinkWithTokenHash(input: {
       (result.json as { msg?: string; error_description?: string } | null)
         ?.error_description ||
       (result.json as { msg?: string } | null)?.msg ||
-      "Sign-in link expired or invalid — request a new one";
+      "Sign-in link expired or invalid. Request a new one.";
     throw new Error(msg);
   }
   const accessToken = (result.json as { access_token?: string } | null)

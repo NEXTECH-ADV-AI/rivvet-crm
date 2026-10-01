@@ -24,8 +24,6 @@ import { Route as AppLeadsIndexRouteImport } from './routes/_app/leads/index'
 import { Route as AppLeadsLeadIdRouteImport } from './routes/_app/leads/$leadId'
 import { Route as AppOpportunitiesIndexRouteImport } from './routes/_app/opportunities/index'
 import { Route as AppOpportunitiesOppIdRouteImport } from './routes/_app/opportunities/$oppId'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiCrmBookRouteImport } from './routes/api/crm/book'
 import { Route as AppOpportunitiesOppIdIndexRouteImport } from './routes/_app/opportunities/$oppId.index'
 import { Route as AppOpportunitiesOppIdDealBuilderRouteImport } from './routes/_app/opportunities/$oppId.deal-builder'
 import { Route as AppOpportunitiesOppIdSendRouteImport } from './routes/_app/opportunities/$oppId.send'
@@ -104,16 +102,6 @@ const AppOpportunitiesOppIdRoute = AppOpportunitiesOppIdRouteImport.update({
   path: '/opportunities/$oppId',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCrmBookRoute = ApiCrmBookRouteImport.update({
-  id: '/api/crm/book',
-  path: '/api/crm/book',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppOpportunitiesOppIdIndexRoute =
   AppOpportunitiesOppIdIndexRouteImport.update({
     id: '/',
@@ -145,8 +133,6 @@ export interface FileRoutesByFullPath {
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/leads/$leadId': typeof AppLeadsLeadIdRoute
   '/opportunities/$oppId': typeof AppOpportunitiesOppIdRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/crm/book': typeof ApiCrmBookRoute
   '/accounts/': typeof AppAccountsIndexRoute
   '/leads/': typeof AppLeadsIndexRoute
   '/opportunities/': typeof AppOpportunitiesIndexRoute
@@ -165,8 +151,6 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/leads/$leadId': typeof AppLeadsLeadIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/crm/book': typeof ApiCrmBookRoute
   '/accounts': typeof AppAccountsIndexRoute
   '/leads': typeof AppLeadsIndexRoute
   '/opportunities': typeof AppOpportunitiesIndexRoute
@@ -188,8 +172,6 @@ export interface FileRoutesById {
   '/_app/accounts/$accountId': typeof AppAccountsAccountIdRoute
   '/_app/leads/$leadId': typeof AppLeadsLeadIdRoute
   '/_app/opportunities/$oppId': typeof AppOpportunitiesOppIdRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/crm/book': typeof ApiCrmBookRoute
   '/_app/accounts/': typeof AppAccountsIndexRoute
   '/_app/leads/': typeof AppLeadsIndexRoute
   '/_app/opportunities/': typeof AppOpportunitiesIndexRoute
@@ -211,8 +193,6 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/leads/$leadId'
     | '/opportunities/$oppId'
-    | '/api/auth/$'
-    | '/api/crm/book'
     | '/accounts/'
     | '/leads/'
     | '/opportunities/'
@@ -231,8 +211,6 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/accounts/$accountId'
     | '/leads/$leadId'
-    | '/api/auth/$'
-    | '/api/crm/book'
     | '/accounts'
     | '/leads'
     | '/opportunities'
@@ -253,8 +231,6 @@ export interface FileRouteTypes {
     | '/_app/accounts/$accountId'
     | '/_app/leads/$leadId'
     | '/_app/opportunities/$oppId'
-    | '/api/auth/$'
-    | '/api/crm/book'
     | '/_app/accounts/'
     | '/_app/leads/'
     | '/_app/opportunities/'
@@ -268,8 +244,6 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiCrmBookRoute: typeof ApiCrmBookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,20 +353,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOpportunitiesOppIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/crm/book': {
-      id: '/api/crm/book'
-      path: '/api/crm/book'
-      fullPath: '/api/crm/book'
-      preLoaderRoute: typeof ApiCrmBookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/opportunities/$oppId/': {
       id: '/_app/opportunities/$oppId/'
       path: '/'
@@ -469,8 +429,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiCrmBookRoute: ApiCrmBookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
