@@ -18,11 +18,6 @@ import { PriorityBadge } from "./priority-badge";
 import { cn } from "@/components/ui/cn";
 import { usePatchOpportunityStage } from "@/lib/crm/wire";
 
-function shortId(id: string) {
-  if (id.length <= 12) return id;
-  return id.includes("-") ? id.slice(0, 8) : id.slice(0, 8);
-}
-
 export function OppKanban({
   listView,
   filterIds,
@@ -169,9 +164,6 @@ export function OppKanban({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
                               <PriorityBadge priority={pr.priority} />
-                              <span className="font-mono text-[10px] text-fg-subtle">
-                                {shortId(o.id)}
-                              </span>
                             </div>
                             <Link
                               to="/opportunities/$oppId"
