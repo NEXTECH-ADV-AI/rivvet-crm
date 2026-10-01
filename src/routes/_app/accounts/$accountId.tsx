@@ -17,7 +17,7 @@ import {
   oppPriority,
   STAGE_LABEL,
 } from "@/lib/crm/priority";
-import { useAccount } from "@/lib/crm/wire";
+import { useAccount, useCompleteTask, useLogTouch, useNextAction, useRecordActivities } from "@/lib/crm/wire";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
 
 export const Route = createFileRoute("/_app/accounts/$accountId")({
@@ -29,9 +29,9 @@ function AccountDetail() {
   const accountQ = useAccount(accountId);
   const allOpps = useCrmStore((s) => s.opportunities);
   const activities = useCrmStore((s) => s.activities);
-  const setAccountNextAction = useCrmStore((s) => s.setAccountNextAction);
   const completeActivity = useCrmStore((s) => s.completeActivity);
-  const logTouch = useCrmStore((s) => s.logTouch);
+  const completeTask = useCompleteTask();
+  const logTouch = useLogTouch();
 
   const account = accountQ.data?.account ?? null;
   const contacts = accountQ.data?.contacts ?? [];
@@ -41,12 +41,13 @@ function AccountDetail() {
     () => allOpps.filter((o) => o.accountId === accountId),
     [allOpps, accountId],
   );
+  const live = source === "live" && Boolean(account);
+  const ref = { accountId: live ? account?.id : undefined };
+  const historyQ = useRecordActivities(ref, accountId);
+  const nextQ = useNextAction(ref);
   const timeline = useMemo(
-    () =>
-      account
-        ? activitiesForEntity(activities, "account", account.id)
-        : [],
-    [activities, account],
+    () => historyQ.data?.activities ?? (account ? activitiesForEntity(activities, "account", account.id) : []),
+    [historyQ.data, activities, account],
   );
 
   if (accountQ.isLoading) {
@@ -82,7 +83,7 @@ function AccountDetail() {
 
       <RecordHeader
         title={account.name}
-        subtitle={`${account.domain ?? "—"} · ${(account.vertical && VERTICAL_LABEL[account.vertical]) || account.industry} · ${account.region} · ${source}`}
+        subtitle={[account.domain, (account.vertical && VERTICAL_LABEL[account.vertical]) || account.industry, account.region].filter(Boolean).join(" · ")}
         status={STAGE_LABEL[life] ?? life}
         statusTone={
           life === "churned" || account.health === "risk"
@@ -92,7 +93,7 @@ function AccountDetail() {
               : "neutral"
         }
         ownerId={account.ownerId}
-        nextAction={account.nextAction}
+        nextAction={live ? (nextQ.data?.nextAction?.title ?? null) : account.nextAction}
         lastTouch={account.lastTouch}
         amount={
           account.arr
@@ -106,18 +107,11 @@ function AccountDetail() {
         actions={
           <button
             type="button"
-            onClick={() =>
-              logTouch(
-                "account",
-                account.id,
-                account.name,
-                "call",
-                `Call: ${account.name}`,
-              )
-            }
-            className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white hover:bg-deep-ink"
+            disabled={!live || logTouch.isPending || logTouch.isSuccess}
+            onClick={() => logTouch.mutate({ accountId: account.id, type: "call" })}
+            className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
           >
-            Log activity
+            {logTouch.isSuccess ? "Call logged" : logTouch.isError ? "Couldn't log. Retry" : "Log a call"}
           </button>
         }
       />
@@ -125,15 +119,10 @@ function AccountDetail() {
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-2">
           <MetaPanel title="Next step">
-            <NextActionEditor
-              nextAction={account.nextAction}
-              nextActionDue={account.nextActionDue}
-              onSave={(patch) => setAccountNextAction(account.id, patch)}
-            />
-            {source === "live" && (
-              <p className="mt-2 text-[10px] text-fg-subtle">
-                Next action isn't saved yet. It clears when you reload.
-              </p>
+            {live ? (
+              <NextActionEditor record={{ accountId: account.id }} />
+            ) : (
+              <p className="text-sm text-fg-muted">Not connected to live data.</p>
             )}
           </MetaPanel>
           <MetaPanel title="Account fields">
@@ -230,7 +219,11 @@ function AccountDetail() {
             )}
           </MetaPanel>
           <MetaPanel title="Activity timeline">
-            <Timeline items={timeline} onComplete={completeActivity} />
+            {historyQ.isError && <p className="mb-2 text-xs text-danger">Couldn't load saved history. Showing what this page has.</p>}
+            <Timeline
+              items={timeline}
+              onComplete={(id) => (historyQ.data ? completeTask.mutate(id) : completeActivity(id))}
+            />
           </MetaPanel>
           <MissionLineagePanel
             accountId={account.id}

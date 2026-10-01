@@ -6,6 +6,8 @@ import { Timeline } from "@/components/crm/timeline";
 import { NextActionEditor } from "@/components/crm/next-action-editor";
 import { MetaPanel, MetaRow, TagList } from "@/components/crm/meta-panel";
 import { StatusChip } from "@/components/crm/status-chip";
+import { CallRow } from "@/components/crm/call-queue";
+import { useCompleteTask, useLead, useLogTouch, useNextAction, useRecordActivities } from "@/lib/crm/wire";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { activitiesForEntity } from "@/lib/crm/filters";
@@ -20,7 +22,6 @@ import {
   campaignForVertical,
   isInInstantly,
   isSequenceReady,
-  isWorkableLead,
 } from "@/lib/crm/lead-model";
 
 export const Route = createFileRoute("/_app/leads/$leadId")({
@@ -31,36 +32,40 @@ function LeadDetail() {
   const { leadId } = Route.useParams();
   const leads = useCrmStore((s) => s.leads);
   const activities = useCrmStore((s) => s.activities);
-  const setLeadNextAction = useCrmStore((s) => s.setLeadNextAction);
   const completeActivity = useCrmStore((s) => s.completeActivity);
-  const logTouch = useCrmStore((s) => s.logTouch);
 
-  const lead = useMemo(
-    () => leads.find((l) => l.id === leadId),
-    [leads, leadId],
-  );
+  // A lead a list already showed opens at once; a pasted link loads it by id (RIV-1542).
+  const stored = useMemo(() => leads.find((l) => l.id === leadId), [leads, leadId]);
+  const leadQ = useLead(leadId, !stored);
+  const lead = stored ?? leadQ.data?.lead ?? null;
+  const ref = { gtmLeadId: lead?.gtmLeadId };
+  const historyQ = useRecordActivities(ref, leadId);
+  const nextQ = useNextAction(ref);
+  const completeTask = useCompleteTask();
+  const logTouch = useLogTouch();
   const timeline = useMemo(
-    () => (lead ? activitiesForEntity(activities, "lead", lead.id) : []),
-    [activities, lead],
+    () => historyQ.data?.activities ?? (lead ? activitiesForEntity(activities, "lead", lead.id) : []),
+    [historyQ.data, activities, lead],
   );
 
-  // ponytail: detail reads the store, so a reload of a lead the Leads page never
-  // listed lands here; loading one lead by id from the server is the identity slice.
   if (!lead) {
+    const loading = leadQ.isLoading;
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <h1 className="text-lg font-semibold text-ink">Open this lead from the Leads page</h1>
-        <p className="mt-1 text-sm text-fg-muted">This link only works after the lead has shown in a list.</p>
-        <Link to="/leads" className="mt-4 inline-block text-sm font-semibold text-product-mint hover:underline">
-          Go to Leads
-        </Link>
+        <h1 className="text-lg font-semibold text-ink">
+          {loading ? "Loading lead…" : leadQ.isError ? "Couldn't load this lead" : "Lead not found"}
+        </h1>
+        {!loading && (
+          <Link to="/leads" className="mt-4 inline-block text-sm font-semibold text-product-mint hover:underline">
+            Go to Leads
+          </Link>
+        )}
       </div>
     );
   }
   const p = leadPriority(lead, DEMO_NOW);
   const seq = isSequenceReady(lead);
   const loaded = isInInstantly(lead);
-  const salesReady = isWorkableLead(lead);
   const icpMax = 20;
   const targetCamp = campaignForVertical(lead.vertical);
 
@@ -90,7 +95,7 @@ function LeadDetail() {
                   : "warn"
         }
         ownerId={lead.ownerId}
-        nextAction={lead.nextAction}
+        nextAction={nextQ.data?.nextAction?.title ?? null}
         lastTouch={lead.lastTouch}
         amount={lead.amountHint ? formatMoney(lead.amountHint) : null}
         priority={p.priority}
@@ -104,18 +109,12 @@ function LeadDetail() {
           ) : loaded ? (
             <button
               type="button"
-              onClick={() =>
-                logTouch(
-                  "lead",
-                  lead.id,
-                  lead.name,
-                  "email",
-                  `Email follow-up: ${lead.name}`,
-                )
-              }
-              className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white hover:bg-deep-ink"
+              disabled={!lead.gtmLeadId || logTouch.isPending || logTouch.isSuccess}
+              onClick={() => lead.gtmLeadId && logTouch.mutate({ gtmLeadId: lead.gtmLeadId, type: "email" })}
+              className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
             >
-              <Mail className="size-3.5" /> Log email
+              <Mail className="size-3.5" />
+              {logTouch.isSuccess ? "Email logged" : logTouch.isError ? "Couldn't log. Retry" : "Log an email I sent"}
             </button>
           ) : (
             <span className="rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-xs font-semibold text-warn">
@@ -152,15 +151,19 @@ function LeadDetail() {
         />
       </div>
 
+      {lead.phone && lead.gtmLeadId && (
+        <MetaPanel title="Log a call">
+          <ul className="-mx-4 -mb-4">
+            <CallRow lead={lead} />
+          </ul>
+        </MetaPanel>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-2">
-          {(seq || salesReady) && (
+          {lead.gtmLeadId && (
             <MetaPanel title="Next step">
-              <NextActionEditor
-                nextAction={lead.nextAction}
-                nextActionDue={lead.nextActionDue}
-                onSave={(patch) => setLeadNextAction(lead.id, patch)}
-              />
+              <NextActionEditor record={{ gtmLeadId: lead.gtmLeadId }} />
             </MetaPanel>
           )}
 
@@ -228,7 +231,12 @@ function LeadDetail() {
 
         <div className="space-y-4 lg:col-span-3">
           <MetaPanel title="Activity">
-            <Timeline items={timeline} onComplete={completeActivity} />
+            {historyQ.isError && <p className="mb-2 text-xs text-danger">Couldn't load saved history. Showing what this page has.</p>}
+            <Timeline
+              items={timeline}
+              // Saved tasks complete on the server; anything else is page-only.
+              onComplete={(id) => (historyQ.data ? completeTask.mutate(id) : completeActivity(id))}
+            />
           </MetaPanel>
         </div>
       </div>
