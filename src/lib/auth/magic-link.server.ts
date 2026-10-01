@@ -13,6 +13,7 @@ import {
   PLATFORM_SUPABASE_URL,
 } from "@/lib/crm/wire/config";
 import { crmEmailAllowed, startCrmSession } from "./crm-session.server";
+import { normalizeTokenHash } from "./token-hash";
 
 export const DEFAULT_CRM_PUBLIC_ORIGIN = "https://crm.rivvetai.com";
 
@@ -354,7 +355,7 @@ export async function completeMagicLinkWithTokenHash(input: {
     key: anonKey(),
     body: {
       type,
-      token_hash: input.tokenHash,
+      token_hash: normalizeTokenHash(input.tokenHash),
     },
   });
   if (!result.ok) {
