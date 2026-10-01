@@ -7,6 +7,7 @@ import { NextActionEditor } from "@/components/crm/next-action-editor";
 import { MetaPanel, MetaRow, TagList } from "@/components/crm/meta-panel";
 import { StatusChip } from "@/components/crm/status-chip";
 import { CallRow } from "@/components/crm/call-queue";
+import { CreateOpportunityButton } from "@/components/crm/create-opportunity";
 import { useCompleteTask, useLead, useLogTouch, useNextAction, useRecordActivities } from "@/lib/crm/wire";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
@@ -32,6 +33,7 @@ function LeadDetail() {
   const { leadId } = Route.useParams();
   const leads = useCrmStore((s) => s.leads);
   const activities = useCrmStore((s) => s.activities);
+  const opportunities = useCrmStore((s) => s.opportunities);
   const completeActivity = useCrmStore((s) => s.completeActivity);
 
   // A lead a list already showed opens at once; a pasted link loads it by id (RIV-1542).
@@ -63,6 +65,7 @@ function LeadDetail() {
       </div>
     );
   }
+  const leadOpp = lead.gtmLeadId ? opportunities.find((o) => o.gtmLeadId === lead.gtmLeadId) : undefined;
   const p = leadPriority(lead, DEMO_NOW);
   const seq = isSequenceReady(lead);
   const loaded = isInInstantly(lead);
@@ -101,7 +104,9 @@ function LeadDetail() {
         priority={p.priority}
         reasons={p.reasons}
         actions={
-          seq && !loaded ? (
+          <>
+          {lead.gtmLeadId && <CreateOpportunityButton record={{ gtmLeadId: lead.gtmLeadId }} existingId={leadOpp?.id} />}
+          {seq && !loaded ? (
             <span className="rounded-md border border-product-mint/30 bg-product-mint/10 px-3 py-2 text-xs font-semibold text-product-mint">
               Ready for email outreach
               {targetCamp ? ` · ${targetCamp}` : ""}
@@ -120,7 +125,8 @@ function LeadDetail() {
             <span className="rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-xs font-semibold text-warn">
               Not ready for email yet
             </span>
-          )
+          )}
+          </>
         }
       />
 
