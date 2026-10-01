@@ -1,27 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireCrmSession } from "@/lib/auth/crm-session";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
 import type { LostReason, OppStage } from "../types";
 
-export const getWireStatusFn = createServerFn({ method: "GET" }).handler(
+export const getWireStatusFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
     const { wireStatusService } = await import("./lead-service.server");
     return wireStatusService();
   },
 );
 
-export const listLeadsFn = createServerFn({ method: "GET" })
+export const listLeadsFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator((data: ListLeadsInput) => data)
   .handler(async ({ data }) => {
     const { listLeadsService } = await import("./lead-service.server");
     return listLeadsService(data ?? { view: "sequence_ready" });
   });
 
-export const getBookFn = createServerFn({ method: "GET" }).handler(async () => {
+export const getBookFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(async () => {
   const { getBookService } = await import("./lead-service.server");
   return getBookService();
 });
 
-export const patchLeadNextActionFn = createServerFn({ method: "POST" })
+export const patchLeadNextActionFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
   .validator(
     (data: {
       gtmLeadId: string;
@@ -36,21 +37,21 @@ export const patchLeadNextActionFn = createServerFn({ method: "POST" })
     return patchLeadNextActionService(data);
   });
 
-export const listAccountsFn = createServerFn({ method: "GET" })
+export const listAccountsFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator((data: ListAccountsInput) => data ?? {})
   .handler(async ({ data }) => {
     const { listAccountsService } = await import("./account-service.server");
     return listAccountsService(data ?? {});
   });
 
-export const getAccountFn = createServerFn({ method: "GET" })
+export const getAccountFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator((data: { accountId: string }) => data)
   .handler(async ({ data }) => {
     const { getAccountService } = await import("./account-service.server");
     return getAccountService(data.accountId);
   });
 
-export const getAccountsFunnelFn = createServerFn({ method: "GET" }).handler(
+export const getAccountsFunnelFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
     const { getAccountsFunnelService } = await import(
       "./account-service.server"
@@ -59,7 +60,7 @@ export const getAccountsFunnelFn = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export const listOpportunitiesFn = createServerFn({ method: "GET" })
+export const listOpportunitiesFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator(
     (data: {
       view?: string;
@@ -77,7 +78,7 @@ export const listOpportunitiesFn = createServerFn({ method: "GET" })
     return listOpportunitiesService(data ?? {});
   });
 
-export const getOpportunityFn = createServerFn({ method: "GET" })
+export const getOpportunityFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator((data: { opportunityId: string }) => data)
   .handler(async ({ data }) => {
     const { getOpportunityService } = await import(
@@ -86,7 +87,7 @@ export const getOpportunityFn = createServerFn({ method: "GET" })
     return getOpportunityService(data.opportunityId);
   });
 
-export const patchOpportunityStageFn = createServerFn({ method: "POST" })
+export const patchOpportunityStageFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
   .validator(
     (data: {
       opportunityId: string;
@@ -101,14 +102,14 @@ export const patchOpportunityStageFn = createServerFn({ method: "POST" })
     return patchOpportunityStageService(data);
   });
 
-export const hydrateCrmFn = createServerFn({ method: "GET" }).handler(
+export const hydrateCrmFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
     const { hydrateCrmService } = await import("./hydrate-service.server");
     return hydrateCrmService();
   },
 );
 
-export const getMissionLineageFn = createServerFn({ method: "GET" })
+export const getMissionLineageFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
   .validator(
     (data: {
       accountId?: string | null;
