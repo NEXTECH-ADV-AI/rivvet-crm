@@ -140,6 +140,19 @@ export async function listLeadsService(
     );
   }
 
+  if (input.view === "call_queue") {
+    // Openers with a phone nobody on the team has called yet, plus call-backs that
+    // are due. Hand-dial only: nothing here dials (RIV-1533).
+    params.set("email_opened", "is.true");
+    params.set("phone", "not.is.null");
+    params.set("dnc_flag", "not.is.true");
+    params.set("marketing_paused", "not.is.true");
+    params.set("demo_booked_at", "is.null");
+    orGroups.push(`(human_call_attempts.eq.0,next_callback_at.lte.${new Date().toISOString()})`);
+    // Never-called first (the old AI dialer rang some of these in the spring).
+    params.set("order", "call_attempts.asc.nullsfirst,updated_at.desc");
+  }
+
   if (input.vertical && input.vertical !== "all") {
     params.set("vertical", `eq.${input.vertical}`);
   }

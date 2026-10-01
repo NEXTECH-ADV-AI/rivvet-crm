@@ -55,6 +55,16 @@ export function filterLeads(items: Lead[], view: ListView): Lead[] {
   if (view === "in_instantly") {
     list = list.filter(isInInstantly);
   }
+  if (view === "call_queue") {
+    list = list.filter(
+      (l) =>
+        l.emailOpened &&
+        Boolean(l.phone) &&
+        !l.dncFlag &&
+        !l.marketingPaused &&
+        (l.humanCallAttempts ?? 0) === 0,
+    );
+  }
   if (view === "my_open") {
     list = list.filter(
       (l) =>

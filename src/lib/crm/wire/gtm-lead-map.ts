@@ -194,6 +194,12 @@ export function mapGtmLeadRow(row: GtmLeadRow): Lead {
     scoreIntent: intentFromIcp(score),
     nextAction: row.next_action ? str(row.next_action) : null,
     nextActionDue: row.next_action_due ? str(row.next_action_due) : null,
+    nextCallbackAt: row.next_callback_at ? str(row.next_callback_at) : null,
+    humanCallAttempts: Number(row.human_call_attempts ?? 0) || 0,
+    lastHumanCallAt: row.last_human_call_at ? str(row.last_human_call_at) : null,
+    callOutcome: row.call_outcome ? str(row.call_outcome) : null,
+    phoneLineType:
+      ((row.enrichment_data as Record<string, unknown> | null)?.phone_line_type as string | undefined) ?? null,
     emailOpened: bool(row.email_opened),
     emailReplied: bool(row.email_replied),
     dncFlag: bool(row.dnc_flag),

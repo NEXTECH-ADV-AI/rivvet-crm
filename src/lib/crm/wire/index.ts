@@ -27,6 +27,7 @@ export {
   hydrateCrmFn,
   getMissionLineageFn,
   completeTaskFn,
+  logCallFn,
 } from "./server-fns";
 export type { LineageInput, LineageServiceResult } from "./activity-service.server";
 export type {

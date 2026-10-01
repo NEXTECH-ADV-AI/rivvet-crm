@@ -10,6 +10,7 @@ const DEFAULT_VIEWS: { id: ListView; label: string }[] = [
 
 /** Load-eligible first (ready not yet in Instantly) */
 export const LEAD_VIEWS: { id: ListView; label: string }[] = [
+  { id: "call_queue", label: "Call queue" },
   { id: "sequence_ready", label: "Load-eligible" },
   { id: "needs_enrich", label: "Needs enrich" },
   { id: "needs_verify", label: "Needs verify" },
