@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
-import { useLeadBook } from "@/lib/crm/wire";
+import { useLeadBook, useLeadsList } from "@/lib/crm/wire";
 import { queueAccounts, queueLeads, queueOpps } from "@/lib/crm/filters";
 import {
   accountPriority,
@@ -54,6 +54,7 @@ function HomePage() {
     [leads],
   );
   const bookQ = useLeadBook();
+  const callQ = useLeadsList({ view: "call_queue", limit: 1, offset: 0 });
   const book = bookQ.data?.book;
 
   const gtm = useMemo(
@@ -68,8 +69,22 @@ function HomePage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="What needs you"
-        description="Live counts from the lead book, plus the leads waiting on a next step."
+        description="Who to call, then the live lead book."
       />
+
+      <Link
+        to="/leads"
+        className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-product-mint/30 bg-product-mint/10 p-4 shadow-soft transition hover:bg-product-mint/15"
+      >
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-product-mint">Call queue</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">
+            {callQ.data ? callQ.data.total.toLocaleString() : "…"}
+            <span className="ml-2 text-sm font-normal text-fg-muted">openers with a phone, ready to call</span>
+          </p>
+        </div>
+        <span className="text-sm font-semibold text-ink">Start calling →</span>
+      </Link>
 
       <div className="mb-4 rounded-xl border border-border-soft bg-card p-3 shadow-soft sm:p-4">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">

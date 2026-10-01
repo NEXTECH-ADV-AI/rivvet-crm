@@ -8,6 +8,7 @@ import { LeadBookFunnel } from "@/components/crm/lead-funnel";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { StatusChip } from "@/components/crm/status-chip";
 import { EmptyState } from "@/components/crm/empty-state";
+import { CallQueue } from "@/components/crm/call-queue";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import {
   defaultLeadFilters,
@@ -35,9 +36,9 @@ export const Route = createFileRoute("/_app/leads/")({
 });
 
 function LeadsPage() {
-  const [view, setView] = useState<ListView>("sequence_ready");
+  const [view, setView] = useState<ListView>("call_queue");
   const [filters, setFilters] = useState<LeadFilterState>(defaultLeadFilters);
-  const [showBook, setShowBook] = useState(true);
+  const [showBook, setShowBook] = useState(false);
   const [page, setPage] = useState(0);
 
   const wire = useWireStatus();
@@ -117,14 +118,16 @@ function LeadsPage() {
           counts={counts}
           views={LEAD_VIEWS}
         />
-        <LeadFilters
-          value={filters}
-          onChange={(f) => {
-            setFilters(f);
-            setPage(0);
-          }}
-          resultCount={total}
-        />
+        {view !== "call_queue" && (
+          <LeadFilters
+            value={filters}
+            onChange={(f) => {
+              setFilters(f);
+              setPage(0);
+            }}
+            resultCount={total}
+          />
+        )}
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-subtle">
@@ -166,9 +169,15 @@ function LeadsPage() {
         ) : rows.length === 0 && !listQ.isLoading ? (
           <EmptyState
             icon={Inbox}
-            title="No leads match"
-            body="Try Needs enrich / Needs verify, or Sample all."
+            title={view === "call_queue" ? "Nobody to call right now" : "No leads match"}
+            body={
+              view === "call_queue"
+                ? "Openers with a phone show up here, and call-backs come back on their date."
+                : "Try another view, or clear the search."
+            }
           />
+        ) : view === "call_queue" ? (
+          <CallQueue leads={rows} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] text-left text-sm">

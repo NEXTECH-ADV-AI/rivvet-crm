@@ -139,3 +139,18 @@ export const completeTaskFn = createServerFn({ method: "POST" }).middleware([req
     );
     return { ok: true as const };
   });
+
+export const logCallFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: { gtmLeadId: string; outcome: string; note?: string; callbackAt?: string | null }) => {
+    if (!/^[0-9a-f-]{36}$/i.test(String(data?.gtmLeadId))) throw new Error("Invalid lead id");
+    return {
+      gtmLeadId: data.gtmLeadId,
+      outcome: String(data.outcome),
+      note: String(data.note ?? "").slice(0, 2000),
+      callbackAt: data.callbackAt && !Number.isNaN(Date.parse(data.callbackAt)) ? new Date(data.callbackAt).toISOString() : null,
+    };
+  })
+  .handler(async ({ data, context }) => {
+    const { logCallService } = await import("./call-service.server");
+    return logCallService({ ...data, repEmail: context.crmUser.email });
+  });

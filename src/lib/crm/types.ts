@@ -85,7 +85,8 @@ export type ListView =
   | "my_open"
   | "stale"
   | "stale_7d"
-  | "closing_month";
+  | "closing_month"
+  | "call_queue";
 
 export type ForecastCategory =
   | "pipeline"
@@ -144,6 +145,9 @@ export interface Lead {
   nextCallbackAt?: string | null;
   humanCallAttempts?: number;
   lastHumanCallAt?: string | null;
+  callOutcome?: string | null;
+  /** Twilio line type for the phone: mobile, landline, nonFixedVoip, ... */
+  phoneLineType?: string | null;
   emailOpened: boolean;
   emailReplied: boolean;
   dncFlag: boolean;
