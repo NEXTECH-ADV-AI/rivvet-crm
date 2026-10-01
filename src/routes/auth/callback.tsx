@@ -10,7 +10,7 @@
  * `?next=/home` was stripping the #access_token fragment and causing
  * "No sign-in token found".
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import {
@@ -63,62 +63,62 @@ export const Route = createFileRoute("/auth/callback")({
   // No validateSearch defaults — defaults caused a 307 that ate the hash.
 });
 
+type Outcome = "done" | "handoff";
+
+/** Once per page load, not per mount: the router can remount this route after
+ *  hydration, and a second run found the token already spent ("No sign-in
+ *  token found") while the first had signed in (RIV-1545). */
+let signIn: Promise<Outcome> | null = null;
+
+async function runSignIn(): Promise<Outcome> {
+  try {
+    const creds = captureCredentials() ?? readMagicLinkCredentialsFromUrl();
+    if (creds.error || creds.errorDescription) {
+      throw new Error(creds.errorDescription || creds.error || "Sign-in was denied");
+    }
+    if (!creds.accessToken && !creds.code && !creds.tokenHash) {
+      throw new Error("No sign-in token found. Request a new link from the sign-in page.");
+    }
+    await completeMagicLink({
+      accessToken: creds.accessToken,
+      code: creds.code,
+      tokenHash: creds.tokenHash,
+      type: creds.type,
+    });
+    // The tab that asked for the link takes over; this one only says so (RIV-1544).
+    return (await announceSignIn()) ? "handoff" : "done";
+  } finally {
+    try {
+      window.sessionStorage.removeItem(CAPTURE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function AuthCallback() {
-  const started = useRef(false);
-  const [phase, setPhase] = useState<"working" | "done" | "handoff" | "error">("working");
+  const [phase, setPhase] = useState<"working" | Outcome | "error">("working");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
-    (async () => {
-      try {
-        const creds = captureCredentials() ?? readMagicLinkCredentialsFromUrl();
-
-        if (creds.error || creds.errorDescription) {
-          throw new Error(
-            creds.errorDescription || creds.error || "Sign-in was denied",
-          );
-        }
-
-        if (!creds.accessToken && !creds.code && !creds.tokenHash) {
-          throw new Error(
-            "No sign-in token found. Request a new link from the sign-in page.",
-          );
-        }
-
-        await completeMagicLink({
-          accessToken: creds.accessToken,
-          code: creds.code,
-          tokenHash: creds.tokenHash,
-          type: creds.type,
-        });
-
-        try {
-          window.sessionStorage.removeItem(CAPTURE_KEY);
-        } catch {
-          /* ignore */
-        }
-
-        // The tab that asked for the link takes over; this one only says so (RIV-1544).
-        if (await announceSignIn()) {
-          setPhase("handoff");
-          window.close(); // only works where the browser allows it; the message covers the rest
-          return;
-        }
-        setPhase("done");
-        window.location.replace("/home");
-      } catch (err) {
+    let live = true;
+    signIn ??= runSignIn();
+    signIn.then(
+      (outcome) => {
+        if (!live) return;
+        setPhase(outcome);
+        if (outcome === "handoff") window.close(); // only where the browser allows it; the message covers the rest
+        else window.location.replace("/home");
+      },
+      (err: unknown) => {
+        if (!live) return;
         setPhase("error");
         setError(err instanceof Error ? err.message : "Sign-in failed");
-        try {
-          window.sessionStorage.removeItem(CAPTURE_KEY);
-        } catch {
-          /* ignore */
-        }
-      }
-    })();
+      },
+    );
+    return () => {
+      live = false;
+    };
   }, []);
 
   return (
