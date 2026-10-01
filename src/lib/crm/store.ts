@@ -1,9 +1,5 @@
 import { create } from "zustand";
 import {
-  seedAccounts,
-  seedActivities,
-  seedContacts,
-  seedLeads,
   seedOpportunities,
   seedPayments,
   seedSendDocuments,
@@ -118,11 +114,14 @@ let seq = 900;
 let stageSeq = 100;
 
 export const useCrmStore = create<CrmState>((set, get) => ({
-  leads: structuredClone(seedLeads),
-  accounts: structuredClone(seedAccounts),
-  contacts: structuredClone(seedContacts),
+  // Lead, account, contact and activity slices start empty and come only from
+  // the hydrate payload (live, or seed in local mock mode). Starting on seed
+  // showed demo rows to real users whenever a live slice was empty (RIV-1534).
+  leads: [],
+  accounts: [],
+  contacts: [],
   opportunities: structuredClone(seedOpportunities),
-  activities: structuredClone(seedActivities),
+  activities: [],
   stageEvents: structuredClone(seedStageEvents),
   sendDocuments: structuredClone(seedSendDocuments),
   payments: structuredClone(seedPayments),
@@ -134,15 +133,14 @@ export const useCrmStore = create<CrmState>((set, get) => ({
 
   hydrateFromWire: (payload) => {
     set({
-      leads: payload.leads.length ? payload.leads : get().leads,
-      accounts: payload.accounts.length ? payload.accounts : get().accounts,
+      leads: payload.leads,
+      accounts: payload.accounts,
+      // Opportunities keep their existing merge (out of scope for this pass).
       opportunities: payload.opportunities.length
         ? payload.opportunities
         : get().opportunities,
-      contacts: payload.contacts.length ? payload.contacts : get().contacts,
-      activities: payload.activities.length
-        ? payload.activities
-        : get().activities,
+      contacts: payload.contacts,
+      activities: payload.activities,
       dataSource: payload.source,
       hydrateMessage: payload.message,
       hydratedAt: new Date().toISOString(),

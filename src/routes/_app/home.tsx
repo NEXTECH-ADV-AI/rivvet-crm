@@ -11,7 +11,8 @@ import {
 import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
-import { DEMO_NOW, leadBookSnapshot } from "@/lib/crm/seed";
+import { DEMO_NOW } from "@/lib/crm/seed";
+import { useLeadBook } from "@/lib/crm/wire";
 import { queueAccounts, queueLeads, queueOpps } from "@/lib/crm/filters";
 import {
   accountPriority,
@@ -52,11 +53,12 @@ function HomePage() {
     () => leads.filter(isLoadEligible).length,
     [leads],
   );
-  const book = leadBookSnapshot;
+  const bookQ = useLeadBook();
+  const book = bookQ.data?.book;
 
   const gtm = useMemo(
-    () => buildGtmAnalytics(opportunities, leads, accounts, activities),
-    [opportunities, leads, accounts, activities],
+    () => buildGtmAnalytics(opportunities, leads, accounts, activities, book),
+    [opportunities, leads, accounts, activities, book],
   );
 
   const enrichQ = leads.filter(needsEnrich).slice(0, 5);
@@ -65,32 +67,16 @@ function HomePage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
-        eyebrow="GTM · sequence-first"
         title="What needs you"
-        description="Load-eligible leads into multi-vertical Instantly. HVAC RCA before scale. Cold call deferred. Deal send locked."
-        action={
-          <Link
-            to="/sequences"
-            className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white shadow-soft hover:bg-ink/90"
-          >
-            <Mail className="size-3.5" />
-            Sequences · Load GO
-          </Link>
-        }
+        description="Live counts from the lead book, plus the leads waiting on a next step."
       />
 
       <div className="mb-4 rounded-xl border border-border-soft bg-card p-3 shadow-soft sm:p-4">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-ink">
-            Book → Instantly (full book mirror)
+            Lead book
           </h2>
           <div className="flex gap-3">
-            <Link
-              to="/sequences"
-              className="text-[11px] font-medium text-product-mint hover:underline"
-            >
-              Load GO board
-            </Link>
             <Link
               to="/analytics"
               className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-muted hover:underline"
@@ -99,40 +85,34 @@ function HomePage() {
             </Link>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          <Kpi label="Scrapes" value={book.total.toLocaleString()} hint="inventory" />
+        {!book ? (
+          <p className="text-xs text-fg-muted">{bookQ.isError ? "Couldn't load the lead book." : "Loading the lead book…"}</p>
+        ) : (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <Kpi label="Leads" value={book.total.toLocaleString()} hint="all sources" />
           <Kpi
             label="Valid email"
             value={book.validEmail.toLocaleString()}
-            hint={formatPct((book.validEmail / book.total) * 100)}
+            hint={book.total ? formatPct((book.validEmail / book.total) * 100) : "0%"}
           />
           <Kpi
             label="Sequence-ready"
             value={book.sequenceReady.toLocaleString()}
-            hint="north star supply"
+            hint="valid email, active trade"
             accent
           />
           <Kpi
             label="In Instantly"
             value={book.inInstantly.toLocaleString()}
-            hint="mostly HVAC Nat'l"
+            hint="loaded to a campaign"
           />
           <Kpi
             label="HVAC of book"
             value={`${book.hvacSharePct}%`}
-            hint="rebalance when ready"
-            warn={book.hvacSharePct > 40}
-          />
-          <Kpi
-            label="Idle camps"
-            value={String(
-              Object.values(book.byCampaignLoads).filter((n) => !n).length,
-            )}
-            hint="of 6 verticals"
-            warn
+            hint="share of all leads"
           />
         </div>
-        <p className="mt-2 text-[11px] text-fg-muted">{book.notes}</p>
+        )}
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">

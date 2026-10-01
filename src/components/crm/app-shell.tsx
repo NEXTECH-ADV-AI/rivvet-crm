@@ -4,17 +4,10 @@ import { Menu, X } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { RivvetBrand, RivvetIcon, RivvetWordmark } from "./logo";
 import { CommandSearch } from "./command-search";
-import { AgentStrip } from "./agent-strip";
-import { WireBanner } from "./wire-banner";
 import { CrmHydrateBanner } from "./crm-hydrate";
-import { useWireStatus } from "@/lib/crm/wire";
-import { useCrmStore } from "@/lib/crm/store";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { data: wire } = useWireStatus();
-  const dataSource = useCrmStore((s) => s.dataSource);
-  const live = wire?.source === "live" || dataSource === "live";
 
   return (
     <div className="flex min-h-[calc(100dvh-var(--grok-banner-h,0px))] bg-mist">
@@ -74,19 +67,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="ml-auto flex items-center gap-2">
               <CommandSearch />
-              <span
-                className={`hidden rounded-full border px-2 py-0.5 font-mono text-[10px] lg:inline ${
-                  live
-                    ? "border-product-mint/40 bg-product-mint/10 text-product-mint"
-                    : "border-border-soft bg-mist text-fg-subtle"
-                }`}
-              >
-                {live ? "LIVE" : "MOCK"}
-              </span>
             </div>
           </div>
-          <WireBanner />
-          <AgentStrip />
         </header>
 
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">

@@ -248,10 +248,6 @@ function SettingsPage() {
                 </li>
                 <li>Redeploy Production → chip flips to LIVE</li>
               </ol>
-              <p className="mt-2 font-mono text-[10px]">
-                Or paste SUPABASE_SERVICE_ROLE_KEY in chat once — we inject on
-                deploy (never commit).
-              </p>
             </div>
 
             <div>

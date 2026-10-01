@@ -65,9 +65,8 @@ function AccountsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
-        eyebrow={`accounts · ${source}`}
         title="Accounts"
-        description="Production accounts table — lifecycle, ownership, primary contact. Test accounts excluded on LIVE."
+        description="Every business we track, live."
       />
 
       {funnel && (

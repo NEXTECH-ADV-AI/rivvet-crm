@@ -1,43 +1,32 @@
 import { useCrmHydrate } from "@/lib/crm/wire";
 import { useCrmStore } from "@/lib/crm/store";
-import { cn } from "@/components/ui/cn";
 
-/** Loads LIVE or MOCK book into the client store once per session. */
+/** Loads the book into the client store. Says something only when the data is
+ *  loading, failed, or is demo data; live data needs no banner (RIV-1534). */
 export function CrmHydrateBanner() {
   const q = useCrmHydrate();
   const dataSource = useCrmStore((s) => s.dataSource);
-  const message = useCrmStore((s) => s.hydrateMessage);
 
   if (q.isLoading) {
     return (
-      <div className="border-b border-border-soft bg-mist px-4 py-1.5 text-center font-mono text-[10px] text-fg-subtle">
-        Hydrating CRM book…
+      <div className="border-b border-border-soft bg-mist px-4 py-1.5 text-center text-xs text-fg-subtle">
+        Loading CRM data…
       </div>
     );
   }
-
-  if (!message) return null;
-
-  return (
-    <div
-      className={cn(
-        "border-b px-4 py-1.5 text-center font-mono text-[10px]",
-        dataSource === "live"
-          ? "border-product-mint/25 bg-product-mint/10 text-ink"
-          : "border-border-soft bg-mist text-fg-muted",
-      )}
-    >
-      <span
-        className={cn(
-          "mr-2 rounded-full border px-1.5 py-0.5 font-semibold uppercase tracking-wide",
-          dataSource === "live"
-            ? "border-product-mint/40 text-product-mint"
-            : "border-border-soft text-fg-subtle",
-        )}
-      >
-        {dataSource === "live" ? "LIVE" : "MOCK"}
-      </span>
-      {message}
-    </div>
-  );
+  if (q.isError) {
+    return (
+      <div role="alert" className="border-b border-red-300 bg-red-50 px-4 py-1.5 text-center text-xs text-red-800">
+        Couldn't load CRM data. Refresh the page to try again.
+      </div>
+    );
+  }
+  if (q.data && dataSource !== "live") {
+    return (
+      <div className="border-b border-amber-300 bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900">
+        Demo data: this deploy has no database connection.
+      </div>
+    );
+  }
+  return null;
 }

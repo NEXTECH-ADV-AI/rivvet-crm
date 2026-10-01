@@ -123,3 +123,19 @@ export const getMissionLineageFn = createServerFn({ method: "GET" }).middleware(
     );
     return getMissionLineageService(data ?? {});
   });
+
+export const completeTaskFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: { taskId: string }) => {
+    if (!/^[0-9a-f-]{36}$/i.test(String(data?.taskId))) throw new Error("Invalid task id");
+    return { taskId: data.taskId };
+  })
+  .handler(async ({ data }) => {
+    const { restPatch } = await import("./supabase-rest.server");
+    const now = new Date().toISOString();
+    await restPatch(
+      "/crm_tasks",
+      { task_id: `eq.${data.taskId}`, status: "eq.open" },
+      { status: "completed", completed_at: now, updated_at: now },
+    );
+    return { ok: true as const };
+  });

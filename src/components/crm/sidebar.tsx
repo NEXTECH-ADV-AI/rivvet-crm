@@ -50,9 +50,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       eligible: leads.filter(isLoadEligible).length,
       accounts: queueAccounts(accounts).length,
       opps: queueOpps(opps).length,
-      tasks: activities.filter(
-        (a) => a.ownerId === "usr_you" && !a.completedAt && a.dueAt,
-      ).length,
+      tasks: activities.filter((a) => a.type === "task" && !a.completedAt).length,
     }),
     [leads, opps, accounts, activities],
   );

@@ -15,6 +15,7 @@ import {
   isVercelRuntime,
 } from "./config";
 import { seedActivities, seedContacts } from "../seed";
+import { mapTaskRow, mapTouchRow } from "./activity-map";
 import type { Account, Activity, Contact, Lead, Opportunity } from "../types";
 
 export type HydratePayload = {
@@ -32,76 +33,26 @@ export type HydratePayload = {
   };
 };
 
-function mapActivityRow(row: Record<string, unknown>): Activity {
-  const id = String(row.activity_id || row.task_id || row.id || Math.random());
-  const typeRaw = String(row.type || row.activity_type || "note").toLowerCase();
-  const type =
-    typeRaw === "call" ||
-    typeRaw === "email" ||
-    typeRaw === "meeting" ||
-    typeRaw === "task" ||
-    typeRaw === "system"
-      ? typeRaw
-      : "note";
-  const relatedType = row.opportunity_id
-    ? "opportunity"
-    : row.account_id
-      ? "account"
-      : "lead";
-  const relatedId = String(
-    row.opportunity_id || row.account_id || row.gtm_lead_id || id,
-  );
-  return {
-    id,
-    type: type as Activity["type"],
-    subject: String(row.title || row.subject || row.body || "Activity").slice(
-      0,
-      120,
-    ),
-    body: String(row.body || row.notes || row.description || ""),
-    relatedType,
-    relatedId,
-    relatedName: String(row.related_name || relatedId),
-    ownerId: "usr_you",
-    dueAt: row.due_at
-      ? String(row.due_at)
-      : row.occurred_at
-        ? String(row.occurred_at)
-        : null,
-    completedAt:
-      row.status === "done" || row.status === "completed"
-        ? String(row.updated_at || row.occurred_at || new Date().toISOString())
-        : null,
-    createdAt: String(
-      row.occurred_at || row.created_at || new Date().toISOString(),
-    ),
-  };
-}
-
 async function fetchActivitiesLive(): Promise<Activity[]> {
   const { url, key } = getServerSupabaseConfig();
-  for (const path of [
-    `/activities?select=*&order=occurred_at.desc&limit=80`,
-    `/crm_tasks?select=*&status=eq.open&order=due_at.asc.nullslast&limit=80`,
-  ]) {
-    try {
-      const res = await fetch(`${url}/rest/v1${path}`, {
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          Accept: "application/json",
-        },
-      });
-      if (!res.ok) continue;
-      const rows = (await res.json()) as Record<string, unknown>[];
-      if (Array.isArray(rows) && rows.length) {
-        return rows.map(mapActivityRow);
-      }
-    } catch {
-      /* try next */
-    }
-  }
-  return [];
+  const get = async (path: string) => {
+    const res = await fetch(`${url}/rest/v1${path}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`${path.split("?")[0]} ${res.status}`);
+    return (await res.json()) as Record<string, unknown>[];
+  };
+  // Both, not the first non-empty one: tasks were never shown while the
+  // touches table had rows.
+  const [tasks, touches] = await Promise.all([
+    get(
+      `/crm_tasks?select=*,accounts(name),gtm_leads(business_name)&status=eq.open&is_test=is.false&order=due_at.asc.nullslast&limit=80`,
+    ),
+    get(
+      `/activities?select=activity_id,account_id,gtm_lead_id,type,direction,subject,summary,occurred_at,created_at,accounts(name)&order=occurred_at.desc&limit=80`,
+    ),
+  ]);
+  return [...tasks.map(mapTaskRow), ...touches.map(mapTouchRow)];
 }
 
 async function hydrateViaProxy(proxyBase: string): Promise<HydratePayload | null> {
@@ -163,9 +114,9 @@ export async function hydrateCrmService(opts?: {
   if (live && (leadsR.source === "live" || oppsR.source === "live")) {
     try {
       activities = await fetchActivitiesLive();
-      if (!activities.length) activities = seedActivities;
     } catch {
-      activities = seedActivities;
+      // Live deploy: show nothing rather than demo rows.
+      activities = [];
     }
     contacts = [];
   }
