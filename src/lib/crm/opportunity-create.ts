@@ -28,7 +28,7 @@ const text = (v: unknown, max: number) => {
 
 export type CreateOpportunityInput =
   | { from: "lead"; gtmLeadId: string }
-  | { from: "account"; accountId: string }
+  | { from: "account"; accountId: string; stage?: NewOppStage }
   | ({ from: "new" } & NewOpportunity);
 
 /** Trust boundary for createOpportunityFn: ids are uuids, the form is trimmed and checked. */
@@ -37,7 +37,9 @@ export function parseCreateOpportunity(data: unknown): CreateOpportunityInput {
   if (d.from === "lead" || d.from === "account") {
     const id = String(d.from === "lead" ? d.gtmLeadId : d.accountId);
     if (!UUID.test(id)) throw new Error("Invalid record id");
-    return d.from === "lead" ? { from: "lead", gtmLeadId: id } : { from: "account", accountId: id };
+    if (d.from === "lead") return { from: "lead", gtmLeadId: id };
+    const stage = NEW_OPP_STAGES.find((s) => s.value === d.stage)?.value;
+    return stage ? { from: "account", accountId: id, stage } : { from: "account", accountId: id };
   }
   if (d.from !== "new") throw new Error("Unknown opportunity source");
   const company = text(d.company, 120);

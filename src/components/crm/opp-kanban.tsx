@@ -81,20 +81,6 @@ export function OppKanban({
 
   return (
     <div className="space-y-3">
-      <p className="text-[11px] text-fg-subtle">
-        Drag across stages.{" "}
-        {dataSource === "live" ? (
-          <span className="font-medium text-product-mint">
-            LIVE — patches crm_opportunities.stage
-          </span>
-        ) : (
-          <span className="font-medium text-ink">
-            MOCK — local only (no prod side-effects)
-          </span>
-        )}
-        . Contract send stays locked.
-      </p>
-
       <div className="-mx-1 overflow-x-auto pb-2">
         <div className="flex min-w-max gap-2.5 px-1">
           {KANBAN_STAGES.map((stage) => {

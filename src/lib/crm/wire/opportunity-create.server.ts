@@ -120,7 +120,7 @@ async function fromLead(
   }
 }
 
-async function fromAccount(accountId: string, repEmail: string) {
+async function fromAccount(accountId: string, repEmail: string, stage?: NewOppStage) {
   const [leads, opps] = await Promise.all([
     call<{ gtm_lead_id: string }[]>(
       `/gtm_leads?select=gtm_lead_id&account_id=eq.${accountId}&is_test=not.is.true&order=updated_at.desc&limit=50`,
@@ -136,7 +136,7 @@ async function fromAccount(accountId: string, repEmail: string) {
   if (plan.kind === "existing") return { id: plan.opportunityId, existing: true };
   if (plan.kind === "none")
     throw new Error("This account has no lead to start an Opportunity from.");
-  return fromLead(plan.gtmLeadId, repEmail);
+  return fromLead(plan.gtmLeadId, repEmail, stage);
 }
 
 async function fromForm(input: Extract<CreateOpportunityInput, { from: "new" }>, repEmail: string) {
@@ -172,7 +172,7 @@ export async function createOpportunityService(
     input.from === "lead"
       ? await fromLead(input.gtmLeadId, repEmail)
       : input.from === "account"
-        ? await fromAccount(input.accountId, repEmail)
+        ? await fromAccount(input.accountId, repEmail, input.stage)
         : await fromForm(input, repEmail);
   const { opportunity } = await getOpportunityService(made.id);
   return { opportunityId: made.id, existing: made.existing, opportunity };

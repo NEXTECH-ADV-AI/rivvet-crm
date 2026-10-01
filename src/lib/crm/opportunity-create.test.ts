@@ -43,6 +43,15 @@ test("a missing company, a bad email, or a non-uuid id is refused", () => {
     /Invalid record id/,
   );
   assert.throws(() => parseCreateOpportunity({ from: "stripe" }), /Unknown/);
+  assert.deepEqual(parseCreateOpportunity({ from: "account", accountId: LEAD, stage: "demo_booked" }), {
+    from: "account",
+    accountId: LEAD,
+    stage: "demo_booked",
+  });
+  assert.deepEqual(parseCreateOpportunity({ from: "account", accountId: LEAD, stage: "closed_won" }), {
+    from: "account",
+    accountId: LEAD,
+  });
   assert.deepEqual(parseCreateOpportunity({ from: "lead", gtmLeadId: LEAD }), {
     from: "lead",
     gtmLeadId: LEAD,
