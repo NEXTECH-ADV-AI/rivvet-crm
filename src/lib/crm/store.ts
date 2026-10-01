@@ -26,15 +26,7 @@ import type {
 import { STAGE_LABEL } from "./priority";
 import { priceDeal } from "./deal-catalog";
 import { PROD_OPP_STATUS_WRITE, PROD_LOST_REASONS } from "./prod-mirror";
-import {
-  INSTANTLY_CAMPAIGNS,
-  isSequenceVertical,
-  type SequenceVertical,
-} from "./lead-model";
-import {
-  DEFAULT_GO_BATCH_SIZE,
-  isLoadEligible,
-} from "./sequence-queries";
+import { mergeById } from "./filters";
 
 export interface CrmState {
   leads: Lead[];
@@ -46,17 +38,13 @@ export interface CrmState {
   sendDocuments: SendDocumentMirror[];
   payments: PaymentMirror[];
   currentUserId: OwnerId;
-  lastLoadGo: {
-    vertical: SequenceVertical;
-    count: number;
-    at: string;
-    leadIds: string[];
-  } | null;
   /** mock | live after hydrate */
   dataSource: "mock" | "live" | "seed";
   hydrateMessage: string | null;
   hydratedAt: string | null;
 
+  /** Keep leads a list page showed, so their detail page can open (RIV-1541). */
+  rememberLeads: (leads: Lead[]) => void;
   hydrateFromWire: (payload: {
     source: "mock" | "live";
     leads: Lead[];
@@ -91,10 +79,6 @@ export interface CrmState {
     type: "call" | "email" | "meeting",
     subject: string,
   ) => void;
-  simulateLoadGo: (
-    vertical: SequenceVertical,
-    max?: number,
-  ) => { ok: boolean; message: string; count: number };
 }
 
 function touchNow() {
@@ -126,14 +110,18 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   sendDocuments: structuredClone(seedSendDocuments),
   payments: structuredClone(seedPayments),
   currentUserId: "usr_you",
-  lastLoadGo: null,
   dataSource: "seed",
   hydrateMessage: null,
   hydratedAt: null,
 
+  rememberLeads: (leads) => {
+    if (leads.length) set((s) => ({ leads: mergeById(leads, s.leads) }));
+  },
+
   hydrateFromWire: (payload) => {
     set({
-      leads: payload.leads,
+      // Store starts empty, so anything already here came from a live list page.
+      leads: mergeById(payload.leads, get().leads),
       accounts: payload.accounts,
       // Opportunities keep their existing merge (out of scope for this pass).
       opportunities: payload.opportunities.length
@@ -392,51 +380,5 @@ export const useCrmStore = create<CrmState>((set, get) => ({
             : s.opportunities,
       };
     });
-  },
-
-  simulateLoadGo: (vertical, max = DEFAULT_GO_BATCH_SIZE) => {
-    const s = get();
-    if (!isSequenceVertical(vertical)) {
-      return { ok: false, message: "Vertical not sequence-enabled", count: 0 };
-    }
-    const camp = INSTANTLY_CAMPAIGNS[vertical];
-    const eligible = s.leads
-      .filter((l) => isLoadEligible(l) && l.vertical === vertical)
-      .slice(0, max);
-    if (!eligible.length) {
-      return {
-        ok: false,
-        message: `No load-eligible ${vertical} leads in book`,
-        count: 0,
-      };
-    }
-    const now = touchNow();
-    const ids = new Set(eligible.map((l) => l.id));
-    set({
-      leads: s.leads.map((l) =>
-        ids.has(l.id)
-          ? {
-              ...l,
-              lifecycle: "loaded_to_instantly" as const,
-              status: "loaded_to_instantly" as const,
-              instantlyCampaignId: camp.id,
-              instantlyCampaignName: camp.name,
-              updatedAt: now,
-              lastTouch: now,
-            }
-          : l,
-      ),
-      lastLoadGo: {
-        vertical,
-        count: eligible.length,
-        at: now,
-        leadIds: eligible.map((l) => l.id),
-      },
-    });
-    return {
-      ok: true,
-      message: `Simulated Load GO · ${eligible.length} → ${camp.name}`,
-      count: eligible.length,
-    };
   },
 }));

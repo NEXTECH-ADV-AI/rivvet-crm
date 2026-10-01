@@ -112,7 +112,7 @@ function AccountDetail() {
                 account.id,
                 account.name,
                 "call",
-                `Call — ${account.name}`,
+                `Call: ${account.name}`,
               )
             }
             className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white hover:bg-deep-ink"
@@ -132,7 +132,7 @@ function AccountDetail() {
             />
             {source === "live" && (
               <p className="mt-2 text-[10px] text-fg-subtle">
-                Next action is local until accounts patch is wired.
+                Next action isn't saved yet. It clears when you reload.
               </p>
             )}
           </MetaPanel>
@@ -196,9 +196,7 @@ function AccountDetail() {
           <MetaPanel title="Opportunities">
             {opps.length === 0 ? (
               <p className="text-sm text-fg-muted">
-                {source === "live"
-                  ? "Linked opps load from crm_opportunities when that wire lands (seed opps only if IDs match)."
-                  : "No opportunities linked in mock seed."}
+                No deals linked to this account.
               </p>
             ) : (
               <ul className="space-y-2">

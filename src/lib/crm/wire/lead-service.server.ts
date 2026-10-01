@@ -238,7 +238,7 @@ export async function getBookService(): Promise<BookResult> {
     cleaning: "cleaning",
   };
   const verticalKeys = Object.keys(verticalSlugs) as Vertical[];
-  const [total, validEmail, sequenceReady, inInstantly, lifecycleCounts, verticalCounts, loadedStates] =
+  const [total, validEmail, sequenceReady, inInstantly, opened, replied, demosBooked, lifecycleCounts, verticalCounts, loadedStates] =
     await Promise.all([
       count(live),
       count(`${live}&email_verification_status=eq.valid`),
@@ -246,6 +246,10 @@ export async function getBookService(): Promise<BookResult> {
         `${live}&email_verification_status=eq.valid&vertical=in.(${SEQUENCE_VERTICALS.join(",")})`,
       ),
       count(`${live}&or=(instantly_campaign_id.not.is.null,status.eq.loaded_to_instantly)`),
+      count(`${live}&email_opened=is.true`),
+      // Auto-replies (out of office) are not replies a person wrote.
+      count(`${live}&email_replied=is.true&or=(reply_classification.is.null,reply_classification.neq.AUTO_REPLY)`),
+      count(`${live}&demo_booked_at=not.is.null`),
       Promise.all(LIFECYCLE_ORDER.map((st) => count(`${live}&status=eq.${st}`))),
       Promise.all(verticalKeys.map((v) => count(`${live}&vertical=eq.${verticalSlugs[v]}`))),
       fetch(`${url}/rest/v1/gtm_leads?select=state&${live}&status=eq.loaded_to_instantly&state=not.is.null`, {
@@ -262,6 +266,9 @@ export async function getBookService(): Promise<BookResult> {
     validEmail,
     sequenceReady,
     inInstantly,
+    opened,
+    replied,
+    demosBooked,
     hvacSharePct: total > 0 ? Math.round(((byVertical.hvac ?? 0) / total) * 100) : 0,
     statesInLoads: new Set(loadedStates.map((r) => r.state.trim().toUpperCase())).size,
     byLifecycle,

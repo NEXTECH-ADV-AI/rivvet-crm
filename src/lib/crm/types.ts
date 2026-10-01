@@ -172,6 +172,10 @@ export interface LeadBookSnapshot {
   validEmail: number;
   sequenceReady: number;
   inInstantly: number;
+  /** Live only: leads with a recorded open, a non-auto reply, a demo booked. */
+  opened?: number;
+  replied?: number;
+  demosBooked?: number;
   enriched?: number;
   ownerVerified?: number;
   icpA?: number;

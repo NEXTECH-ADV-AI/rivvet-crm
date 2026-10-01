@@ -33,7 +33,7 @@ export function LeadBookFunnel({
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         <Stat
-          label="Book size"
+          label="Leads"
           value={s.total.toLocaleString()}
           sub="all sources"
         />
@@ -43,13 +43,13 @@ export function LeadBookFunnel({
           sub={`${formatPct(validRate)} of book`}
         />
         <Stat
-          label="Sequence-ready"
+          label="Ready for email"
           value={s.sequenceReady.toLocaleString()}
           sub={`${formatPct(readyRate)} of book`}
           accent
         />
         <Stat
-          label="In Instantly"
+          label="In a campaign"
           value={s.inInstantly.toLocaleString()}
           sub="loaded to a campaign"
         />
@@ -59,7 +59,7 @@ export function LeadBookFunnel({
           sub="share of all leads"
         />
         <Stat
-          label="States in loads"
+          label="States in campaigns"
           value={String(s.statesInLoads)}
           sub="among loaded leads"
         />
@@ -109,8 +109,8 @@ export function LeadBookFunnel({
 
       <div className="crm-surface p-3 sm:p-4">
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold text-ink">Lifecycle funnel</h2>
-          <span className="text-[11px] text-fg-subtle">Filter sample</span>
+          <h2 className="text-sm font-semibold text-ink">Lead stages</h2>
+          <span className="text-[11px] text-fg-subtle">This page of results</span>
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1">
           {LIFECYCLE_ORDER.map((stage, i) => {

@@ -8,17 +8,16 @@ const DEFAULT_VIEWS: { id: ListView; label: string }[] = [
   { id: "all", label: "All" },
 ];
 
-/** Load-eligible first (ready not yet in Instantly) */
+// ponytail: no "My queue" until owners are real people (identity slice).
 export const LEAD_VIEWS: { id: ListView; label: string }[] = [
   { id: "call_queue", label: "Call queue" },
-  { id: "sequence_ready", label: "Load-eligible" },
-  { id: "needs_enrich", label: "Needs enrich" },
-  { id: "needs_verify", label: "Needs verify" },
-  { id: "in_instantly", label: "In Instantly" },
-  { id: "high_icp", label: "High ICP eligible" },
-  { id: "stale_7d", label: "Stale eligible" },
-  { id: "my_open", label: "My queue" },
-  { id: "all", label: "Sample all" },
+  { id: "sequence_ready", label: "Ready for email" },
+  { id: "in_instantly", label: "In a campaign" },
+  { id: "high_icp", label: "Best fit" },
+  { id: "needs_enrich", label: "Missing details" },
+  { id: "needs_verify", label: "Email not checked" },
+  { id: "stale_7d", label: "No touch in 7 days" },
+  { id: "all", label: "All leads" },
 ];
 
 export function ViewTabs({

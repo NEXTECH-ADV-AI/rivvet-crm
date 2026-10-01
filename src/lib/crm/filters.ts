@@ -33,6 +33,12 @@ export function isOpenLead(l: Lead) {
   );
 }
 
+/** fresh wins on id clashes; records only in kept stay. */
+export function mergeById<T extends { id: string }>(fresh: T[], kept: T[]): T[] {
+  const ids = new Set(fresh.map((x) => x.id));
+  return [...fresh, ...kept.filter((x) => !ids.has(x.id))];
+}
+
 export function isOpenOpp(o: Opportunity) {
   return o.stage !== "closed_won" && o.stage !== "closed_lost";
 }
@@ -235,8 +241,10 @@ export function queueLeads(items: Lead[]): Lead[] {
   });
 }
 
+// Home and the sidebar look at every open record, not "my_open": owners are
+// still seed ids, so a live deal never matched usr_you and Home read "all clear".
 export function queueOpps(items: Opportunity[]): Opportunity[] {
-  return filterOpps(items, "my_open").filter((o) => {
+  return filterOpps(items, "all").filter(isOpenOpp).filter((o) => {
     const p = oppPriority(o, DEMO_NOW).priority;
     return (
       p === "P1" ||
@@ -246,7 +254,7 @@ export function queueOpps(items: Opportunity[]): Opportunity[] {
 }
 
 export function queueAccounts(items: Account[]): Account[] {
-  return filterAccounts(items, "my_open").filter((a) => {
+  return filterAccounts(items, "all").filter((a) => a.status !== "churned").filter((a) => {
     const p = accountPriority(a, DEMO_NOW).priority;
     return p === "P1" || a.health === "risk" || a.status === "at_risk";
   });

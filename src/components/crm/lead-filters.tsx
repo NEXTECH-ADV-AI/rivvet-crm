@@ -145,28 +145,16 @@ export function LeadFilters({
           ]}
         />
         <Select
-          label="Enrichment"
+          label="Details"
           value={value.enrichment}
           onChange={(v) =>
             set("enrichment", v as LeadFilterState["enrichment"])
           }
           options={[
-            { value: "all", label: "Any enrichment" },
-            { value: "none", label: "Not enriched" },
+            { value: "all", label: "Any details" },
+            { value: "none", label: "No details yet" },
             { value: "partial", label: "Partial" },
             { value: "complete", label: "Complete" },
-          ]}
-        />
-        <Select
-          label="Owner"
-          value={value.owner}
-          onChange={(v) => set("owner", v)}
-          options={[
-            { value: "all", label: "All owners" },
-            { value: "usr_you", label: "You" },
-            { value: "usr_maya", label: "Maya" },
-            { value: "usr_jordan", label: "Jordan" },
-            { value: "unassigned", label: "Unassigned" },
           ]}
         />
         <button
@@ -179,7 +167,7 @@ export function LeadFilters({
               : "border-border-soft bg-mist/50 text-fg-muted hover:text-ink",
           )}
         >
-          Sequence-ready only
+          Ready for email only
         </button>
         <div className="flex rounded-md border border-border-soft bg-mist/50 p-0.5">
           {(["all", "P1", "P2", "P3"] as const).map((p) => (
