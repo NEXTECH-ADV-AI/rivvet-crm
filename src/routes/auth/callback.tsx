@@ -17,7 +17,8 @@ import {
   completeMagicLink,
   readMagicLinkCredentialsFromUrl,
 } from "@/lib/auth/client";
-import { RivvetMark } from "@/components/crm/logo";
+import { RivvetBrand } from "@/components/crm/logo";
+import { announceSignIn } from "@/lib/auth/auth-channel";
 
 const CAPTURE_KEY = "rivvet.auth.callback.creds";
 
@@ -64,7 +65,7 @@ export const Route = createFileRoute("/auth/callback")({
 
 function AuthCallback() {
   const started = useRef(false);
-  const [phase, setPhase] = useState<"working" | "done" | "error">("working");
+  const [phase, setPhase] = useState<"working" | "done" | "handoff" | "error">("working");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -100,6 +101,12 @@ function AuthCallback() {
           /* ignore */
         }
 
+        // The tab that asked for the link takes over; this one only says so (RIV-1544).
+        if (await announceSignIn()) {
+          setPhase("handoff");
+          window.close(); // only works where the browser allows it; the message covers the rest
+          return;
+        }
         setPhase("done");
         window.location.replace("/home");
       } catch (err) {
@@ -115,42 +122,38 @@ function AuthCallback() {
   }, []);
 
   return (
-    <main className="grid min-h-[calc(100dvh-var(--grok-banner-h,0px))] place-items-center bg-deep-ink px-4 py-10 text-white">
+    <main className="grid min-h-dvh place-items-center bg-mist px-4 py-10">
       <div className="w-full max-w-sm space-y-5 text-center">
-        <div className="flex justify-center">
-          <RivvetMark className="size-11" />
+        <RivvetBrand className="justify-center" />
+        <div className="crm-surface space-y-3 p-6">
+          {phase === "working" && (
+            <>
+              <Loader2 className="mx-auto size-6 animate-spin text-product-mint" aria-hidden />
+              <p className="text-lg font-semibold text-ink">Signing you in to Rivvet CRM…</p>
+            </>
+          )}
+          {phase === "done" && <p className="text-sm text-product-mint">Opening Rivvet CRM…</p>}
+          {phase === "handoff" && (
+            <>
+              <p className="text-lg font-semibold text-ink">You're signed in</p>
+              <p className="text-sm text-fg-muted">Rivvet CRM opened in the tab where you asked for the code. You can close this tab.</p>
+              <a href="/home" className="inline-block text-sm font-semibold text-product-mint hover:underline">
+                Or keep working here
+              </a>
+            </>
+          )}
+          {phase === "error" && (
+            <>
+              <p className="text-lg font-semibold text-ink">Sign-in didn't work</p>
+              <p role="alert" className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                {error ?? "Unknown error"}
+              </p>
+              <a href="/login" className="inline-flex rounded-md bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:bg-ink/90">
+                Back to sign in
+              </a>
+            </>
+          )}
         </div>
-        {phase === "working" && (
-          <>
-            <Loader2
-              className="mx-auto size-6 animate-spin text-bright-mint"
-              aria-hidden
-            />
-            <p className="font-display text-lg font-semibold">
-              Signing you in…
-            </p>
-            <p className="text-sm text-white/55">One moment.</p>
-          </>
-        )}
-        {phase === "done" && (
-          <p className="text-sm text-bright-mint">Opening Rivvet CRM…</p>
-        )}
-        {phase === "error" && (
-          <div className="space-y-4">
-            <p className="font-display text-lg font-semibold text-red-200">
-              Sign-in failed
-            </p>
-            <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-              {error ?? "Unknown error"}
-            </p>
-            <a
-              href="/login"
-              className="inline-flex rounded-md bg-bright-mint px-4 py-2.5 font-mono text-[11px] font-bold tracking-[0.14em] text-deep-ink"
-            >
-              BACK TO SIGN IN
-            </a>
-          </div>
-        )}
       </div>
     </main>
   );
