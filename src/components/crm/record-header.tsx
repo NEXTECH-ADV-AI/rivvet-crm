@@ -1,7 +1,7 @@
-import { PriorityBadge } from "./priority-badge";
+import { PriorityBadge, PRIORITY_LABEL } from "./priority-badge";
 import { StatusChip } from "./status-chip";
 import type { Priority } from "@/lib/crm/types";
-import { OWNER_LABEL, formatRelative } from "@/lib/crm/priority";
+import { formatRelative } from "@/lib/crm/priority";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { cn } from "@/components/ui/cn";
 
@@ -10,7 +10,6 @@ export function RecordHeader({
   subtitle,
   status,
   statusTone = "neutral",
-  ownerId,
   nextAction,
   lastTouch,
   amount,
@@ -62,7 +61,7 @@ export function RecordHeader({
               {title}
             </h1>
             {subtitle && (
-              <div className="mt-0.5 text-sm text-fg-muted">{subtitle}</div>
+              <div className="mt-0.5 text-sm text-fg-muted [overflow-wrap:anywhere]">{subtitle}</div>
             )}
           </div>
         </div>
@@ -72,7 +71,6 @@ export function RecordHeader({
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border-soft pt-3.5 sm:grid-cols-4">
-        <Meta label="Owner" value={OWNER_LABEL[ownerId] ?? ownerId} />
         <Meta
           label="Last touch"
           value={formatRelative(lastTouch, DEMO_NOW)}
@@ -87,7 +85,7 @@ export function RecordHeader({
       </dl>
       {reasons && reasons.length > 0 && (
         <p className="mt-2.5 text-[11px] leading-relaxed text-fg-subtle">
-          <span className="font-medium text-fg-muted">Why {priority}:</span>{" "}
+          <span className="font-medium text-fg-muted">Why “{PRIORITY_LABEL[priority]}”:</span>{" "}
           {reasons.join(" · ")}
         </p>
       )}

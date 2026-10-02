@@ -11,7 +11,7 @@ import {
 import { RivvetIcon, RivvetWordmarkOnDark } from "./logo";
 import { cn } from "@/components/ui/cn";
 import { useCrmStore } from "@/lib/crm/store";
-import { queueOpps, queueAccounts } from "@/lib/crm/filters";
+import { queueAccounts } from "@/lib/crm/filters";
 import { useLeadsList } from "@/lib/crm/wire";
 import { useMemo } from "react";
 
@@ -42,7 +42,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     () => ({
       calls,
       accounts: queueAccounts(accounts).length,
-      opps: queueOpps(opps).length,
+      // The same number the Opportunities page opens on ("All"), so the two never disagree.
+      opps: opps.length,
       tasks: activities.filter((a) => a.type === "task" && !a.completedAt).length,
     }),
     [calls, opps, accounts, activities],

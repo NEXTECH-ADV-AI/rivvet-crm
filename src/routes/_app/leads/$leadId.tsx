@@ -15,8 +15,7 @@ import { activitiesForEntity } from "@/lib/crm/filters";
 import {
   formatMoney,
   formatRelative,
-  leadPriority,
-} from "@/lib/crm/priority";
+  leadPriority, ENRICH_LABEL, EMAIL_LABEL, SOURCE_LABEL, plain } from "@/lib/crm/priority";
 import {
   LIFECYCLE_LABEL,
   VERTICAL_LABEL,
@@ -83,7 +82,6 @@ function LeadDetail() {
 
       <RecordHeader
         title={lead.name}
-        idLabel={lead.id}
         subtitle={`${lead.title} · ${lead.company} · ${VERTICAL_LABEL[lead.vertical]} · ${lead.state ?? "—"}`}
         status={LIFECYCLE_LABEL[lead.lifecycle]}
         statusTone={
@@ -137,23 +135,23 @@ function LeadDetail() {
             lead.enrichmentStatus !== "none" &&
             lead.enrichmentStatus !== "failed"
           }
-          detail={lead.enrichmentStatus}
+          detail={ENRICH_LABEL[lead.enrichmentStatus] ?? plain(lead.enrichmentStatus)}
         />
         <Gate
           label="Valid email"
           ok={lead.emailVerificationStatus === "valid"}
-          detail={lead.emailVerificationStatus}
+          detail={EMAIL_LABEL[lead.emailVerificationStatus] ?? plain(lead.emailVerificationStatus)}
         />
         <Gate
           label="Trade has a campaign"
           ok={Boolean(targetCamp)}
-          detail={targetCamp ?? lead.vertical}
+          detail={targetCamp ?? "None for this trade yet"}
         />
-        <Gate label="Ready for email" ok={seq} detail={seq ? "yes" : "no"} />
+        <Gate label="Ready for email" ok={seq} detail={seq ? "Yes" : "No"} />
         <Gate
           label="In a campaign"
           ok={loaded}
-          detail={lead.instantlyCampaignName ?? (loaded ? "loaded" : "—")}
+          detail={loaded ? "Yes" : "No"}
         />
       </div>
 
@@ -225,13 +223,12 @@ function LeadDetail() {
             <MetaRow k="Phone" v={lead.phone ?? "—"} mono />
             <MetaRow k="Website" v={lead.websiteUrl ?? "—"} />
             <MetaRow k="State" v={lead.state ?? "—"} mono />
-            <MetaRow k="Source" v={lead.source} />
-            <MetaRow k="Batch" v={lead.scrapeBatch ?? "—"} mono />
+            <MetaRow k="Found via" v={SOURCE_LABEL[lead.source] ?? plain(lead.source)} />
             <MetaRow
               k="Last touch"
               v={formatRelative(lead.lastTouch, DEMO_NOW)}
             />
-            <TagList tags={lead.tags} />
+            <TagList tags={lead.tags.filter((t) => !t.includes("_")).map(plain)} />
           </MetaPanel>
         </div>
 

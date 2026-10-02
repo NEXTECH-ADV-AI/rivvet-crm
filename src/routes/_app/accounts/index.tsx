@@ -6,13 +6,7 @@ import { PriorityBadge } from "@/components/crm/priority-badge";
 import { StatusChip } from "@/components/crm/status-chip";
 import { EmptyState } from "@/components/crm/empty-state";
 import { DEMO_NOW } from "@/lib/crm/seed";
-import {
-  accountPriority,
-  formatMoney,
-  formatRelative,
-  OWNER_LABEL,
-  STAGE_LABEL,
-} from "@/lib/crm/priority";
+import { accountPriority, formatMoney, formatRelative, STAGE_LABEL } from "@/lib/crm/priority";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
 import { useAccountsFunnel, useAccountsList } from "@/lib/crm/wire";
 import type { AccountLifecycle, Vertical } from "@/lib/crm/types";
@@ -204,7 +198,6 @@ function AccountsPage() {
                   <th className="px-4 py-2.5 font-medium">Lifecycle</th>
                   <th className="px-4 py-2.5 font-medium">Primary contact</th>
                   <th className="px-4 py-2.5 font-medium">Location</th>
-                  <th className="px-4 py-2.5 font-medium">Owner</th>
                   <th className="px-4 py-2.5 font-medium">Updated</th>
                   <th className="px-4 py-2.5 font-medium text-right">ICP</th>
                 </tr>
@@ -260,9 +253,6 @@ function AccountsPage() {
                       <td className="px-4 py-3 text-xs text-fg-muted">
                         {[a.city, a.state].filter(Boolean).join(", ") ||
                           a.region}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-fg-muted">
-                        {a.ownerEmail || OWNER_LABEL[a.ownerId] || "Unassigned"}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs tabular text-fg-muted">
                         {formatRelative(a.lastTouch, DEMO_NOW)}

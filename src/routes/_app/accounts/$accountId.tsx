@@ -16,8 +16,7 @@ import {
   formatMoney,
   formatRelative,
   oppPriority,
-  STAGE_LABEL,
-} from "@/lib/crm/priority";
+  STAGE_LABEL, SOURCE_LABEL, plain } from "@/lib/crm/priority";
 import { useAccount, useCompleteTask, useLogTouch, useNextAction, useRecordActivities } from "@/lib/crm/wire";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
 
@@ -135,11 +134,9 @@ function AccountDetail() {
             )}
           </MetaPanel>
           <MetaPanel title="Account fields">
-            <MetaRow k="ID" v={account.id} mono />
             <MetaRow k="Lifecycle" v={STAGE_LABEL[life] ?? life} />
-            <MetaRow k="Owner email" v={account.ownerEmail ?? "—"} />
             <MetaRow k="Phone" v={account.phone ?? "—"} mono />
-            <MetaRow k="Source" v={account.source ?? "—"} />
+            <MetaRow k="Found via" v={account.source ? (SOURCE_LABEL[account.source] ?? plain(account.source)) : "Not set"} />
             <MetaRow
               k="ICP score"
               v={
@@ -149,7 +146,6 @@ function AccountDetail() {
               }
               mono
             />
-            <MetaRow k="Client id" v={account.clientId ?? "—"} mono />
             <MetaRow
               k="Updated"
               v={formatRelative(account.updatedAt, DEMO_NOW)}

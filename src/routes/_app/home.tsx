@@ -75,9 +75,9 @@ function HomePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <QueuePanel title="Deals needing a next step" icon={Target} to="/opportunities">
+        <QueuePanel title="Opportunities needing a next step" icon={Target} to="/opportunities">
           {oppQ.length === 0 ? (
-            <p className="text-xs text-fg-muted">Every open deal has a next step.</p>
+            <p className="text-xs text-fg-muted">Every open opportunity has a next step.</p>
           ) : (
             oppQ.slice(0, 5).map((o) => {
               const p = oppPriority(o, DEMO_NOW);

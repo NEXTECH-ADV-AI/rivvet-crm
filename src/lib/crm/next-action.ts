@@ -28,6 +28,19 @@ export function nextActionWrite(
   return { kind: "update", taskId: existing.taskId, title, dueAt };
 }
 
+/** Puts each opportunity's newest open next step (tasks arrive newest first) on it. */
+export function attachNextSteps<O extends { id: string; nextAction: string | null; nextActionDue: string | null }>(
+  opps: O[],
+  tasks: { opportunity_id: string; title: string; due_at: string | null }[],
+): O[] {
+  const next = new Map<string, (typeof tasks)[number]>();
+  for (const t of tasks) if (!next.has(t.opportunity_id)) next.set(t.opportunity_id, t);
+  return opps.map((o) => {
+    const t = next.get(o.id);
+    return t ? { ...o, nextAction: t.title, nextActionDue: t.due_at?.slice(0, 10) ?? null } : o;
+  });
+}
+
 /** Lead pages are keyed `L-<first 8 hex of gtm_lead_id>`; this is the uuid range
  *  that prefix covers, so a direct link can find its lead. */
 export function leadIdRange(routeId: string): [string, string] | null {

@@ -19,7 +19,7 @@ import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
 import { useLeadBook } from "@/lib/crm/wire";
 import { buildGtmAnalytics, formatMoney } from "@/lib/crm/analytics";
-import { formatDate } from "@/lib/crm/priority";
+import { formatDate, STAGE_LABEL, plain } from "@/lib/crm/priority";
 
 export const Route = createFileRoute("/_app/analytics")({
   component: AnalyticsPage,
@@ -49,7 +49,7 @@ function AnalyticsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Analytics"
-        description="Leads, outreach and deals, from live data."
+        description="Leads, outreach and opportunities."
         action={
           <Link
             to="/leads"
@@ -81,7 +81,7 @@ function AnalyticsPage() {
         <Kpi
           label="Closing in 30 days"
           value={formatMoney(kpis.closing30Amt)}
-          sub={`${kpis.closing30Count} deals`}
+          sub={`${kpis.closing30Count} ${kpis.closing30Count === 1 ? "opportunity" : "opportunities"}`}
         />
       </div>
 
@@ -221,7 +221,7 @@ function AnalyticsPage() {
         </Panel>
 
         <Panel
-          title="Top open deals"
+          title="Top open opportunities"
           subtitle="By amount"
           className="lg:col-span-2"
         >
@@ -239,7 +239,7 @@ function AnalyticsPage() {
                       {d.name}
                     </p>
                     <p className="text-[11px] text-fg-subtle">
-                      {d.stage}
+                      {STAGE_LABEL[d.stage] ?? plain(d.stage)}
                       {d.closeDate ? ` · ${formatDate(d.closeDate)}` : ""}
                     </p>
                   </div>

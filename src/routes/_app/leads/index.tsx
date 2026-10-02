@@ -14,12 +14,7 @@ import {
   defaultLeadFilters,
   type LeadFilterState,
 } from "@/lib/crm/filters";
-import {
-  formatMoney,
-  formatRelative,
-  leadPriority,
-  OWNER_LABEL,
-} from "@/lib/crm/priority";
+import { formatMoney, formatRelative, leadPriority } from "@/lib/crm/priority";
 import {
   LIFECYCLE_LABEL,
   VERTICAL_LABEL,
@@ -221,8 +216,7 @@ function LeadsPage() {
                           {l.name}
                         </Link>
                         <p className="text-[11px] text-fg-subtle">
-                          {l.company} ·{" "}
-                          <span className="font-mono">{l.id}</span>
+                          {l.company}
                         </p>
                       </td>
                       <td className="px-3 py-2.5 text-xs text-fg-muted">
@@ -284,8 +278,7 @@ function LeadsPage() {
                             (seq ? "Ready for email" : "—")}
                         </span>
                         <p className="font-mono text-[10px] text-fg-subtle">
-                          {formatRelative(l.lastTouch, DEMO_NOW)} ·{" "}
-                          {OWNER_LABEL[l.ownerId] ?? l.ownerId}
+                          {formatRelative(l.lastTouch, DEMO_NOW)}
                         </p>
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-xs font-semibold tabular">

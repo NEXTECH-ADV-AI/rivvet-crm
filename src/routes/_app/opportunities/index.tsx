@@ -20,8 +20,7 @@ import {
   formatRelative,
   formatDate,
   oppPriority,
-  STAGE_LABEL,
-} from "@/lib/crm/priority";
+  STAGE_LABEL, plain } from "@/lib/crm/priority";
 import type { ListView, Opportunity } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
 
@@ -30,11 +29,6 @@ export const Route = createFileRoute("/_app/opportunities/")({
 });
 
 type LayoutMode = "board" | "list";
-
-function shortId(id: string) {
-  if (id.length <= 12) return id;
-  return id.includes("-") ? id.slice(0, 8) : id.slice(0, 8);
-}
 
 function applyLocalFilters(
   rows: Opportunity[],
@@ -202,8 +196,7 @@ function OppsPage() {
                             {o.name}
                           </Link>
                           <p className="text-[11px] text-fg-subtle">
-                            {o.accountName} ·{" "}
-                            <span className="font-mono">{shortId(o.id)}</span>
+                            {o.accountName}
                           </p>
                         </td>
                         <td className="px-4 py-3">
@@ -219,9 +212,9 @@ function OppsPage() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          {o.lockedSendState ? (
+                          {o.lockedSendState && o.lockedSendState !== "none" ? (
                             <StatusChip
-                              label={o.lockedSendState}
+                              label={plain(o.lockedSendState)}
                               tone={
                                 o.lockedSendState === "signed"
                                   ? "mint"
