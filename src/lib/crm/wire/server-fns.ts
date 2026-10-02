@@ -3,6 +3,7 @@ import { requireCrmSession } from "@/lib/auth/crm-session";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
 import type { LostReason, OppStage } from "../types";
 import { parseCreateOpportunity } from "../opportunity-create";
+import { parseOpportunitySave } from "../opportunity-form";
 
 export const getWireStatusFn = createServerFn({ method: "GET" }).middleware([requireCrmSession]).handler(
   async () => {
@@ -150,13 +151,15 @@ export const logCallFn = createServerFn({ method: "POST" }).middleware([requireC
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Exactly one of gtmLeadId / accountId, each a uuid: these ids go into PostgREST paths. */
-function target(data: { gtmLeadId?: string | null; accountId?: string | null }) {
-  const gtmLeadId = data?.gtmLeadId ? String(data.gtmLeadId) : undefined;
-  const accountId = data?.accountId ? String(data.accountId) : undefined;
-  if (Boolean(gtmLeadId) === Boolean(accountId)) throw new Error("Pick one lead or one account");
-  if (!UUID.test(gtmLeadId ?? accountId ?? "")) throw new Error("Invalid record id");
-  return gtmLeadId ? { gtmLeadId } : { accountId };
+type TargetInput = { gtmLeadId?: string | null; accountId?: string | null; opportunityId?: string | null };
+
+/** Exactly one of gtmLeadId / accountId / opportunityId, a uuid: these ids go into PostgREST paths. */
+function target(data: TargetInput) {
+  const keys = (["gtmLeadId", "accountId", "opportunityId"] as const).filter((k) => data?.[k]);
+  if (keys.length !== 1) throw new Error("Pick one lead, account or opportunity");
+  const id = String(data[keys[0]]);
+  if (!UUID.test(id)) throw new Error("Invalid record id");
+  return { [keys[0]]: id } as { gtmLeadId?: string; accountId?: string; opportunityId?: string };
 }
 
 export const getLeadFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
@@ -167,7 +170,7 @@ export const getLeadFn = createServerFn({ method: "GET" }).middleware([requireCr
   });
 
 export const getRecordActivitiesFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
-  .validator((data: { gtmLeadId?: string; accountId?: string; routeId: string }) => ({
+  .validator((data: TargetInput & { routeId: string }) => ({
     target: target(data),
     routeId: String(data?.routeId ?? "").slice(0, 60),
   }))
@@ -177,14 +180,14 @@ export const getRecordActivitiesFn = createServerFn({ method: "GET" }).middlewar
   });
 
 export const getNextActionFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
-  .validator((data: { gtmLeadId?: string; accountId?: string }) => target(data))
+  .validator((data: TargetInput) => target(data))
   .handler(async ({ data }) => {
     const { getNextActionService } = await import("./record-service.server");
     return getNextActionService(data);
   });
 
 export const setNextActionFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
-  .validator((data: { gtmLeadId?: string; accountId?: string; title: string | null; dueDate: string | null }) => ({
+  .validator((data: TargetInput & { title: string | null; dueDate: string | null }) => ({
     target: target(data),
     title: data.title == null ? null : String(data.title).slice(0, 200),
     dueDate: data.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(data.dueDate) ? data.dueDate : null,
@@ -195,11 +198,30 @@ export const setNextActionFn = createServerFn({ method: "POST" }).middleware([re
   });
 
 export const logTouchFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
-  .validator((data: { gtmLeadId?: string; accountId?: string; type: string; note?: string }) => {
-    if (data?.type !== "call" && data?.type !== "email") throw new Error("Unknown log type");
-    return { target: target(data), type: data.type as "call" | "email", note: String(data.note ?? "").slice(0, 2000) };
+  .validator((data: TargetInput & { type: string; note?: string }) => {
+    if (data?.type !== "call" && data?.type !== "email" && data?.type !== "note") throw new Error("Unknown log type");
+    const note = String(data.note ?? "").trim().slice(0, 2000);
+    if (data.type === "note" && !note) throw new Error("Write the note first");
+    return { target: target(data), type: data.type as "call" | "email" | "note", note };
   })
   .handler(async ({ data, context }) => {
     const { logTouchService } = await import("./record-service.server");
     return logTouchService(data.target, { type: data.type, note: data.note, repEmail: context.crmUser.email });
+  });
+
+export const getOpportunityRecordFn = createServerFn({ method: "GET" }).middleware([requireCrmSession])
+  .validator((data: { opportunityId: string }) => {
+    if (!UUID.test(String(data?.opportunityId))) throw new Error("Invalid opportunity id");
+    return { opportunityId: data.opportunityId };
+  })
+  .handler(async ({ data }) => {
+    const { getOpportunityRecordService } = await import("./record-service.server");
+    return getOpportunityRecordService(data.opportunityId);
+  });
+
+export const saveOpportunityFn = createServerFn({ method: "POST" }).middleware([requireCrmSession])
+  .validator((data: unknown) => parseOpportunitySave(data))
+  .handler(async ({ data }) => {
+    const { saveOpportunityService } = await import("./record-service.server");
+    return saveOpportunityService(data.opportunityId, data.form);
   });

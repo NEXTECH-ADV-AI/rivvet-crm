@@ -1,33 +1,28 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  Lock,
-  MapPin,
-  Save,
-  Send,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, Lock, Save, Send, Sparkles } from "lucide-react";
 import { useCrmStore } from "@/lib/crm/store";
-import { usePatchOpportunityStage } from "@/lib/crm/wire";
+import {
+  useCompleteTask,
+  useLogTouch,
+  usePatchOpportunityStage,
+  useRecordActivities,
+  useSaveOpportunity,
+} from "@/lib/crm/wire";
+import type { OpportunityRecord } from "@/lib/crm/wire/record-service.server";
+import { formChanged, type OpportunityForm } from "@/lib/crm/opportunity-form";
 import { DEMO_NOW } from "@/lib/crm/seed";
-import { activitiesForEntity } from "@/lib/crm/filters";
 import {
   daysSince,
   formatDate,
   formatMoney,
-  formatRelative,
   oppPriority,
   STAGE_LABEL,
   KANBAN_STAGES,
 } from "@/lib/crm/priority";
-import {
-  ALL_VERTICALS,
-  VERTICAL_LABEL,
-} from "@/lib/crm/lead-model";
+import { ALL_VERTICALS, VERTICAL_LABEL } from "@/lib/crm/lead-model";
 import {
   SERVICE_SKUS,
-  FORECAST_OPTIONS,
   FREE_MONTH_OPTIONS,
   PAYMENT_OPTIONS,
   TERM_OPTIONS,
@@ -42,60 +37,39 @@ import {
   COMMERCE_PRODUCT_DESCRIPTION,
   COMMERCE_SETUP_FEE,
   COMMERCE_MONTHLY_RETAINER,
-  PROD_LOST_REASONS,
 } from "@/lib/crm/prod-mirror";
-import type { LostReason } from "@/lib/crm/types";
-import type {
-  ForecastCategory,
-  OppStage,
-  Opportunity,
-  Vertical,
-} from "@/lib/crm/types";
+import type { LostReason, OppStage } from "@/lib/crm/types";
 import { Timeline } from "./timeline";
-import { StatusChip } from "./status-chip";
 import { MissionLineagePanel } from "./mission-lineage-panel";
 import { cn } from "@/components/ui/cn";
 
-export function OppWorkspace({ oppId }: { oppId: string }) {
-  const opportunities = useCrmStore((s) => s.opportunities);
-  const contacts = useCrmStore((s) => s.contacts);
-  const activities = useCrmStore((s) => s.activities);
-  const patchOpp = useCrmStore((s) => s.patchOpp);
+export function OppWorkspace({ record }: { record: OpportunityRecord }) {
+  const storeOpp = useCrmStore((s) => s.opportunities.find((o) => o.id === record.opportunity.id));
   const setDealConfig = useCrmStore((s) => s.setDealConfig);
   const moveOppStage = useCrmStore((s) => s.moveOppStage);
   const dataSource = useCrmStore((s) => s.dataSource);
   const patchStage = usePatchOpportunityStage();
-  const completeActivity = useCrmStore((s) => s.completeActivity);
-  const logTouch = useCrmStore((s) => s.logTouch);
+  const save = useSaveOpportunity(record.opportunity.id);
+  const logTouch = useLogTouch();
+  const completeTask = useCompleteTask();
+  const ref = { opportunityId: record.opportunity.id };
+  const historyQ = useRecordActivities(ref, record.opportunity.id);
 
-  const opp = useMemo(
-    () => opportunities.find((o) => o.id === oppId),
-    [opportunities, oppId],
-  );
-  const contact = useMemo(
-    () =>
-      opp?.primaryContactId
-        ? contacts.find((c) => c.id === opp.primaryContactId)
-        : undefined,
-    [contacts, opp],
-  );
-  const relatedContacts = useMemo(
-    () =>
-      opp
-        ? contacts.filter(
-            (c) =>
-              c.accountId === opp.accountId ||
-              c.id === opp.primaryContactId,
-          )
-        : [],
-    [contacts, opp],
-  );
-  const timeline = useMemo(
-    () => (opp ? activitiesForEntity(activities, "opportunity", opp.id) : []),
-    [activities, opp],
-  );
+  // One explicit Save for every field below; stage saves the moment it changes, like dragging a card.
+  const [form, setForm] = useState<OpportunityForm>(record.form);
+  // Reset only when the stored values change, not on every refetch (a stage move), so edits survive.
+  const storedKey = JSON.stringify(record.form);
+  const [loaded, setLoaded] = useState(storedKey);
+  if (loaded !== storedKey) {
+    setLoaded(storedKey);
+    setForm(record.form);
+  }
+  const dirty = formChanged(form, record.form);
+  const set = <K extends keyof OpportunityForm>(k: K, v: OpportunityForm[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const [note, setNote] = useState("");
 
-  if (!opp) return null;
+  // The order cards below still read the store's draft (they feed the locked send path).
+  const opp = storeOpp ?? record.opportunity;
   const current = opp;
 
   function applyStage(stage: OppStage) {
@@ -112,7 +86,7 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
         ? (normalized as LostReason)
         : "timing";
     }
-    if (dataSource === "live") {
+    if (dataSource === "live" || !storeOpp) {
       patchStage.mutate({
         opportunityId: current.id,
         stage,
@@ -125,11 +99,12 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
 
   const p = oppPriority(opp, DEMO_NOW);
   const priced = priceDeal(opp.deal);
-  const weighted = Math.round(opp.amount * (opp.probability / 100));
   const stageDays = daysSince(opp.stageEnteredAt, DEMO_NOW);
   const open = opp.stage !== "closed_won" && opp.stage !== "closed_lost";
   const pricedFull = priced;
   const serviceSkus = SERVICE_SKUS;
+  const verticals = ALL_VERTICALS.includes(form.vertical as never) || !form.vertical ? ALL_VERTICALS : [...ALL_VERTICALS, form.vertical];
+  const timeline = historyQ.data?.activities ?? [];
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-3">
@@ -143,9 +118,10 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
-              {opp.accountName}
+              {record.form.name}
             </h1>
             <select
+              aria-label="Stage"
               value={opp.stage}
               onChange={(e) => applyStage(e.target.value as OppStage)}
               disabled={patchStage.isPending}
@@ -162,30 +138,30 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
                 Could not save stage — try again
               </span>
             )}
-            <select
-              value={opp.vertical}
-              onChange={(e) =>
-                patchOpp(opp.id, { vertical: e.target.value as Vertical })
-              }
-              className="rounded-full border border-border-soft bg-card px-2.5 py-0.5 text-xs font-medium capitalize text-ink"
-            >
-              {ALL_VERTICALS.map((v) => (
-                <option key={v} value={v}>
-                  {VERTICAL_LABEL[v]}
-                </option>
-              ))}
-            </select>
           </div>
           <p className="mt-1 font-mono text-[11px] text-fg-subtle">
             about {stageDays}d in stage · {opp.source} · {opp.id}
           </p>
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 self-start rounded-full border border-border-soft bg-card px-3 py-1.5 text-xs font-semibold text-ink shadow-soft"
-        >
-          <Save className="size-3.5" /> Save
-        </button>
+        <div className="flex flex-col items-start gap-1 sm:items-end">
+          <button
+            type="button"
+            disabled={!dirty || save.isPending}
+            onClick={() => save.mutate(form, { onSuccess: (r) => setForm(r.record.form) })}
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white shadow-soft enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Save className="size-3.5" /> {save.isPending ? "Saving…" : "Save changes"}
+          </button>
+          <p role="status" className="text-[11px] text-fg-muted">
+            {save.isError
+              ? `Couldn't save: ${save.error instanceof Error ? save.error.message : "try again"}`
+              : dirty
+                ? "Unsaved changes"
+                : save.isSuccess
+                  ? "Saved"
+                  : ""}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -218,176 +194,142 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
       <div className="grid gap-3 xl:grid-cols-12">
         <div className="space-y-3 xl:col-span-3">
           <Card title="Contact">
-            <Field label="Company">
-              <input readOnly value={opp.accountName} className="field" />
-            </Field>
+            {record.hasAccount && (
+              <Field label="Company">
+                <input value={form.company} onChange={(e) => set("company", e.target.value)} className="field" />
+              </Field>
+            )}
             <Field label="Name">
               <input
-                readOnly
-                value={
-                  contact ? `${contact.firstName} ${contact.lastName}` : "—"
-                }
+                value={form.contactName}
+                onChange={(e) => set("contactName", e.target.value)}
+                disabled={!record.hasAccount}
                 className="field"
               />
             </Field>
             <Field label="Email">
               <input
-                readOnly
-                value={contact?.email ?? "—"}
+                type="email"
+                value={form.contactEmail}
+                onChange={(e) => set("contactEmail", e.target.value)}
                 className="field"
               />
             </Field>
             <Field label="Phone">
               <input
-                readOnly
-                value={contact?.phone ?? ""}
-                placeholder="—"
+                type="tel"
+                value={form.contactPhone}
+                onChange={(e) => set("contactPhone", e.target.value)}
+                disabled={!record.hasAccount}
                 className="field"
               />
             </Field>
-            <Field label="Vertical">
-              <select
-                value={opp.vertical}
-                onChange={(e) =>
-                  patchOpp(opp.id, { vertical: e.target.value as Vertical })
-                }
-                className="field"
-              >
-                {ALL_VERTICALS.map((v) => (
-                  <option key={v} value={v}>
-                    {VERTICAL_LABEL[v]}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <p className="mt-2 flex items-center gap-1 text-xs text-fg-muted">
-              <MapPin className="size-3" /> {opp.region || "—"}
-            </p>
-          </Card>
-
-          <Card
-            title="Contacts"
-            right={
-              <span className="font-mono text-[10px]">
-                {relatedContacts.length}
-              </span>
-            }
-          >
-            <ul className="space-y-1.5">
-              {relatedContacts.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-center gap-2 rounded-lg bg-mist/70 px-2.5 py-2"
-                >
-                  <span className="flex size-7 items-center justify-center rounded-full bg-product-mint/20 text-[10px] font-semibold text-product-mint">
-                    {c.firstName[0]}
-                    {c.lastName[0]}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {c.firstName} {c.lastName}
-                    </p>
-                    <p className="truncate text-[11px] text-fg-subtle">
-                      {c.email}
-                    </p>
-                  </div>
-                  {c.isPrimary && <StatusChip label="Primary" tone="cyan" />}
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <Card title="Engagement">
-            <div className="grid grid-cols-3 gap-1.5">
-              <Eng label="Opened" value={opp.engagement.opened} />
-              <Eng label="Replied" value={opp.engagement.replied} active />
-              <Eng label="Calls" value={opp.engagement.calls} active />
-            </div>
-            <p className="mt-2 text-[11px] text-fg-subtle">
-              Status: {STAGE_LABEL[opp.stage]}
-            </p>
-          </Card>
-        </div>
-
-        <div className="space-y-3 xl:col-span-5">
-          <Card title="Forecast & pipeline">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Field label="Forecast category">
-                <select
-                  value={opp.forecastCategory}
-                  onChange={(e) =>
-                    patchOpp(opp.id, {
-                      forecastCategory: e.target.value as ForecastCategory,
-                    })
-                  }
-                  className="field"
-                >
-                  {FORECAST_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
+            {record.hasAccount && (
+              <Field label="Vertical">
+                <select value={form.vertical} onChange={(e) => set("vertical", e.target.value)} className="field">
+                  <option value="">Not set</option>
+                  {verticals.map((v) => (
+                    <option key={v} value={v}>
+                      {VERTICAL_LABEL[v as keyof typeof VERTICAL_LABEL] ?? v}
                     </option>
                   ))}
                 </select>
               </Field>
+            )}
+          </Card>
+        </div>
+
+        <div className="space-y-3 xl:col-span-5">
+          <Card title="Opportunity">
+            <Field label="Name">
+              <input value={form.name} onChange={(e) => set("name", e.target.value)} className="field" />
+            </Field>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <Field label="Amount ($)">
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={form.amount ?? ""}
+                  onChange={(e) => set("amount", e.target.value === "" ? null : Number(e.target.value))}
+                  placeholder="Not set"
+                  className="field font-mono"
+                />
+              </Field>
               <Field label="Expected close">
                 <input
                   type="date"
-                  value={opp.closeDate || ""}
-                  onChange={(e) =>
-                    patchOpp(opp.id, { closeDate: e.target.value })
-                  }
+                  value={form.closeDate ?? ""}
+                  onChange={(e) => set("closeDate", e.target.value || null)}
                   className="field font-mono"
                 />
               </Field>
             </div>
-            <Field label="Next step" className="mt-2">
-              <input
-                value={opp.nextAction ?? ""}
-                onChange={(e) =>
-                  patchOpp(opp.id, {
-                    nextAction: e.target.value || null,
-                  })
-                }
-                placeholder="e.g. Follow up Tuesday with pricing"
-                className="field"
-              />
-            </Field>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <Field label="Probability">
+            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+              <Field label="Next step">
                 <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={opp.probability}
-                  onChange={(e) =>
-                    patchOpp(opp.id, {
-                      probability: Number(e.target.value) || 0,
-                    })
-                  }
-                  className="field font-mono"
+                  value={form.nextStep}
+                  onChange={(e) => set("nextStep", e.target.value)}
+                  placeholder="e.g. Follow up Tuesday with pricing"
+                  className="field"
                 />
               </Field>
-              <Field label="Weighted">
-                <div className="field font-mono text-fg-muted">
-                  {formatMoney(weighted)}
-                </div>
-              </Field>
-              <Field label="Category">
-                <div className="field capitalize text-fg-muted">
-                  {opp.forecastCategory.replace("_", " ")}
-                </div>
+              <Field label="Due">
+                <input
+                  type="date"
+                  value={form.nextStepDue ?? ""}
+                  onChange={(e) => set("nextStepDue", e.target.value || null)}
+                  className="field font-mono"
+                />
               </Field>
             </div>
           </Card>
 
           <Card title="Notes">
             <textarea
-              value={opp.notes}
-              onChange={(e) => patchOpp(opp.id, { notes: e.target.value })}
-              rows={5}
-              placeholder="Discovery notes, follow-ups, objections, decision process…"
-              className="field min-h-[120px] resize-y"
+              aria-label="New note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              placeholder="Discovery notes, objections, who decides…"
+              className="field min-h-[80px] resize-y"
             />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={!note.trim() || logTouch.isPending}
+                onClick={() => logTouch.mutate({ ...ref, type: "note", note }, { onSuccess: () => setNote("") })}
+                className="rounded-md bg-ink px-3 py-1.5 text-[11px] font-semibold text-white enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Add note
+              </button>
+              <button
+                type="button"
+                disabled={logTouch.isPending}
+                onClick={() => logTouch.mutate({ ...ref, type: "call", note }, { onSuccess: () => setNote("") })}
+                className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
+              >
+                Log a call
+              </button>
+              <button
+                type="button"
+                disabled={logTouch.isPending}
+                onClick={() => logTouch.mutate({ ...ref, type: "email", note }, { onSuccess: () => setNote("") })}
+                className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
+              >
+                Log an email I sent
+              </button>
+            </div>
+            {logTouch.isError && (
+              <p role="alert" className="mt-2 text-xs text-danger">
+                Couldn't save that. Try again.
+              </p>
+            )}
+          </Card>
+
+          <Card title="Activity">
+            {historyQ.isError && <p className="mb-2 text-xs text-danger">Couldn't load the history. Refresh to try again.</p>}
+            <Timeline items={timeline} onComplete={(id) => completeTask.mutate(id)} />
           </Card>
 
           <Card title="Details">
@@ -397,36 +339,6 @@ export function OppWorkspace({ oppId }: { oppId: string }) {
             <Meta
               k="Priority chip"
               v={`${p.priority} · score ${opp.scorePriority}`}
-            />
-          </Card>
-
-          <Card title="Calls">
-            <p className="text-xs leading-relaxed text-fg-muted">
-              No cold_call_result rows for this lead yet. Calls flow in from the
-              ElevenLabs Call Sync workflow (15min cron) — mirror only in
-              sandbox.
-            </p>
-            <button
-              type="button"
-              onClick={() =>
-                logTouch(
-                  "opportunity",
-                  opp.id,
-                  opp.name,
-                  "call",
-                  `Call logged — ${opp.accountName}`,
-                )
-              }
-              className="mt-2 rounded-md border border-border-soft px-2.5 py-1.5 text-[11px] font-semibold hover:bg-mist"
-            >
-              Log call (local)
-            </button>
-          </Card>
-
-          <Card title="Activity">
-            <Timeline
-              items={timeline.slice(0, 8)}
-              onComplete={completeActivity}
             />
           </Card>
 
@@ -944,34 +856,6 @@ function Kpi({
         )}
       >
         {value}
-      </p>
-    </div>
-  );
-}
-
-function Eng({
-  label,
-  value,
-  active,
-}: {
-  label: string;
-  value: number | null;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border px-2 py-2 text-center",
-        active
-          ? "border-signal-cyan/30 bg-agent-soft"
-          : "border-border-soft bg-mist/50",
-      )}
-    >
-      <p className="text-[9px] font-semibold uppercase tracking-wider text-fg-subtle">
-        {label}
-      </p>
-      <p className="font-mono text-sm font-semibold tabular">
-        {value == null ? "—" : value}
       </p>
     </div>
   );
