@@ -42,7 +42,6 @@ export function MissionLineagePanel({
         <div className="space-y-4">
           {showTrial && <TrialRow trial={q.data.trial} />}
           <MissionsRow missions={q.data.missions} />
-          <ActivitiesRow activities={q.data.activities} />
         </div>
       )}
     </MetaPanel>
@@ -69,7 +68,7 @@ function TrialRow({
           )}
         </div>
       ) : (
-        <p className="text-[11px] text-fg-subtle">Unavailable — {trial.reason}</p>
+        <p className="text-[11px] text-fg-subtle">Not set up yet.</p>
       )}
     </div>
   );
@@ -85,10 +84,10 @@ function MissionsRow({
   return (
     <div>
       <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
-        GTM missions
+        Campaign touches
       </h3>
       {missions.status !== "ok" ? (
-        <p className="text-[11px] text-fg-subtle">Unavailable — {missions.reason}</p>
+        <p className="text-[11px] text-fg-subtle">Not available yet.</p>
       ) : missions.chips.length === 0 ? (
         <p className="text-[11px] text-fg-subtle">No mission touches attributed.</p>
       ) : (
@@ -110,63 +109,3 @@ function MissionsRow({
   );
 }
 
-function ActivitiesRow({
-  activities,
-}: {
-  activities:
-    | {
-        status: "ok";
-        items: {
-          id: string;
-          sourceSystem: string;
-          sourceRef: string;
-          correlationId: string | null;
-          subject: string;
-          occurredAt: string;
-        }[];
-        duplicates: { sourceSystem: string; sourceRef: string; count: number }[];
-      }
-    | { status: "unavailable"; reason: string };
-}) {
-  return (
-    <div>
-      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
-        Canonical activity timeline
-      </h3>
-      {activities.status !== "ok" ? (
-        <p className="text-[11px] text-fg-subtle">Unavailable — {activities.reason}</p>
-      ) : (
-        <>
-          {activities.duplicates.length > 0 && (
-            <p className="mb-2 rounded-md border border-warn/30 bg-warn/10 px-2 py-1 text-[10px] text-warn">
-              Data quality: {activities.duplicates.length} duplicate source_ref
-              {activities.duplicates.length === 1 ? "" : "s"} detected —{" "}
-              {activities.duplicates
-                .map((d) => `${d.sourceSystem}:${d.sourceRef} (${d.count}x)`)
-                .join(", ")}
-            </p>
-          )}
-          {activities.items.length === 0 ? (
-            <p className="text-[11px] text-fg-subtle">No canonical activity yet.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {activities.items.slice(0, 20).map((a) => (
-                <li
-                  key={`${a.sourceSystem}-${a.sourceRef}`}
-                  className="rounded-md border border-border-soft bg-mist/50 px-2.5 py-1.5"
-                >
-                  <p className="text-xs font-medium text-ink">{a.subject}</p>
-                  <p className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[10px] text-fg-subtle">
-                    <span>{a.sourceSystem}:{a.sourceRef}</span>
-                    <span>{a.occurredAt ? a.occurredAt.slice(0, 19) : "—"}</span>
-                    <span>corr:{a.correlationId ?? "—"}</span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-    </div>
-  );
-}

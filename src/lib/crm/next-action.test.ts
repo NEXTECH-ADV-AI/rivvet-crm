@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { leadIdRange, nextActionWrite } from "./next-action";
+import { attachNextSteps, leadIdRange, nextActionWrite } from "./next-action";
 
 const open = { taskId: "t1", title: "Call back Tuesday", dueDate: "2026-10-06" };
 
@@ -31,4 +31,17 @@ test("a lead link maps to exactly its uuid prefix range, junk maps to nothing", 
   ]);
   assert.equal(leadIdRange("L-1042"), null);
   assert.equal(leadIdRange("L-2f1dfb20&or=(x)"), null);
+});
+
+test("each opportunity shows its newest open next step; others keep none", () => {
+  const opps = [
+    { id: "o1", nextAction: null, nextActionDue: null },
+    { id: "o2", nextAction: null, nextActionDue: null },
+  ];
+  const out = attachNextSteps(opps, [
+    { opportunity_id: "o1", title: "Send quote", due_at: "2026-10-06T12:00:00+00:00" },
+    { opportunity_id: "o1", title: "Older step", due_at: null },
+  ]);
+  assert.deepEqual(out[0], { id: "o1", nextAction: "Send quote", nextActionDue: "2026-10-06" });
+  assert.deepEqual(out[1], opps[1]);
 });

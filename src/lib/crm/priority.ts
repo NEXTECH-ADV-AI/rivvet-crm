@@ -276,3 +276,38 @@ export const OPEN_STAGES = PROD_OPP_STAGES.filter((s) => s.isOpen).map(
 ) as OppStage[];
 
 export const KANBAN_STAGES: OppStage[] = PROD_OPP_STAGES.map((s) => s.value);
+
+/** A machine value read as words ("closed_won" -> "closed won") for anything without a label below. */
+export const plain = (v: string) => v.replace(/_/g, " ");
+
+/** Where a lead or account came from, in words a rep knows (RIV-1558). */
+export const SOURCE_LABEL: Record<string, string> = {
+  florida_dbpr: "Florida license list",
+  texas_tdlr_ac: "Texas license list",
+  texas_tsbpe_m: "Texas license list",
+  texas_tsbpe_j: "Texas license list",
+  apify_google_maps: "Google Maps",
+  origami_discovery: "Research list",
+  dopl_cbr_import: "License list",
+  inbound_cold: "Replied to outreach",
+  inbound_website: "Website",
+  manual_opportunity: "Added by hand",
+  founder_manual_target: "Added by hand",
+  demo_funnel: "Demo request",
+  lead: "From a lead",
+};
+
+export const ENRICH_LABEL: Record<string, string> = {
+  none: "Not yet",
+  partial: "Partly found",
+  complete: "Found",
+  failed: "Couldn't find",
+};
+
+export const EMAIL_LABEL: Record<string, string> = {
+  valid: "Valid",
+  invalid: "Bounces",
+  pending: "Checking",
+  risky: "Might bounce",
+  unknown: "Unknown",
+};

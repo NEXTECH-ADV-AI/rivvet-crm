@@ -205,7 +205,7 @@ export async function getOpportunityRecordService(opportunityId: string): Promis
   const [contact, next] = await Promise.all([findContact(row), openNextAction({ opportunityId })]);
   return {
     record: {
-      opportunity: mapOpportunityRow(row),
+      opportunity: { ...mapOpportunityRow(row), nextAction: next?.title ?? null, nextActionDue: next?.dueDate ?? null },
       hasAccount: Boolean(row.account_id),
       isTest: row.is_test === true,
       form: {

@@ -14,9 +14,10 @@ import {
   type ProdOppRow,
 } from "./opportunity-map";
 import { parseTotal } from "./supabase-rest.server";
+import { attachNextSteps } from "../next-action";
 
 const LIST_SELECT =
-  "opportunity_id,source_gtm_lead_id,legacy_deal_id,account_id,primary_contact_id,contact_email,opportunity_name,stage,amount,expected_close_date,assigned_rep_email,sent_by_email,created_at,updated_at,is_test,test_reason,accounts(name)";
+  "opportunity_id,source_gtm_lead_id,legacy_deal_id,account_id,primary_contact_id,contact_email,opportunity_name,stage,amount,expected_close_date,assigned_rep_email,sent_by_email,source,created_at,updated_at,is_test,test_reason,accounts(name)";
 
 export type ListOppsInput = {
   view?: string;
@@ -114,7 +115,7 @@ export async function listOpportunitiesService(
     const cleaned = input.includeTest
       ? raw
       : raw.filter((r) => !isPipelineJunk(r));
-    const mapped = cleaned.map(mapOpportunityRow);
+    const mapped = await withNextSteps(cleaned.map(mapOpportunityRow), url, key);
     const total = mapped.length;
     return {
       source: "live",
@@ -135,6 +136,22 @@ export async function listOpportunitiesService(
       offset,
       message: `LIVE failed (${msg}) — mock pipeline.`,
     };
+  }
+}
+
+/** An opportunity's next step is its open crm_next_action task (RIV-1558); cards, Home and the
+ *  priority rules read it from here. One query for the whole page of opportunities. */
+async function withNextSteps(opps: Opportunity[], url: string, key: string): Promise<Opportunity[]> {
+  if (!opps.length) return opps;
+  // Ids come from crm_opportunities rows, never from the client. A failed lookup keeps the real pipeline.
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/crm_tasks?select=opportunity_id,title,due_at&source=eq.crm_next_action&status=eq.open&is_test=is.false&opportunity_id=in.(${opps.map((o) => o.id).join(",")})&order=created_at.desc`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" } },
+    );
+    return res.ok ? attachNextSteps(opps, await res.json()) : opps;
+  } catch {
+    return opps;
   }
 }
 

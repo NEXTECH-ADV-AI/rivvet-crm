@@ -1,15 +1,16 @@
 import { Search, X } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { PRIORITY_LABEL } from "./priority-badge";
 import type { Priority } from "@/lib/crm/types";
 
 export type PriorityFilter = Priority | "all";
 export type OwnerFilter = "all" | "usr_you" | "usr_maya" | "usr_jordan";
 
 const PRIORITIES: { id: PriorityFilter; label: string }[] = [
-  { id: "all", label: "All P" },
-  { id: "P1", label: "P1" },
-  { id: "P2", label: "P2" },
-  { id: "P3", label: "P3" },
+  { id: "all", label: "All" },
+  { id: "P1", label: PRIORITY_LABEL.P1 },
+  { id: "P2", label: PRIORITY_LABEL.P2 },
+  { id: "P3", label: PRIORITY_LABEL.P3 },
 ];
 
 const OWNERS: { id: OwnerFilter; label: string }[] = [
@@ -76,7 +77,7 @@ export function FilterBar({
               type="button"
               onClick={() => onPriority(p.id)}
               className={cn(
-                "rounded px-2 py-1 font-mono text-[11px] font-semibold transition-colors",
+                "rounded px-2 py-1 text-[11px] font-semibold transition-colors",
                 priority === p.id
                   ? p.id === "P1"
                     ? "bg-p1 text-white"

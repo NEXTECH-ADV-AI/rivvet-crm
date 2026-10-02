@@ -40,8 +40,17 @@ import {
 } from "@/lib/crm/prod-mirror";
 import type { LostReason, OppStage } from "@/lib/crm/types";
 import { Timeline } from "./timeline";
-import { MissionLineagePanel } from "./mission-lineage-panel";
+import { PriorityBadge, PRIORITY_HINT } from "./priority-badge";
 import { cn } from "@/components/ui/cn";
+
+/** Where an opportunity came from, in plain words. */
+const SOURCE_LABEL: Record<string, string> = {
+  legacy_gtm_leads: "From a lead",
+  manual: "Added by hand",
+  website: "From the website",
+  legacy_deal: "From the earlier pipeline",
+  crm_opportunities: "Added in the CRM",
+};
 
 export function OppWorkspace({ record }: { record: OpportunityRecord }) {
   const storeOpp = useCrmStore((s) => s.opportunities.find((o) => o.id === record.opportunity.id));
@@ -100,7 +109,6 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
   const p = oppPriority(opp, DEMO_NOW);
   const priced = priceDeal(opp.deal);
   const stageDays = daysSince(opp.stageEnteredAt, DEMO_NOW);
-  const open = opp.stage !== "closed_won" && opp.stage !== "closed_lost";
   const pricedFull = priced;
   const serviceSkus = SERVICE_SKUS;
   const verticals = ALL_VERTICALS.includes(form.vertical as never) || !form.vertical ? ALL_VERTICALS : [...ALL_VERTICALS, form.vertical];
@@ -114,7 +122,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             to="/opportunities"
             className="mb-1 inline-flex items-center gap-1 text-xs text-fg-muted hover:text-ink"
           >
-            <ArrowLeft className="size-3.5" /> Pipeline
+            <ArrowLeft className="size-3.5" /> Opportunities
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
@@ -139,8 +147,8 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               </span>
             )}
           </div>
-          <p className="mt-1 font-mono text-[11px] text-fg-subtle">
-            about {stageDays}d in stage · {opp.source} · {opp.id}
+          <p className="mt-1 text-[11px] text-fg-muted">
+            {stageDays === 0 ? "Moved to this stage today" : `In this stage ${stageDays} day${stageDays === 1 ? "" : "s"}`} · Created {formatDate(opp.createdAt)} · {SOURCE_LABEL[opp.source] ?? "Added in the CRM"}
           </p>
         </div>
         <div className="flex flex-col items-start gap-1 sm:items-end">
@@ -164,34 +172,18 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Kpi
-          label="MRR"
-          value={formatMoney(
-            opp.monthlyAmount ?? priced.monthly ?? 0,
-          )}
-        />
-        <Kpi
-          label="TCV"
-          value={formatMoney(opp.amount || priced.tcv || 0)}
-        />
-        <Kpi
-          label="Weighted"
-          value={formatMoney(
-            Math.round(
-              (opp.amount || priced.tcv || 0) * (opp.probability / 100),
-            ),
-          )}
-        />
-        <Kpi label="Win prob" value={`${opp.probability}%`} />
-        <Kpi
-          label="Priority"
-          value={String(opp.scorePriority)}
-          accent={p.priority === "P1"}
-        />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Kpi label="Amount" value={formatMoney(record.form.amount ?? 0)} />
+        <Kpi label="Expected close" value={record.form.closeDate ? formatDate(record.form.closeDate) : "Not set"} />
+        <Kpi label="Next step due" value={record.form.nextStepDue ? formatDate(record.form.nextStepDue) : "Not set"} />
+        <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5 shadow-soft">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">Priority</p>
+          <PriorityBadge priority={p.priority} className="mt-1.5" />
+          <p className="mt-1 text-[11px] text-fg-muted">{p.reasons[0] ?? PRIORITY_HINT[p.priority]}</p>
+        </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <div className="space-y-3 xl:col-span-3">
           <Card title="Contact">
             {record.hasAccount && (
@@ -332,20 +324,6 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             <Timeline items={timeline} onComplete={(id) => completeTask.mutate(id)} />
           </Card>
 
-          <Card title="Details">
-            <Meta k="Source" v={opp.source} />
-            <Meta k="Status" v={STAGE_LABEL[opp.stage]} />
-            <Meta k="Created" v={formatDate(opp.createdAt)} />
-            <Meta
-              k="Priority chip"
-              v={`${p.priority} · score ${opp.scorePriority}`}
-            />
-          </Card>
-
-          <MissionLineagePanel
-            accountId={opp.accountId}
-            gtmLeadId={opp.gtmLeadId}
-          />
         </div>
 
         <div className="space-y-3 xl:col-span-4">
@@ -353,15 +331,15 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             title={
               <span className="inline-flex items-center gap-1.5">
                 <Sparkles className="size-3.5 text-signal-cyan" />
-                Deal builder
+                Order builder
               </span>
             }
           >
             <div className="mb-3 flex gap-1 rounded-lg bg-mist p-0.5">
               {(
                 [
-                  ["commerce", "Commerce Order", "Launch Partner contract"],
-                  ["rivvet_ai", "Rivvet AI Order", "Rivvet AI deals"],
+                  ["commerce", "Commerce order", "Launch Partner agreement"],
+                  ["rivvet_ai", "Rivvet AI order", "Rivvet AI plans"],
                 ] as const
               ).map(([id, label, sub]) => (
                 <button
@@ -748,28 +726,15 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               </ul>
             ) : (
               <p className="text-xs text-fg-muted">
-                Select a Rivvet AI plan or configure Commerce to price the deal.
+                Pick a Rivvet AI plan or set up the Commerce order to see the price.
               </p>
             )}
           </Card>
 
-          <div className="rounded-xl border border-product-mint/25 bg-product-mint/10 px-3 py-2.5 text-xs text-ink">
-            <span className="font-semibold text-product-mint">
-              Send authorized
-            </span>
-            <span className="text-fg-muted">
-              {" "}
-              · Mirror only — PandaDoc/Stripe locked (prod: sendContract +
-              crm_create_contract_draft).
-            </span>
-          </div>
-
-          {open && (
-            <div className="rounded-xl border border-warn/25 bg-warn/5 px-3 py-2 text-[11px] text-fg-muted">
-              <Lock className="mr-1 inline size-3 text-warn" />
-              PandaDoc / Stripe send path is locked in sandbox — UI only.
-            </div>
-          )}
+          <p className="rounded-xl border border-border-soft bg-mist/60 px-3 py-2.5 text-xs text-fg-muted">
+            <Lock className="mr-1 inline size-3" />
+            The order above is a draft on this screen and isn't saved. Contracts go out from the send page.
+          </p>
 
           <button
             type="button"
@@ -786,7 +751,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             params={{ oppId: opp.id }}
             className="block text-center text-[11px] font-medium text-product-mint hover:underline"
           >
-            Open locked send shell →
+            Open the send page →
           </Link>
         </div>
       </div>
@@ -857,15 +822,6 @@ function Kpi({
       >
         {value}
       </p>
-    </div>
-  );
-}
-
-function Meta({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-3 border-b border-border-soft/70 py-1.5 text-sm last:border-0">
-      <span className="text-fg-muted">{k}</span>
-      <span className="text-right font-mono text-xs text-ink">{v}</span>
     </div>
   );
 }

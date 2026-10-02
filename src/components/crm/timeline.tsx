@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { Activity } from "@/lib/crm/types";
 import { DEMO_NOW } from "@/lib/crm/seed";
-import { formatRelative, OWNER_LABEL } from "@/lib/crm/priority";
+import { formatRelative, formatDate } from "@/lib/crm/priority";
 import { StatusChip } from "./status-chip";
 import { cn } from "@/components/ui/cn";
 
@@ -66,7 +66,6 @@ export function Timeline({
             <div className="min-w-0 flex-1 rounded-lg border border-border-soft bg-card-soft/50 px-3 py-2">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusChip label={a.type.replace("_", " ")} tone="neutral" />
-                <span className="font-mono text-[10px] text-fg-subtle">{a.id}</span>
                 {open && <StatusChip label="Open" tone="warn" />}
               </div>
               <p className="mt-1 text-sm font-medium text-ink">{a.subject}</p>
@@ -74,15 +73,13 @@ export function Timeline({
                 <p className="mt-0.5 text-xs text-fg-muted line-clamp-2">{a.body}</p>
               )}
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-fg-subtle">
-                <span>{OWNER_LABEL[a.ownerId] ?? a.ownerId}</span>
-                <span>·</span>
                 <span className="font-mono tabular">
                   {formatRelative(a.createdAt, DEMO_NOW)}
                 </span>
                 {a.dueAt && !a.completedAt && (
                   <>
                     <span>·</span>
-                    <span className="font-mono text-warn">Due {a.dueAt}</span>
+                    <span className="text-warn">Due {formatDate(a.dueAt)}</span>
                   </>
                 )}
               </div>

@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { PRIORITY_LABEL } from "./priority-badge";
 import type { LeadFilterState } from "@/lib/crm/filters";
 import {
   ALL_VERTICALS,
@@ -176,7 +177,7 @@ export function LeadFilters({
               type="button"
               onClick={() => set("priority", p)}
               className={cn(
-                "rounded px-2 py-1 font-mono text-[11px] font-semibold",
+                "rounded px-2 py-1 text-[11px] font-semibold",
                 value.priority === p
                   ? p === "P1"
                     ? "bg-p1 text-white"
@@ -186,7 +187,7 @@ export function LeadFilters({
                   : "text-fg-muted",
               )}
             >
-              {p === "all" ? "All P" : p}
+              {p === "all" ? "All" : PRIORITY_LABEL[p]}
             </button>
           ))}
         </div>
