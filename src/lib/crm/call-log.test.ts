@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { callLeadPatch, isCallOutcome } from "./call-log";
+import { callLeadPatch, isCallOutcome, queueLineTypeFilters } from "./call-log";
 
 const base = { priorHumanAttempts: 0, repEmail: "will@rivvetai.com", nowIso: "2026-10-01T16:00:00Z" };
 
@@ -27,4 +27,16 @@ test("only a call-back keeps a return date; do-not-call sets the DNC flag", () =
 test("only known outcomes are accepted", () => {
   assert.equal(isCallOutcome("voicemail"), true);
   assert.equal(isCallOutcome("drop table"), false);
+});
+
+test("the call queue holds back a number either source calls a cell or VoIP line, and keeps the rest", () => {
+  const groups = queueLineTypeFilters();
+  const held = (col: string) => {
+    const g = groups.find((x) => x.startsWith(`(${col}.is.null,`));
+    assert.ok(g, `${col} is checked, and its unchecked rows stay`);
+    return new RegExp(`${col.replace(/[>-]/g, "\\$&")}\\.not\\.in\\.\\(([^)]*)\\)`).exec(g)![1].split(",").sort();
+  };
+  assert.deepEqual(held("phone_type"), ["mobile", "voip"]);
+  assert.deepEqual(held("enrichment_data->>phone_line_type"), ["fixedVoip", "mobile", "nonFixedVoip"]);
+  assert.ok(!groups.join().includes("landline"));
 });
