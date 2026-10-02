@@ -8,7 +8,6 @@
  */
 
 import { seedLeads, leadBookSnapshot } from "../seed";
-import { queueLineTypeFilters } from "../call-log";
 import type { Lead, LeadBookSnapshot, ListView, Vertical } from "../types";
 import {
   DEFAULT_PAGE_LIMIT,
@@ -150,7 +149,6 @@ export async function listLeadsService(
     params.set("marketing_paused", "not.is.true");
     params.set("demo_booked_at", "is.null");
     orGroups.push(`(human_call_attempts.eq.0,next_callback_at.lte.${new Date().toISOString()})`);
-    orGroups.push(...queueLineTypeFilters());
     // Never-called first (the old AI dialer rang some of these in the spring).
     params.set("order", "call_attempts.asc.nullsfirst,updated_at.desc");
   }
