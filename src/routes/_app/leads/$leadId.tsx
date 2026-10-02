@@ -163,7 +163,7 @@ function LeadDetail() {
         </MetaPanel>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-2">
           {lead.gtmLeadId && (
             <MetaPanel title="Next step">

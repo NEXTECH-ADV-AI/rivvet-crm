@@ -183,7 +183,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <div className="space-y-3 xl:col-span-3">
           <Card title="Contact">
             {record.hasAccount && (

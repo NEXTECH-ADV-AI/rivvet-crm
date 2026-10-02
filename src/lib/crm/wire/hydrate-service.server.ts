@@ -42,6 +42,7 @@ async function fetchActivitiesLive(): Promise<Activity[]> {
     if (!res.ok) throw new Error(`${path.split("?")[0]} ${res.status}`);
     return (await res.json()) as Record<string, unknown>[];
   };
+  // Only touches tied to a business: internal system rows have neither id (RIV-1558).
   // Both, not the first non-empty one: tasks were never shown while the
   // touches table had rows.
   const [tasks, touches] = await Promise.all([
@@ -49,7 +50,7 @@ async function fetchActivitiesLive(): Promise<Activity[]> {
       `/crm_tasks?select=*,accounts(name),gtm_leads(business_name),crm_opportunities(opportunity_name)&status=eq.open&is_test=is.false&order=due_at.asc.nullslast&limit=80`,
     ),
     get(
-      `/activities?select=activity_id,account_id,gtm_lead_id,type,direction,subject,summary,occurred_at,created_at,accounts(name)&order=occurred_at.desc&limit=80`,
+      `/activities?select=activity_id,account_id,gtm_lead_id,type,direction,subject,summary,occurred_at,created_at,accounts(name)&or=(account_id.not.is.null,gtm_lead_id.not.is.null)&order=occurred_at.desc&limit=80`,
     ),
   ]);
   return [...tasks.map(mapTaskRow), ...touches.map(mapTouchRow)];

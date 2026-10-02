@@ -28,6 +28,7 @@ export const Route = createRootRoute({
         : []),
     ],
     links: [
+      { rel: "icon", type: "image/png", href: "/brand/rivvet-icon.png" },
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",

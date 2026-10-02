@@ -144,7 +144,7 @@ export function LeadBookFunnel({
         </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
         <div className="crm-surface p-3 lg:col-span-5">
           <h2 className="mb-2 text-sm font-semibold text-ink">
             Leads by trade

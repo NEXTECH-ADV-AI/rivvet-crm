@@ -92,7 +92,7 @@ function AnalyticsPage() {
         <MiniStat label="Accounts at risk" value={kpis.atRisk} warn />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
         <Panel title="Pipeline by stage" subtitle="Open amount">
           <div className="h-56">
