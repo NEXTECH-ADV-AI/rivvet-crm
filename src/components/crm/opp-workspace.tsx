@@ -57,9 +57,11 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
 
   // One explicit Save for every field below; stage saves the moment it changes, like dragging a card.
   const [form, setForm] = useState<OpportunityForm>(record.form);
-  const [loaded, setLoaded] = useState(record.form);
-  if (loaded !== record.form) {
-    setLoaded(record.form);
+  // Reset only when the stored values change, not on every refetch (a stage move), so edits survive.
+  const storedKey = JSON.stringify(record.form);
+  const [loaded, setLoaded] = useState(storedKey);
+  if (loaded !== storedKey) {
+    setLoaded(storedKey);
     setForm(record.form);
   }
   const dirty = formChanged(form, record.form);
@@ -145,7 +147,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
           <button
             type="button"
             disabled={!dirty || save.isPending}
-            onClick={() => save.mutate(form)}
+            onClick={() => save.mutate(form, { onSuccess: (r) => setForm(r.record.form) })}
             className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white shadow-soft enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Save className="size-3.5" /> {save.isPending ? "Saving…" : "Save changes"}
@@ -304,7 +306,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               <button
                 type="button"
                 disabled={logTouch.isPending}
-                onClick={() => logTouch.mutate({ ...ref, type: "call", note })}
+                onClick={() => logTouch.mutate({ ...ref, type: "call", note }, { onSuccess: () => setNote("") })}
                 className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
               >
                 Log a call
@@ -312,7 +314,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               <button
                 type="button"
                 disabled={logTouch.isPending}
-                onClick={() => logTouch.mutate({ ...ref, type: "email", note })}
+                onClick={() => logTouch.mutate({ ...ref, type: "email", note }, { onSuccess: () => setNote("") })}
                 className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
               >
                 Log an email I sent

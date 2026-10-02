@@ -42,7 +42,13 @@ test("bad input is refused before it reaches the database", () => {
   bad({ amount: "ten" }, /dollar figure/);
   bad({ closeDate: "2026-13-45" }, /real date/);
   bad({ contactEmail: "pat@" }, /email/);
-  bad({ contactPhone: "call me" }, /phone/);
+  bad({ contactPhone: "555;0100" }, /phone/);
+});
+
+test("legacy contact values loaded from the database still save", () => {
+  const { form } = parseOpportunitySave({ opportunityId: id, form: { ...base, contactPhone: "555-123-4567 ext 5", contactEmail: "pat@localhost" } });
+  assert.equal(form.contactPhone, "555-123-4567 ext 5");
+  assert.equal(form.contactEmail, "pat@localhost");
 });
 
 test("the contact edited is the opportunity's, then the account's primary, then its first", () => {

@@ -15,8 +15,10 @@ export type OpportunityForm = {
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EMAIL = /^[^\s@",()]+@[^\s@",()]+\.[^\s@",()]+$/;
-const PHONE = /^[0-9+().\-\s]{0,40}$/;
+// Loose on purpose: stored contacts are sent back on every save, so legacy values must still pass.
+// Both only ever go into a JSON body, never a PostgREST filter.
+const EMAIL = /^[^\s@]+@[^\s@]+$/;
+const PHONE = /^[0-9a-zA-Z+().#\-\s]{0,40}$/;
 
 const text = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
@@ -58,7 +60,7 @@ export function parseOpportunitySave(data: unknown): { opportunityId: string; fo
       closeDate: day(f.closeDate, "Expected close"),
       company: text(f.company, 200),
       vertical: text(f.vertical, 60),
-      contactName: text(f.contactName, 120),
+      contactName: text(f.contactName, 200),
       contactEmail,
       contactPhone,
       nextStep: text(f.nextStep, 200),

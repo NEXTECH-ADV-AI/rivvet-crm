@@ -258,6 +258,8 @@ function useRecordWrite<V>(fn: (vars: V) => Promise<unknown>) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["crm", "next-action"] });
       void qc.invalidateQueries({ queryKey: ["crm", "record-activities"] });
+      // The opportunity form holds the next step too; a stale copy would re-create a completed one on Save.
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunity-record"] });
       void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
     },
   });
