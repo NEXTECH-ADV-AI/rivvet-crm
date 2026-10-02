@@ -142,11 +142,17 @@ export async function listOpportunitiesService(
 /** An opportunity's next step is its open crm_next_action task (RIV-1558); cards, Home and the
  *  priority rules read it from here. One query for the whole page of opportunities. */
 async function withNextSteps(opps: Opportunity[], url: string, key: string): Promise<Opportunity[]> {
-  const res = await fetch(
-    `${url}/rest/v1/crm_tasks?select=opportunity_id,title,due_at&source=eq.crm_next_action&status=eq.open&opportunity_id=not.is.null&order=created_at.desc&limit=500`,
-    { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" } },
-  );
-  return res.ok ? attachNextSteps(opps, await res.json()) : opps;
+  if (!opps.length) return opps;
+  // Ids come from crm_opportunities rows, never from the client. A failed lookup keeps the real pipeline.
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/crm_tasks?select=opportunity_id,title,due_at&source=eq.crm_next_action&status=eq.open&is_test=is.false&opportunity_id=in.(${opps.map((o) => o.id).join(",")})&order=created_at.desc`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" } },
+    );
+    return res.ok ? attachNextSteps(opps, await res.json()) : opps;
+  } catch {
+    return opps;
+  }
 }
 
 export async function getOpportunityService(
