@@ -5,7 +5,8 @@ const KNOWN_TYPES = new Set(["call", "email", "meeting", "task", "system", "note
 function relatedName(row: Record<string, unknown>, fallback: string): string {
   const acct = row.accounts as { name?: string } | null | undefined;
   const lead = row.gtm_leads as { business_name?: string } | null | undefined;
-  return acct?.name || lead?.business_name || fallback;
+  const opp = row.crm_opportunities as { opportunity_name?: string } | null | undefined;
+  return acct?.name || lead?.business_name || opp?.opportunity_name || fallback;
 }
 
 /** Lead pages are keyed `L-<first 8 of gtm_lead_id>` (gtm-lead-map). */
@@ -41,13 +42,14 @@ export function mapTouchRow(row: Record<string, unknown>): Activity {
 export function mapTaskRow(row: Record<string, unknown>): Activity {
   const accountId = row.account_id ? String(row.account_id) : null;
   const leadId = row.gtm_lead_id ? String(row.gtm_lead_id) : null;
+  const oppId = row.opportunity_id ? String(row.opportunity_id) : null;
   return {
     id: String(row.task_id),
     type: "task",
     subject: String(row.title || "Follow up").slice(0, 120),
     body: row.priority && row.priority !== "normal" ? `Priority: ${row.priority}` : "",
-    relatedType: accountId ? "account" : "lead",
-    relatedId: accountId || leadRouteId(leadId) || String(row.task_id),
+    relatedType: oppId ? "opportunity" : accountId ? "account" : "lead",
+    relatedId: oppId || accountId || leadRouteId(leadId) || String(row.task_id),
     relatedName: relatedName(row, "Unknown business"),
     ownerId: "unassigned",
     dueAt: row.due_at ? String(row.due_at) : null,

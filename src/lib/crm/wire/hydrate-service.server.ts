@@ -46,7 +46,7 @@ async function fetchActivitiesLive(): Promise<Activity[]> {
   // touches table had rows.
   const [tasks, touches] = await Promise.all([
     get(
-      `/crm_tasks?select=*,accounts(name),gtm_leads(business_name)&status=eq.open&is_test=is.false&order=due_at.asc.nullslast&limit=80`,
+      `/crm_tasks?select=*,accounts(name),gtm_leads(business_name),crm_opportunities(opportunity_name)&status=eq.open&is_test=is.false&order=due_at.asc.nullslast&limit=80`,
     ),
     get(
       `/activities?select=activity_id,account_id,gtm_lead_id,type,direction,subject,summary,occurred_at,created_at,accounts(name)&order=occurred_at.desc&limit=80`,

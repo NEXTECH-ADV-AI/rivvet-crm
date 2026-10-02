@@ -18,7 +18,10 @@ import {
   completeTaskFn,
   patchOpportunityStageFn,
   createOpportunityFn,
+  getOpportunityRecordFn,
+  saveOpportunityFn,
 } from "./server-fns";
+import type { OpportunityForm } from "../opportunity-form";
 import type { ListAccountsInput, ListLeadsInput } from "./types";
 import type { CreateOpportunityInput } from "../opportunity-create";
 import type { LostReason, OppStage } from "../types";
@@ -135,11 +138,13 @@ export function usePatchOpportunityStage() {
     onSuccess: () => {
       // Refresh lists but keep optimistic stage (mapped again from server)
       void qc.invalidateQueries({ queryKey: ["crm", "opportunities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunity-record"] });
       void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
     },
     onError: (err) => {
       console.error("[crm] stage patch failed", err);
       // Force re-hydrate so UI snaps back to server truth
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunity-record"] });
       void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
     },
   });
@@ -191,9 +196,33 @@ export function useMissionLineage(input: {
   });
 }
 
-/** One lead or one account, by its uuid (RIV-1542). */
-export type RecordRef = { gtmLeadId?: string; accountId?: string };
-const refKey = (r: RecordRef) => r.gtmLeadId ?? r.accountId ?? "";
+/** One lead, account or opportunity, by its uuid (RIV-1542, RIV-1558). */
+export type RecordRef = { gtmLeadId?: string; accountId?: string; opportunityId?: string };
+const refKey = (r: RecordRef) => r.gtmLeadId ?? r.accountId ?? r.opportunityId ?? "";
+
+/** An opportunity and its editable fields, read from the database by id (RIV-1558). */
+export function useOpportunityRecord(opportunityId: string) {
+  return useQuery({
+    queryKey: ["crm", "opportunity-record", opportunityId],
+    queryFn: () => getOpportunityRecordFn({ data: { opportunityId } }),
+    staleTime: 15_000,
+  });
+}
+
+/** Save returns the stored row read back; the page shows that, not what was typed. */
+export function useSaveOpportunity(opportunityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (form: OpportunityForm) => saveOpportunityFn({ data: { opportunityId, form } }),
+    onSuccess: (r) => {
+      qc.setQueryData(["crm", "opportunity-record", opportunityId], r);
+      void qc.invalidateQueries({ queryKey: ["crm", "next-action"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "record-activities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "opportunities"] });
+      void qc.invalidateQueries({ queryKey: ["crm", "hydrate"] });
+    },
+  });
+}
 
 export function useLead(leadId: string, enabled: boolean) {
   return useQuery({
@@ -237,7 +266,7 @@ function useRecordWrite<V>(fn: (vars: V) => Promise<unknown>) {
 export const useSetNextAction = () =>
   useRecordWrite((v: RecordRef & { title: string | null; dueDate: string | null }) => setNextActionFn({ data: v }));
 export const useLogTouch = () =>
-  useRecordWrite((v: RecordRef & { type: "call" | "email"; note?: string }) => logTouchFn({ data: v }));
+  useRecordWrite((v: RecordRef & { type: "call" | "email" | "note"; note?: string }) => logTouchFn({ data: v }));
 export const useCompleteTask = () => useRecordWrite((taskId: string) => completeTaskFn({ data: { taskId } }));
 
 /** Create (or reopen) an Opportunity, keep it in the store so its page opens at once (RIV-1555). */
