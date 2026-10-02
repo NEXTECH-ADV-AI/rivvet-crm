@@ -33,17 +33,3 @@ export function callLeadPatch(input: {
   if (input.outcome === "do_not_call") patch.dnc_flag = true;
   return patch;
 }
-
-/** Cell and VoIP numbers stay out of the call queue until a Do Not Call scrub clears them
- *  (RIV-1533): a sole owner's cell is a wireless number the national DNC list covers.
- *  Two sources say what a line is: the older `phone_type` column and Twilio's lookup in
- *  `enrichment_data.phone_line_type` (what the queue badge shows). Either one holds it. */
-export const HELD_LINE_TYPES = {
-  phone_type: ["mobile", "voip"],
-  "enrichment_data->>phone_line_type": ["mobile", "fixedVoip", "nonFixedVoip"],
-} as const;
-
-/** PostgREST or-groups for the queue, one per source. A number a source has not checked
- *  stays (unchecked is not known to be a cell); `not.in` alone would also drop NULL rows. */
-export const queueLineTypeFilters = () =>
-  Object.entries(HELD_LINE_TYPES).map(([col, held]) => `(${col}.is.null,${col}.not.in.(${held.join(",")}))`);
