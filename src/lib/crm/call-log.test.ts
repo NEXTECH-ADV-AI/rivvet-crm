@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { callLeadPatch, isCallOutcome, queueLineTypeFilter } from "./call-log";
+import { callLeadPatch, isCallOutcome, queueLineTypeFilters } from "./call-log";
 
 const base = { priorHumanAttempts: 0, repEmail: "will@rivvetai.com", nowIso: "2026-10-01T16:00:00Z" };
 
@@ -29,10 +29,14 @@ test("only known outcomes are accepted", () => {
   assert.equal(isCallOutcome("drop table"), false);
 });
 
-test("the call queue holds cell and VoIP numbers back but keeps unchecked and landline ones", () => {
-  const f = queueLineTypeFilter();
-  const held = /phone_type\.not\.in\.\(([^)]*)\)/.exec(f)?.[1].split(",") ?? [];
-  assert.deepEqual(held.sort(), ["mobile", "voip"]);
-  assert.ok(f.includes("phone_type.is.null"), "numbers with no line type yet stay in the queue");
-  assert.ok(!held.includes("landline"));
+test("the call queue holds back a number either source calls a cell or VoIP line, and keeps the rest", () => {
+  const groups = queueLineTypeFilters();
+  const held = (col: string) => {
+    const g = groups.find((x) => x.startsWith(`(${col}.is.null,`));
+    assert.ok(g, `${col} is checked, and its unchecked rows stay`);
+    return new RegExp(`${col.replace(/[>-]/g, "\\$&")}\\.not\\.in\\.\\(([^)]*)\\)`).exec(g)![1].split(",").sort();
+  };
+  assert.deepEqual(held("phone_type"), ["mobile", "voip"]);
+  assert.deepEqual(held("enrichment_data->>phone_line_type"), ["fixedVoip", "mobile", "nonFixedVoip"]);
+  assert.ok(!groups.join().includes("landline"));
 });

@@ -35,9 +35,15 @@ export function callLeadPatch(input: {
 }
 
 /** Cell and VoIP numbers stay out of the call queue until a Do Not Call scrub clears them
- *  (RIV-1533): a sole owner's cell is a wireless number the national DNC list covers. */
-export const HELD_LINE_TYPES = ["mobile", "voip"] as const;
+ *  (RIV-1533): a sole owner's cell is a wireless number the national DNC list covers.
+ *  Two sources say what a line is: the older `phone_type` column and Twilio's lookup in
+ *  `enrichment_data.phone_line_type` (what the queue badge shows). Either one holds it. */
+export const HELD_LINE_TYPES = {
+  phone_type: ["mobile", "voip"],
+  "enrichment_data->>phone_line_type": ["mobile", "fixedVoip", "nonFixedVoip"],
+} as const;
 
-/** PostgREST or-group for the queue. A number with no line type yet stays (an unchecked
- *  number is not known to be a cell); `not.in` alone would also drop those NULL rows. */
-export const queueLineTypeFilter = () => `(phone_type.is.null,phone_type.not.in.(${HELD_LINE_TYPES.join(",")}))`;
+/** PostgREST or-groups for the queue, one per source. A number a source has not checked
+ *  stays (unchecked is not known to be a cell); `not.in` alone would also drop NULL rows. */
+export const queueLineTypeFilters = () =>
+  Object.entries(HELD_LINE_TYPES).map(([col, held]) => `(${col}.is.null,${col}.not.in.(${held.join(",")}))`);
