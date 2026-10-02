@@ -33,3 +33,11 @@ export function callLeadPatch(input: {
   if (input.outcome === "do_not_call") patch.dnc_flag = true;
   return patch;
 }
+
+/** Cell and VoIP numbers stay out of the call queue until a Do Not Call scrub clears them
+ *  (RIV-1533): a sole owner's cell is a wireless number the national DNC list covers. */
+export const HELD_LINE_TYPES = ["mobile", "voip"] as const;
+
+/** PostgREST or-group for the queue. A number with no line type yet stays (an unchecked
+ *  number is not known to be a cell); `not.in` alone would also drop those NULL rows. */
+export const queueLineTypeFilter = () => `(phone_type.is.null,phone_type.not.in.(${HELD_LINE_TYPES.join(",")}))`;
