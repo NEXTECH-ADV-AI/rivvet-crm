@@ -6,7 +6,7 @@ const TRIAL_LABEL: Record<string, string> = {
   pending: "Trial pending",
   checkout_created: "Checkout created",
   invite_sending: "Invite sending",
-  invite_sent: "Trial live",
+  invite_sent: "Invite sent",
 };
 
 /**
