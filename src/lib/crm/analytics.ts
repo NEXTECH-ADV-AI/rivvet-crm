@@ -16,6 +16,24 @@ import {
   needsEnrich,
 } from "./lead-model";
 
+/** The hydrate message carries this tag when the live opportunities read failed,
+ *  so pages can say "unavailable" instead of showing an empty pipeline (RIV-1940). */
+export const OPPS_UNAVAILABLE_TAG = "opportunities unavailable";
+
+export type PipelineState = "loading" | "unavailable" | "empty" | "ready";
+
+/** What the pipeline numbers on Home and Analytics should say. Zero rows is
+ *  "empty", a failed read is "unavailable"; neither is ever shown as $0. */
+export function pipelineState(input: {
+  opportunities: Opportunity[];
+  hydratedAt: string | null;
+  unavailable: boolean;
+}): PipelineState {
+  if (!input.hydratedAt) return "loading";
+  if (input.unavailable) return "unavailable";
+  return input.opportunities.length ? "ready" : "empty";
+}
+
 function openOpp(o: Opportunity) {
   return o.stage !== "closed_won" && o.stage !== "closed_lost";
 }
