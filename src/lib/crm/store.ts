@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import {
-  seedOpportunities,
   seedPayments,
   seedSendDocuments,
   seedStageEvents,
@@ -27,12 +26,17 @@ import { STAGE_LABEL } from "./priority";
 import { priceDeal } from "./deal-catalog";
 import { PROD_OPP_STATUS_WRITE, PROD_LOST_REASONS } from "./prod-mirror";
 import { mergeById } from "./filters";
+import { OPPS_UNAVAILABLE_TAG } from "./analytics";
+
+export { OPPS_UNAVAILABLE_TAG };
 
 export interface CrmState {
   leads: Lead[];
   accounts: Account[];
   contacts: Contact[];
   opportunities: Opportunity[];
+  /** True when the last hydrate could not read opportunities (RIV-1940). */
+  opportunitiesUnavailable: boolean;
   activities: Activity[];
   stageEvents: StageEvent[];
   sendDocuments: SendDocumentMirror[];
@@ -98,13 +102,15 @@ let seq = 900;
 let stageSeq = 100;
 
 export const useCrmStore = create<CrmState>((set, get) => ({
-  // Lead, account, contact and activity slices start empty and come only from
-  // the hydrate payload (live, or seed in local mock mode). Starting on seed
-  // showed demo rows to real users whenever a live slice was empty (RIV-1534).
+  // Lead, account, contact, opportunity and activity slices start empty and come
+  // only from the hydrate payload (live, or seed in local mock mode). Starting on
+  // seed showed demo rows to real users whenever a live slice was empty
+  // (RIV-1534, RIV-1940 for opportunities).
   leads: [],
   accounts: [],
   contacts: [],
-  opportunities: structuredClone(seedOpportunities),
+  opportunities: [],
+  opportunitiesUnavailable: false,
   activities: [],
   stageEvents: structuredClone(seedStageEvents),
   sendDocuments: structuredClone(seedSendDocuments),
@@ -125,10 +131,10 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       // Store starts empty, so anything already here came from a live list page.
       leads: mergeById(payload.leads, get().leads),
       accounts: payload.accounts,
-      // Opportunities keep their existing merge (out of scope for this pass).
-      opportunities: payload.opportunities.length
-        ? payload.opportunities
-        : get().opportunities,
+      // The payload is the whole truth: an empty live read is an empty pipeline,
+      // never the demo rows (RIV-1940).
+      opportunities: payload.opportunities,
+      opportunitiesUnavailable: payload.message.includes(OPPS_UNAVAILABLE_TAG),
       contacts: payload.contacts,
       activities: payload.activities,
       dataSource: payload.source,

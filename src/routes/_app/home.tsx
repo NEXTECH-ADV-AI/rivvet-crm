@@ -6,6 +6,7 @@ import { useCrmStore } from "@/lib/crm/store";
 import { DEMO_NOW } from "@/lib/crm/seed";
 import { useLeadBook, useLeadsList } from "@/lib/crm/wire";
 import { queueAccounts, queueOpps } from "@/lib/crm/filters";
+import { pipelineState } from "@/lib/crm/analytics";
 import {
   accountPriority,
   formatMoney,
@@ -22,6 +23,9 @@ export const Route = createFileRoute("/_app/home")({
 function HomePage() {
   const opportunities = useCrmStore((s) => s.opportunities);
   const accounts = useCrmStore((s) => s.accounts);
+  const hydratedAt = useCrmStore((s) => s.hydratedAt);
+  const unavailable = useCrmStore((s) => s.opportunitiesUnavailable);
+  const pipeline = pipelineState({ opportunities, hydratedAt, unavailable });
 
   const oppQ = queueOpps(opportunities);
   const acctQ = queueAccounts(accounts);
@@ -76,7 +80,15 @@ function HomePage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <QueuePanel title="Opportunities needing a next step" icon={Target} to="/opportunities">
-          {oppQ.length === 0 ? (
+          {pipeline === "loading" ? (
+            <p className="text-xs text-fg-muted">Loading opportunities…</p>
+          ) : pipeline === "unavailable" ? (
+            <p role="alert" className="text-xs text-red-800">
+              Opportunities are unavailable right now. Refresh to try again.
+            </p>
+          ) : pipeline === "empty" ? (
+            <p className="text-xs text-fg-muted">No opportunities yet.</p>
+          ) : oppQ.length === 0 ? (
             <p className="text-xs text-fg-muted">Every open opportunity has a next step.</p>
           ) : (
             oppQ.slice(0, 5).map((o) => {

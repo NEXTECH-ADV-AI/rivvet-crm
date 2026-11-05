@@ -15,6 +15,7 @@ import {
 } from "./opportunity-map";
 import { parseTotal } from "./supabase-rest.server";
 import { attachNextSteps } from "../next-action";
+import { unavailableOpportunities } from "./opportunity-unavailable";
 
 const LIST_SELECT =
   "opportunity_id,source_gtm_lead_id,legacy_deal_id,account_id,primary_contact_id,contact_email,opportunity_name,stage,amount,expected_close_date,assigned_rep_email,sent_by_email,source,created_at,updated_at,is_test,test_reason,accounts(name)";
@@ -37,6 +38,8 @@ export type ListOppsResult = {
   limit: number;
   offset: number;
   message?: string;
+  /** Live read failed: zero rows here means "could not load", not "none" (RIV-1940). */
+  unavailable?: boolean;
 };
 
 export async function listOpportunitiesService(
@@ -125,17 +128,12 @@ export async function listOpportunitiesService(
       offset,
     };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "opps fetch failed";
-    let rows = [...seedOpportunities];
-    if (input.view) rows = filterOpps(rows, input.view as never);
-    return {
-      source: "mock",
-      opportunities: rows.slice(offset, offset + limit),
-      total: rows.length,
+    // Live deploy: a failed read shows nothing, never the demo pipeline (RIV-1940).
+    return unavailableOpportunities(
       limit,
       offset,
-      message: `LIVE failed (${msg}) — mock pipeline.`,
-    };
+      e instanceof Error ? e.message : "opps fetch failed",
+    );
   }
 }
 
@@ -188,10 +186,10 @@ export async function getOpportunityService(
       opportunity: rows[0] ? mapOpportunityRow(rows[0]) : null,
     };
   } catch (e) {
+    // Live deploy: never answer with a demo opportunity (RIV-1940).
     return {
       source: "mock",
-      opportunity:
-        seedOpportunities.find((o) => o.id === opportunityId) ?? null,
+      opportunity: null,
       message: e instanceof Error ? e.message : "fetch failed",
     };
   }

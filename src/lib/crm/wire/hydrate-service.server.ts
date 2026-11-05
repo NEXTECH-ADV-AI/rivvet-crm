@@ -16,6 +16,7 @@ import {
 } from "./config";
 import { seedActivities, seedContacts } from "../seed";
 import { mapTaskRow, mapTouchRow } from "./activity-map";
+import { OPPS_UNAVAILABLE_TAG } from "../analytics";
 import type { Account, Activity, Contact, Lead, Opportunity } from "../types";
 
 export type HydratePayload = {
@@ -132,7 +133,7 @@ export async function hydrateCrmService(opts?: {
   const parts = [
     `leads ${leadsR.source}`,
     `accounts ${accountsR.source}`,
-    `opps ${oppsR.source}`,
+    oppsR.unavailable ? OPPS_UNAVAILABLE_TAG : `opps ${oppsR.source}`,
   ];
   const warn = [leadsR, accountsR, oppsR]
     .map((r) => ("message" in r ? r.message : undefined))
