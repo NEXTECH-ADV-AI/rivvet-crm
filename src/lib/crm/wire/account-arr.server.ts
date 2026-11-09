@@ -1,85 +1,56 @@
 /**
- * Reads the two Platform tables behind account ARR (RIV-1942), server side only.
- * public.revenue_customers (who is revenue, and their Stripe customer id) and
- * public.deals (monthly_total, joined on stripe_customer_id). No Stripe call, no write.
+ * Reads billable customers and their deals from Platform, server side, GET only (RIV-1942).
  */
 
 import type { Account } from "../types";
 import { getServerSupabaseConfig } from "./config";
-import { parseTotal } from "./supabase-rest.server";
-import {
-  ARR_UNAVAILABLE,
-  billableStripeIds,
-  deriveAccountArr,
-  type ArrReads,
-  type DealRow,
-  type RevenueCustomerRow,
-} from "./account-arr";
+import { arrFor, type ArrByClient } from "./account-arr";
 
+// ponytail: one page; a set this size (5 billable today) never nears it. Fails closed if it does.
 const MAX_ROWS = 1000;
 
-/**
- * Every matching row from ONE request, or a throw. One PostgREST request is one
- * statement, so the rows and the exact count come from the same snapshot; paging
- * across requests could skip a row while the count still matched. If the set no
- * longer fits in one response, ARR shows Unavailable rather than a partial answer
- * (live 2026-11-09: 10 deals, 22 revenue customers).
- */
-async function getRows<T>(path: string, query: string, order: string): Promise<T[]> {
+async function get<T>(path: string): Promise<T[]> {
   const { url, key } = getServerSupabaseConfig();
-  const res = await fetch(`${url}/rest/v1/${path}?${query}&order=${order}&limit=${MAX_ROWS}`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-      Prefer: "count=exact",
-    },
+  const res = await fetch(`${url}/rest/v1/${path}&limit=${MAX_ROWS}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
-  const count = parseTotal(res.headers.get("content-range"));
+  if (!res.ok) throw new Error(`${path.split("?")[0]} ${res.status}`);
   const rows = (await res.json()) as T[];
-  if (count === null) throw new Error(`${path} count missing`);
-  if (rows.length !== count) throw new Error(`${path} partial read ${rows.length} of ${count}`);
+  if (rows.length >= MAX_ROWS) throw new Error(`${path.split("?")[0]} may be truncated`);
   return rows;
 }
 
-function inList(ids: string[]): string {
-  return `in.(${ids.map((i) => encodeURIComponent(i)).join(",")})`;
-}
-
-export async function readArrSources(clientIds: string[]): Promise<ArrReads> {
-  const ids = [...new Set(clientIds.filter(Boolean))];
-  if (ids.length === 0) return { ok: true, revenue: [], deals: [] };
+export async function readArrByClient(): Promise<ArrByClient> {
   try {
-    const revenue = await getRows<RevenueCustomerRow>(
-      "revenue_customers",
-      `select=client_id,stripe_customer_id,billable&client_id=${inList(ids)}`,
-      "stripe_customer_id",
+    const billable = await get<{ client_id: string | null; stripe_customer_id: string }>(
+      "revenue_customers?select=client_id,stripe_customer_id&billable=eq.true",
     );
-    const stripeIds = billableStripeIds(revenue);
-    const deals =
-      stripeIds.length === 0
-        ? []
-        : await getRows<DealRow>(
-            "deals",
-            `select=deal_id,stripe_customer_id,monthly_total&stripe_customer_id=${inList(stripeIds)}`,
-            "deal_id",
-          );
-    return { ok: true, revenue, deals };
+    const ids = billable.map((r) => r.stripe_customer_id);
+    const deals = ids.length
+      ? await get<{ stripe_customer_id: string; monthly_total: number | string | null }>(
+          `deals?select=stripe_customer_id,monthly_total&stripe_customer_id=in.(${ids.map(encodeURIComponent).join(",")})`,
+        )
+      : [];
+    const byClient = new Map<string, number>();
+    for (const r of billable) {
+      if (!r.client_id) continue;
+      const mine = deals.filter((d) => d.stripe_customer_id === r.stripe_customer_id);
+      // One deal is the contract; none or several is a data problem, shown as Unavailable.
+      const arr = mine.length === 1 ? Number(mine[0].monthly_total) * 12 : NaN;
+      byClient.set(r.client_id, byClient.has(r.client_id) ? NaN : Math.round(arr));
+    }
+    return byClient;
   } catch (error) {
-    // A partial read would misstate ARR: show Unavailable, and log why.
     console.error("account ARR read unavailable:", error instanceof Error ? error.message : error);
-    return { ok: false };
+    return null;
   }
 }
 
-/** Live accounts only: stamps arr and arrInfo. A failed read marks every account Unavailable. */
+/** Stamps arr and arrInfo on live accounts; a failed read marks them all Unavailable. */
 export async function withAccountArr(accounts: Account[]): Promise<Account[]> {
-  const reads = await readArrSources(
-    accounts.map((a) => a.clientId ?? "").filter(Boolean),
-  );
+  const byClient = await readArrByClient();
   return accounts.map((a) => {
-    const arrInfo = reads.ok ? deriveAccountArr(a.clientId, reads) : ARR_UNAVAILABLE;
+    const arrInfo = arrFor(a.clientId, byClient);
     return { ...a, arrInfo, arr: arrInfo.state === "base_contract" ? arrInfo.arr : 0 };
   });
 }

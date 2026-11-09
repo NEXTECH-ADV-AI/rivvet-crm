@@ -209,15 +209,13 @@ export type AccountHealth = "healthy" | "watch" | "risk";
 
 /**
  * RIV-1942: the ARR state of one account.
- * base_contract: billable, from the matching deal's monthly_total x 12 (usage and RevShare excluded).
- * not_billable: not a revenue customer, so no ARR.
- * not_available: billable but no deal row for its Stripe customer.
- * unavailable: the read failed, or the deal is ambiguous (more than one) or has no monthly_total.
+ * base_contract: billable in revenue_customers; its deal's monthly_total x 12.
+ * not_billable: not a billable revenue customer, so no ARR.
+ * unavailable: the read failed, or its deal is missing or ambiguous.
  */
 export type AccountArrInfo =
   | { state: "base_contract"; arr: number }
   | { state: "not_billable" }
-  | { state: "not_available" }
   | { state: "unavailable" };
 
 export interface Account {
