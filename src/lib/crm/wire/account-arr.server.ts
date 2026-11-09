@@ -23,7 +23,7 @@ const MAX_ROWS = 1000;
  * statement, so the rows and the exact count come from the same snapshot; paging
  * across requests could skip a row while the count still matched. If the set no
  * longer fits in one response, ARR shows Unavailable rather than a partial answer
- * (live: 10 deals, 5 revenue customers on 2026-11-09).
+ * (live 2026-11-09: 10 deals, 22 revenue customers).
  */
 async function getRows<T>(path: string, query: string, order: string): Promise<T[]> {
   const { url, key } = getServerSupabaseConfig();
