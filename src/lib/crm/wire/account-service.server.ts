@@ -4,6 +4,7 @@
  */
 
 import { seedAccounts, seedContacts } from "../seed";
+import { unavailableAccount, unavailableAccounts } from "./account-unavailable";
 import type { Account, Contact } from "../types";
 import { filterAccounts } from "../filters";
 import { getServerSupabaseConfig, isLiveWire } from "./config";
@@ -222,17 +223,9 @@ export async function listAccountsService(
       offset,
     };
   } catch (e) {
-    // Fallback mock if table missing / RLS
+    // Live deploy: a failed read shows nothing, never the demo accounts (RIV-1940).
     const msg = e instanceof Error ? e.message : "accounts fetch failed";
-    const filtered = mockFilter(seedAccounts, input);
-    return {
-      source: "mock",
-      accounts: filtered.slice(offset, offset + limit),
-      total: filtered.length,
-      limit,
-      offset,
-      message: `LIVE failed (${msg}) — showing mock.`,
-    };
+    return unavailableAccounts(limit, offset, msg);
   }
 }
 
@@ -286,14 +279,8 @@ export async function getAccountService(
 
     return { source: "live", account, contacts };
   } catch (e) {
-    const account = seedAccounts.find((a) => a.id === accountId) ?? null;
-    const contacts = seedContacts.filter((c) => c.accountId === accountId);
-    return {
-      source: "mock",
-      account,
-      contacts,
-      message: e instanceof Error ? e.message : "account fetch failed",
-    };
+    // Live deploy: never answer with a demo account (RIV-1940).
+    return unavailableAccount(e instanceof Error ? e.message : "account fetch failed");
   }
 }
 

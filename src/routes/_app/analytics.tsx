@@ -18,7 +18,7 @@ import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
 import { useLeadBook } from "@/lib/crm/wire";
-import { buildGtmAnalytics, formatMoney } from "@/lib/crm/analytics";
+import { buildGtmAnalytics, formatMoney, pipelineKpiDisplay, pipelineState } from "@/lib/crm/analytics";
 import { formatDate, STAGE_LABEL, plain } from "@/lib/crm/priority";
 
 export const Route = createFileRoute("/_app/analytics")({
@@ -36,6 +36,17 @@ function AnalyticsPage() {
   const leads = useCrmStore((s) => s.leads);
   const accounts = useCrmStore((s) => s.accounts);
   const activities = useCrmStore((s) => s.activities);
+  const hydratedAt = useCrmStore((s) => s.hydratedAt);
+  const unavailable = useCrmStore((s) => s.opportunitiesUnavailable);
+  const pipeline = pipelineState({ opportunities, hydratedAt, unavailable });
+  const notice =
+    pipeline === "loading"
+      ? "Loading opportunities…"
+      : pipeline === "unavailable"
+        ? "Opportunities are unavailable right now. Refresh to try again."
+        : pipeline === "empty"
+          ? "No opportunities yet."
+          : null;
   const book = useLeadBook().data?.book ?? null;
 
   const data = useMemo(
@@ -44,6 +55,7 @@ function AnalyticsPage() {
   );
   const n = (v: number | null) => (v == null ? "…" : v.toLocaleString());
   const { kpis } = data;
+  const money = pipelineKpiDisplay(pipeline, kpis);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -76,12 +88,12 @@ function AnalyticsPage() {
           label="HVAC share"
           value={kpis.hvacShare == null ? "…" : `${kpis.hvacShare}%`}
         />
-        <Kpi label="Pipeline" value={formatMoney(kpis.pipeline)} />
-        <Kpi label="Weighted" value={formatMoney(kpis.weighted)} />
+        <Kpi label="Pipeline" value={money.pipeline} />
+        <Kpi label="Weighted" value={money.weighted} />
         <Kpi
           label="Closing in 30 days"
-          value={formatMoney(kpis.closing30Amt)}
-          sub={`${kpis.closing30Count} ${kpis.closing30Count === 1 ? "opportunity" : "opportunities"}`}
+          value={money.closing}
+          sub={money.closingSub}
         />
       </div>
 
@@ -94,7 +106,7 @@ function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-        <Panel title="Pipeline by stage" subtitle="Open amount">
+        <Panel title="Pipeline by stage" subtitle="Open amount" notice={notice}>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -129,7 +141,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Velocity" subtitle="Created, won and lost">
+        <Panel title="Velocity" subtitle="Created, won and lost" notice={notice}>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.weekly}>
@@ -223,6 +235,7 @@ function AnalyticsPage() {
         <Panel
           title="Top open opportunities"
           subtitle="By amount"
+          notice={notice}
           className="lg:col-span-2"
         >
           <ul className="divide-y divide-border-soft">
@@ -327,11 +340,14 @@ function Panel({
   subtitle,
   children,
   className,
+  notice,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   className?: string;
+  /** When set, shown in place of the panel body. */
+  notice?: string | null;
 }) {
   return (
     <section className={`crm-surface p-4 ${className ?? ""}`}>
@@ -341,7 +357,11 @@ function Panel({
           <p className="text-[11px] text-fg-subtle">{subtitle}</p>
         )}
       </div>
-      {children}
+      {notice ? (
+        <p className="py-6 text-center text-xs text-fg-muted">{notice}</p>
+      ) : (
+        children
+      )}
     </section>
   );
 }
