@@ -22,7 +22,8 @@ const deals = [
   { stripe_customer_id: "cus_2", monthly_total: "200.00" },
 ];
 const acct = (clientId: string | null) => ({ clientId, arr: 0 }) as unknown as Account;
-const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+const ok = (rows: unknown[], total = rows.length) =>
+  new Response(JSON.stringify(rows), { status: 200, headers: { "content-range": `0-${rows.length - 1}/${total}` } });
 
 test("ARR matches the database: billable x deal monthly x 12, everyone else not billable", async () => {
   const calls: string[] = [];
@@ -44,4 +45,11 @@ test("a failed read shows Unavailable on every account, never a number", async (
   const out = await withAccountArr([acct("hillcrest"), acct("prospect")]);
   assert.deepEqual(out.map((a) => arrText(a, formatMoney)), ["Unavailable", "Unavailable"]);
   assert.deepEqual(out.map((a) => a.arr), [0, 0]);
+});
+
+test("a truncated read (server cap hides a second deal) shows Unavailable, not a contract number", async () => {
+  globalThis.fetch = (async (u: string) =>
+    u.includes("/revenue_customers") ? ok(billable) : ok(deals.slice(0, 2), deals.length)) as typeof fetch;
+  const out = await withAccountArr([acct("hillcrest"), acct("two-deals")]);
+  assert.deepEqual(out.map((a) => arrText(a, formatMoney)), ["Unavailable", "Unavailable"]);
 });

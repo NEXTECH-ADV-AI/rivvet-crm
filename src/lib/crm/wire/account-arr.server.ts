@@ -5,18 +5,20 @@
 import type { Account } from "../types";
 import { getServerSupabaseConfig } from "./config";
 import { arrFor, type ArrByClient } from "./account-arr";
+import { parseTotal } from "./supabase-rest.server";
 
-// ponytail: one page; a set this size (5 billable today) never nears it. Fails closed if it does.
+// ponytail: one page; a set this size (5 billable today) never nears it. Any truncation fails closed.
 const MAX_ROWS = 1000;
 
 async function get<T>(path: string): Promise<T[]> {
   const { url, key } = getServerSupabaseConfig();
   const res = await fetch(`${url}/rest/v1/${path}&limit=${MAX_ROWS}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+    headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json", Prefer: "count=exact" },
   });
   if (!res.ok) throw new Error(`${path.split("?")[0]} ${res.status}`);
   const rows = (await res.json()) as T[];
-  if (rows.length >= MAX_ROWS) throw new Error(`${path.split("?")[0]} may be truncated`);
+  // Rows and count come from one response; any server cap below the full set fails closed.
+  if (rows.length !== parseTotal(res.headers.get("content-range"))) throw new Error(`${path.split("?")[0]} partial read`);
   return rows;
 }
 
