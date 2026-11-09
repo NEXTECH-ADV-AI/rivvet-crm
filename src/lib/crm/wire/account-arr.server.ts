@@ -7,7 +7,7 @@ import { getServerSupabaseConfig } from "./config";
 import { arrFor, type ArrByClient } from "./account-arr";
 import { parseTotal } from "./supabase-rest.server";
 
-// ponytail: one page; a set this size (5 billable today) never nears it. Any truncation fails closed.
+// One page per read, scoped to the accounts on screen; any truncation fails closed.
 const MAX_ROWS = 1000;
 
 async function get<T>(path: string): Promise<T[]> {
@@ -22,15 +22,19 @@ async function get<T>(path: string): Promise<T[]> {
   return rows;
 }
 
-export async function readArrByClient(): Promise<ArrByClient> {
+const inList = (ids: string[]) => `in.(${ids.map(encodeURIComponent).join(",")})`;
+
+export async function readArrByClient(clientIds: string[]): Promise<ArrByClient> {
+  const wanted = [...new Set(clientIds.filter(Boolean))];
+  if (wanted.length === 0) return new Map();
   try {
     const billable = await get<{ client_id: string | null; stripe_customer_id: string }>(
-      "revenue_customers?select=client_id,stripe_customer_id&billable=eq.true",
+      `revenue_customers?select=client_id,stripe_customer_id&billable=eq.true&client_id=${inList(wanted)}`,
     );
     const ids = billable.map((r) => r.stripe_customer_id);
     const deals = ids.length
       ? await get<{ stripe_customer_id: string; monthly_total: number | string | null }>(
-          `deals?select=stripe_customer_id,monthly_total&stripe_customer_id=in.(${ids.map(encodeURIComponent).join(",")})`,
+          `deals?select=stripe_customer_id,monthly_total&stripe_customer_id=${inList(ids)}`,
         )
       : [];
     const byClient = new Map<string, number>();
@@ -50,7 +54,7 @@ export async function readArrByClient(): Promise<ArrByClient> {
 
 /** Stamps arr and arrInfo on live accounts; a failed read marks them all Unavailable. */
 export async function withAccountArr(accounts: Account[]): Promise<Account[]> {
-  const byClient = await readArrByClient();
+  const byClient = await readArrByClient(accounts.map((a) => a.clientId ?? ""));
   return accounts.map((a) => {
     const arrInfo = arrFor(a.clientId, byClient);
     return { ...a, arrInfo, arr: arrInfo.state === "base_contract" ? arrInfo.arr : 0 };

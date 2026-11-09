@@ -27,7 +27,9 @@ const ok = (rows: unknown[], total = rows.length) =>
 
 test("ARR matches the database: billable x deal monthly x 12, everyone else not billable", async () => {
   const calls: string[] = [];
+  const seen: string[] = [];
   globalThis.fetch = (async (u: string, init?: RequestInit) => {
+    seen.push(u);
     calls.push(`${init?.method ?? "GET"} ${u.split("?")[0]}`);
     return ok(u.includes("/revenue_customers") ? billable : deals);
   }) as typeof fetch;
@@ -39,6 +41,7 @@ test("ARR matches the database: billable x deal monthly x 12, everyone else not 
   assert.equal(arrHeadline(out[1], formatMoney), "$4,200 base ARR");
   assert.equal(arrHeadline({ arr: 1200 } as Account, formatMoney), "$1,200 ARR");
   assert.ok(calls.every((c) => c.startsWith("GET ")));
+  assert.ok(seen[0].includes("client_id=in.("), "billable read is scoped to the requested accounts");
 });
 
 test("a failed read shows Unavailable on every account, never a number", async () => {
