@@ -25,6 +25,7 @@ export function arrText(a: Pick<Account, "arrInfo" | "arr">, fmt: (n: number) =>
 
 /** Account page headline, or null to fall back to the ICP score. */
 export function arrHeadline(a: Pick<Account, "arrInfo" | "arr">, fmt: (n: number) => string): string | null {
+  if (!a.arrInfo) return a.arr ? `${fmt(a.arr)} ARR` : null;
   const text = arrText(a, fmt);
   if (text === null) return null;
   return text === "Unavailable" ? "ARR unavailable" : `${text} base ARR`;

@@ -37,6 +37,7 @@ test("ARR matches the database: billable x deal monthly x 12, everyone else not 
     ["$6,000", "$4,200", "Unavailable", null, null],
   );
   assert.equal(arrHeadline(out[1], formatMoney), "$4,200 base ARR");
+  assert.equal(arrHeadline({ arr: 1200 } as Account, formatMoney), "$1,200 ARR");
   assert.ok(calls.every((c) => c.startsWith("GET ")));
 });
 
