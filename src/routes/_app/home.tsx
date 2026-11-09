@@ -131,7 +131,7 @@ function HomePage() {
                     meta={`${a.health === "risk" || a.status === "at_risk" ? "At risk" : "High value"} · ${formatRelative(a.lastTouch, DEMO_NOW)}`}
                     next={a.nextAction ?? "Set next step"}
                     priority={p.priority}
-                    amount={a.arr ? `${formatMoney(a.arr)} a year` : null}
+                    amount={a.arr ? `${formatMoney(a.arr)} base ARR` : null}
                   />
                 </Link>
               );

@@ -18,6 +18,7 @@ import {
   oppPriority,
   STAGE_LABEL, SOURCE_LABEL, plain } from "@/lib/crm/priority";
 import { useAccount, useCompleteTask, useLogTouch, useNextAction, useRecordActivities } from "@/lib/crm/wire";
+import { arrHeadline } from "@/lib/crm/wire/account-arr";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
 
 export const Route = createFileRoute("/_app/accounts/$accountId")({
@@ -96,11 +97,10 @@ function AccountDetail() {
         nextAction={live ? (nextQ.data?.nextAction?.title ?? null) : account.nextAction}
         lastTouch={account.lastTouch}
         amount={
-          account.arr
-            ? formatMoney(account.arr) + " ARR"
-            : account.qualificationScore != null
-              ? `ICP ${account.qualificationScore}`
-              : null
+          arrHeadline(account, formatMoney) ??
+          (account.qualificationScore != null
+            ? `ICP ${account.qualificationScore}`
+            : null)
         }
         priority={p.priority}
         reasons={p.reasons}
