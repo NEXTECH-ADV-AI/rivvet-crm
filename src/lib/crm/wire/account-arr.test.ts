@@ -188,8 +188,8 @@ describe("listAccountsService ARR (live)", () => {
     assert.ok(!urls.some((u) => u.includes("select=") && /accounts\?.*(arr|mrr)/.test(u)), "never selects arr or mrr from accounts");
   });
 
-  test("a duplicate deal past the first response page still makes the account ambiguous", async () => {
-    // The server caps each response at 2 rows; Hillcrest's second deal is on page 3.
+  test("a deals set larger than one response marks ARR Unavailable, never a partial answer", async () => {
+    // The server returns 2 of 5 rows; Hillcrest's second deal is in the unread part.
     const dealRows = [
       { stripe_customer_id: "cus_hill", monthly_total: 500 },
       { stripe_customer_id: "cus_nos", monthly_total: 250 },
@@ -199,12 +199,10 @@ describe("listAccountsService ARR (live)", () => {
     ];
     const urls = stub({ dealRows, cap: 2 });
     const r = await listAccountsService({});
-    const by = Object.fromEntries(r.accounts.map((a) => [a.name, a]));
-    assert.equal(by.Hillcrest.arrInfo?.state, "unavailable");
-    assert.equal(by.Hillcrest.arr, 0);
-    assert.equal(by.Nostaira.arr, 3000);
-    assert.equal(by["EZ Services"].arr, 6000);
-    assert.equal(urls.filter((u) => u.includes("/rest/v1/deals?")).length, 3);
+    for (const a of r.accounts) assert.equal(a.arrInfo?.state, "unavailable");
+    assert.ok(r.accounts.every((a) => a.arr === 0));
+    // One request: the rows and the count come from one snapshot.
+    assert.equal(urls.filter((u) => u.includes("/rest/v1/deals?")).length, 1);
   });
 
   test("a deals read with no exact count marks ARR Unavailable", async () => {

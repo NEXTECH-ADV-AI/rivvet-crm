@@ -16,39 +16,30 @@ import {
   type RevenueCustomerRow,
 } from "./account-arr";
 
-const PAGE = 1000;
+const MAX_ROWS = 1000;
 
 /**
- * Every matching row or a throw. PostgREST caps a response, so one response is
- * not the whole set: read stable offset pages until the rows collected equal
- * the exact count, and fail closed on a missing or shifting count or a short page.
+ * Every matching row from ONE request, or a throw. One PostgREST request is one
+ * statement, so the rows and the exact count come from the same snapshot; paging
+ * across requests could skip a row while the count still matched. If the set no
+ * longer fits in one response, ARR shows Unavailable rather than a partial answer
+ * (live: 10 deals, 5 revenue customers on 2026-11-09).
  */
 async function getRows<T>(path: string, query: string, order: string): Promise<T[]> {
   const { url, key } = getServerSupabaseConfig();
-  const rows: T[] = [];
-  let total: number | null = null;
-  do {
-    const res = await fetch(
-      `${url}/rest/v1/${path}?${query}&order=${order}&limit=${PAGE}&offset=${rows.length}`,
-      {
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          Accept: "application/json",
-          Prefer: "count=exact",
-        },
-      },
-    );
-    if (!res.ok) throw new Error(`${path} ${res.status}`);
-    const count = parseTotal(res.headers.get("content-range"));
-    if (count === null) throw new Error(`${path} count missing`);
-    if (total !== null && count !== total) throw new Error(`${path} count shifted`);
-    total = count;
-    const page = (await res.json()) as T[];
-    if (rows.length < total && page.length === 0) throw new Error(`${path} short page`);
-    rows.push(...page);
-    if (rows.length > total) throw new Error(`${path} more rows than count`);
-  } while (rows.length < total);
+  const res = await fetch(`${url}/rest/v1/${path}?${query}&order=${order}&limit=${MAX_ROWS}`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    },
+  });
+  if (!res.ok) throw new Error(`${path} ${res.status}`);
+  const count = parseTotal(res.headers.get("content-range"));
+  const rows = (await res.json()) as T[];
+  if (count === null) throw new Error(`${path} count missing`);
+  if (rows.length !== count) throw new Error(`${path} partial read ${rows.length} of ${count}`);
   return rows;
 }
 
