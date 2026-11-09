@@ -128,7 +128,25 @@ describe("listAccountsService ARR (live)", () => {
     { account_id: "a5", name: "EZ Services", client_id: EZ },
   ];
 
-  function stub(opts: { revenue?: number; deals?: number }) {
+  /** A PostgREST page: honors limit and offset, sends the exact count unless told not to. */
+  function page(u: string, all: unknown[], opts: { cap?: number; noCount?: boolean } = {}) {
+    const q = new URL(u).searchParams;
+    const offset = Number(q.get("offset") ?? 0);
+    const limit = Math.min(Number(q.get("limit") ?? all.length), opts.cap ?? Infinity);
+    const rows = all.slice(offset, offset + limit);
+    const headers: Record<string, string> = opts.noCount
+      ? {}
+      : { "content-range": `${offset}-${offset + rows.length - 1}/${all.length}` };
+    return new Response(JSON.stringify(rows), { status: 200, headers });
+  }
+
+  function stub(opts: {
+    revenue?: number;
+    deals?: number;
+    dealRows?: unknown[];
+    cap?: number;
+    noCount?: boolean;
+  }) {
     const urls: string[] = [];
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const u = String(input);
@@ -141,11 +159,11 @@ describe("listAccountsService ARR (live)", () => {
       }
       if (u.includes("/rest/v1/revenue_customers?")) {
         if (opts.revenue) return new Response("boom", { status: opts.revenue });
-        return new Response(JSON.stringify(revenue), { status: 200 });
+        return page(u, revenue);
       }
       if (u.includes("/rest/v1/deals?")) {
         if (opts.deals) return new Response("boom", { status: opts.deals });
-        return new Response(JSON.stringify(deals), { status: 200 });
+        return page(u, opts.dealRows ?? deals, { cap: opts.cap, noCount: opts.noCount });
       }
       return new Response("unexpected " + u, { status: 500 });
     }) as typeof fetch;
@@ -168,6 +186,31 @@ describe("listAccountsService ARR (live)", () => {
     assert.ok(urls.some((u) => u.includes("/rest/v1/deals?") && u.includes("stripe_customer_id=in.")));
     assert.ok(!urls.some((u) => u.includes("billing_rate_configs")), "no longer reads billing_rate_configs");
     assert.ok(!urls.some((u) => u.includes("select=") && /accounts\?.*(arr|mrr)/.test(u)), "never selects arr or mrr from accounts");
+  });
+
+  test("a duplicate deal past the first response page still makes the account ambiguous", async () => {
+    // The server caps each response at 2 rows; Hillcrest's second deal is on page 3.
+    const dealRows = [
+      { stripe_customer_id: "cus_hill", monthly_total: 500 },
+      { stripe_customer_id: "cus_nos", monthly_total: 250 },
+      { stripe_customer_id: "cus_ez", monthly_total: 500 },
+      { stripe_customer_id: "cus_opachs", monthly_total: 500 },
+      { stripe_customer_id: "cus_hill", monthly_total: 700 },
+    ];
+    const urls = stub({ dealRows, cap: 2 });
+    const r = await listAccountsService({});
+    const by = Object.fromEntries(r.accounts.map((a) => [a.name, a]));
+    assert.equal(by.Hillcrest.arrInfo?.state, "unavailable");
+    assert.equal(by.Hillcrest.arr, 0);
+    assert.equal(by.Nostaira.arr, 3000);
+    assert.equal(by["EZ Services"].arr, 6000);
+    assert.equal(urls.filter((u) => u.includes("/rest/v1/deals?")).length, 3);
+  });
+
+  test("a deals read with no exact count marks ARR Unavailable", async () => {
+    stub({ noCount: true });
+    const r = await listAccountsService({});
+    for (const a of r.accounts) assert.equal(a.arrInfo?.state, "unavailable");
   });
 
   test("a failed revenue read marks ARR Unavailable but keeps the account rows", async () => {
