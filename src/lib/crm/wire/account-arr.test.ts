@@ -10,47 +10,72 @@ const NOSTAIRA = "927c4e60-7cd6-43ef-ab55-d6357b0145da";
 const OPACHS = "fc970cfc-cdab-414e-9e0f-4073e0be2e30";
 const OTHER = "11111111-1111-1111-1111-111111111111";
 
-const reads: ArrReads = {
-  ok: true,
-  revenue: [
-    { client_id: HILLCREST, billable: true },
-    { client_id: EZ, billable: true },
-    { client_id: NOSTAIRA, billable: true },
-    { client_id: OPACHS, billable: false },
-  ],
-  rates: [
-    { client_id: HILLCREST, base_fee_cents: 50000 },
-    { client_id: EZ, base_fee_cents: "50000" },
-  ],
-};
+const revenue = [
+  { client_id: HILLCREST, stripe_customer_id: "cus_hill", billable: true },
+  { client_id: EZ, stripe_customer_id: "cus_ez", billable: true },
+  { client_id: NOSTAIRA, stripe_customer_id: "cus_nos", billable: true },
+  { client_id: OPACHS, stripe_customer_id: "cus_opachs", billable: false },
+];
+// Opachs has a deal too: a non-billable account must still show no ARR.
+const deals = [
+  { stripe_customer_id: "cus_hill", monthly_total: 500 },
+  { stripe_customer_id: "cus_nos", monthly_total: "250.00" },
+  { stripe_customer_id: "cus_ez", monthly_total: 500 },
+  { stripe_customer_id: "cus_ez", monthly_total: 500 },
+  { stripe_customer_id: "cus_opachs", monthly_total: 500 },
+];
+const reads: ArrReads = { ok: true, revenue, deals };
 
 describe("deriveAccountArr", () => {
-  test("billable with a stored base fee is base fee x 12 in dollars", () => {
+  test("billable with a matching deal is monthly_total x 12", () => {
     assert.deepEqual(deriveAccountArr(HILLCREST, reads), { state: "base_contract", arr: 6000 });
-    assert.deepEqual(deriveAccountArr(EZ, reads), { state: "base_contract", arr: 6000 });
+    assert.deepEqual(deriveAccountArr(NOSTAIRA, reads), { state: "base_contract", arr: 3000 });
   });
-  test("billable with no stored contract value is Not available, never a guess", () => {
-    assert.deepEqual(deriveAccountArr(NOSTAIRA, reads), { state: "not_available" });
+  test("two deals on one Stripe customer is Unavailable, never a sum or a pick", () => {
+    assert.deepEqual(deriveAccountArr(EZ, reads), { state: "unavailable" });
   });
-  test("a zero or null base fee is Not available", () => {
+  test("two billable Stripe customers on one account is Unavailable", () => {
     const r: ArrReads = {
       ok: true,
-      revenue: [{ client_id: HILLCREST, billable: true }],
-      rates: [{ client_id: HILLCREST, base_fee_cents: 0 }],
+      revenue: [
+        { client_id: HILLCREST, stripe_customer_id: "cus_a", billable: true },
+        { client_id: HILLCREST, stripe_customer_id: "cus_b", billable: true },
+      ],
+      deals: [
+        { stripe_customer_id: "cus_a", monthly_total: 500 },
+        { stripe_customer_id: "cus_b", monthly_total: 100 },
+      ],
     };
-    assert.deepEqual(deriveAccountArr(HILLCREST, r), { state: "not_available" });
-    r.rates = [{ client_id: HILLCREST, base_fee_cents: null }];
-    assert.deepEqual(deriveAccountArr(HILLCREST, r), { state: "not_available" });
+    assert.deepEqual(deriveAccountArr(HILLCREST, r), { state: "unavailable" });
   });
-  test("non-billable, unregistered and client-less accounts have none, even with a rate config", () => {
-    const withRate: ArrReads = {
+  test("a null, zero or non-numeric monthly_total is Unavailable", () => {
+    for (const monthly_total of [null, 0, "abc"]) {
+      const r: ArrReads = {
+        ok: true,
+        revenue: [{ client_id: HILLCREST, stripe_customer_id: "cus_hill", billable: true }],
+        deals: [{ stripe_customer_id: "cus_hill", monthly_total }],
+      };
+      assert.deepEqual(deriveAccountArr(HILLCREST, r), { state: "unavailable" });
+    }
+  });
+  test("billable with no deal row, or no Stripe id, is Not available", () => {
+    const noDeal: ArrReads = {
       ok: true,
-      revenue: reads.ok ? reads.revenue : [],
-      rates: [{ client_id: OPACHS, base_fee_cents: 50000 }, { client_id: OTHER, base_fee_cents: 50000 }],
+      revenue: [{ client_id: HILLCREST, stripe_customer_id: "cus_hill", billable: true }],
+      deals: [],
     };
-    assert.deepEqual(deriveAccountArr(OPACHS, withRate), { state: "not_billable" });
-    assert.deepEqual(deriveAccountArr(OTHER, withRate), { state: "not_billable" });
-    assert.deepEqual(deriveAccountArr(null, withRate), { state: "not_billable" });
+    assert.deepEqual(deriveAccountArr(HILLCREST, noDeal), { state: "not_available" });
+    const noStripe: ArrReads = {
+      ok: true,
+      revenue: [{ client_id: HILLCREST, stripe_customer_id: null, billable: true }],
+      deals,
+    };
+    assert.deepEqual(deriveAccountArr(HILLCREST, noStripe), { state: "not_available" });
+  });
+  test("non-billable, unregistered and client-less accounts have none, even with a deal", () => {
+    assert.deepEqual(deriveAccountArr(OPACHS, reads), { state: "not_billable" });
+    assert.deepEqual(deriveAccountArr(OTHER, reads), { state: "not_billable" });
+    assert.deepEqual(deriveAccountArr(null, reads), { state: "not_billable" });
   });
   test("a failed read is Unavailable for every account", () => {
     assert.deepEqual(deriveAccountArr(HILLCREST, { ok: false }), { state: "unavailable" });
@@ -100,9 +125,10 @@ describe("listAccountsService ARR (live)", () => {
     { account_id: "a2", name: "Nostaira", client_id: NOSTAIRA },
     { account_id: "a3", name: "Opachs", client_id: OPACHS },
     { account_id: "a4", name: "Prospect", client_id: null },
+    { account_id: "a5", name: "EZ Services", client_id: EZ },
   ];
 
-  function stub(opts: { revenue?: number; rates?: number }) {
+  function stub(opts: { revenue?: number; deals?: number }) {
     const urls: string[] = [];
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const u = String(input);
@@ -110,47 +136,50 @@ describe("listAccountsService ARR (live)", () => {
       if (u.includes("/rest/v1/accounts?")) {
         return new Response(JSON.stringify(accountRows), {
           status: 200,
-          headers: { "content-range": "0-3/4" },
+          headers: { "content-range": "0-4/5" },
         });
       }
       if (u.includes("/rest/v1/revenue_customers?")) {
         if (opts.revenue) return new Response("boom", { status: opts.revenue });
-        return new Response(JSON.stringify(reads.ok ? reads.revenue : []), { status: 200 });
+        return new Response(JSON.stringify(revenue), { status: 200 });
       }
-      if (u.includes("/rest/v1/billing_rate_configs?")) {
-        if (opts.rates) return new Response("boom", { status: opts.rates });
-        return new Response(JSON.stringify([{ client_id: HILLCREST, base_fee_cents: 50000 }]), { status: 200 });
+      if (u.includes("/rest/v1/deals?")) {
+        if (opts.deals) return new Response("boom", { status: opts.deals });
+        return new Response(JSON.stringify(deals), { status: 200 });
       }
       return new Response("unexpected " + u, { status: 500 });
     }) as typeof fetch;
     return urls;
   }
 
-  test("billable shows contract ARR, Nostaira Not available, non-billable none", async () => {
+  test("billable shows deal ARR, ambiguous Unavailable, non-billable none", async () => {
     const urls = stub({});
     const r = await listAccountsService({});
     assert.equal(r.source, "live");
     const by = Object.fromEntries(r.accounts.map((a) => [a.name, a]));
     assert.equal(by.Hillcrest.arr, 6000);
     assert.equal(by.Hillcrest.arrInfo?.state, "base_contract");
-    assert.equal(by.Nostaira.arr, 0);
-    assert.equal(by.Nostaira.arrInfo?.state, "not_available");
+    assert.equal(by.Nostaira.arr, 3000);
+    assert.equal(by.Nostaira.arrInfo?.state, "base_contract");
+    assert.equal(by["EZ Services"].arr, 0);
+    assert.equal(by["EZ Services"].arrInfo?.state, "unavailable");
     assert.equal(by.Opachs.arrInfo?.state, "not_billable");
     assert.equal(by.Prospect.arrInfo?.state, "not_billable");
-    assert.ok(urls.some((u) => u.includes("billing_rate_configs") && u.includes("is_active=eq.true")));
+    assert.ok(urls.some((u) => u.includes("/rest/v1/deals?") && u.includes("stripe_customer_id=in.")));
+    assert.ok(!urls.some((u) => u.includes("billing_rate_configs")), "no longer reads billing_rate_configs");
     assert.ok(!urls.some((u) => u.includes("select=") && /accounts\?.*(arr|mrr)/.test(u)), "never selects arr or mrr from accounts");
   });
 
   test("a failed revenue read marks ARR Unavailable but keeps the account rows", async () => {
     stub({ revenue: 500 });
     const r = await listAccountsService({});
-    assert.equal(r.accounts.length, 4);
+    assert.equal(r.accounts.length, 5);
     for (const a of r.accounts) assert.equal(a.arrInfo?.state, "unavailable");
     assert.ok(r.accounts.every((a) => a.arr === 0));
   });
 
-  test("a failed contract read marks ARR Unavailable, not zero", async () => {
-    stub({ rates: 500 });
+  test("a failed deals read marks ARR Unavailable, not zero", async () => {
+    stub({ deals: 500 });
     const r = await listAccountsService({});
     for (const a of r.accounts) assert.equal(a.arrInfo?.state, "unavailable");
   });

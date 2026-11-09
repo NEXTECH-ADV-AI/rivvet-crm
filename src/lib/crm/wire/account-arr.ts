@@ -1,37 +1,45 @@
 /**
  * Account ARR rules (RIV-1942). Pure, shared by the server read and the UI.
  *
- * ARR here is base contract ARR only: the active contracted monthly base fee
- * times 12. Per-booking usage and RevShare are variable and never projected.
- * A customer counts as revenue only when public.revenue_customers says
- * billable (RIV-1937); an unregistered account has no ARR.
+ * ARR here is contract ARR only: the deal's monthly_total x 12. Per-booking
+ * usage and RevShare are variable and never projected. The join is
+ * account.client_id -> public.revenue_customers (billable, RIV-1937) ->
+ * its stripe_customer_id -> public.deals.stripe_customer_id. An unregistered
+ * or non-billable account has no ARR. Ambiguity or a missing value is
+ * Unavailable, never a guess or a sum.
  */
 
 import type { Account, AccountArrInfo } from "../types";
 
 export type RevenueCustomerRow = {
   client_id: string | null;
+  stripe_customer_id: string | null;
   billable: boolean;
 };
 
-export type RateConfigRow = {
-  client_id: string;
-  base_fee_cents: number | string | null;
+export type DealRow = {
+  stripe_customer_id: string | null;
+  monthly_total: number | string | null;
 };
 
 export type ArrReads =
-  | { ok: true; revenue: RevenueCustomerRow[]; rates: RateConfigRow[] }
+  | { ok: true; revenue: RevenueCustomerRow[]; deals: DealRow[] }
   | { ok: false };
 
 export const ARR_UNAVAILABLE: AccountArrInfo = { state: "unavailable" };
 
-/** Client ids the registry marks billable (any billable row makes the client billable). */
-export function billableClientIds(revenue: RevenueCustomerRow[]): Set<string> {
+/** Billable revenue rows for one client (any billable row makes the client billable). */
+function billableRows(revenue: RevenueCustomerRow[], clientId: string): RevenueCustomerRow[] {
+  return revenue.filter((r) => r.billable === true && r.client_id === clientId);
+}
+
+/** Distinct Stripe customer ids of billable rows, for every client in the list. */
+export function billableStripeIds(revenue: RevenueCustomerRow[]): string[] {
   const out = new Set<string>();
   for (const r of revenue) {
-    if (r.billable === true && r.client_id) out.add(r.client_id);
+    if (r.billable === true && r.client_id && r.stripe_customer_id) out.add(r.stripe_customer_id);
   }
-  return out;
+  return [...out];
 }
 
 export function deriveAccountArr(
@@ -39,13 +47,19 @@ export function deriveAccountArr(
   reads: ArrReads,
 ): AccountArrInfo {
   if (!reads.ok) return ARR_UNAVAILABLE;
-  if (!clientId || !billableClientIds(reads.revenue).has(clientId)) {
-    return { state: "not_billable" };
-  }
-  const rate = reads.rates.find((r) => r.client_id === clientId);
-  const cents = rate == null || rate.base_fee_cents == null ? NaN : Number(rate.base_fee_cents);
-  if (!Number.isFinite(cents) || cents <= 0) return { state: "not_available" };
-  return { state: "base_contract", arr: Math.round((cents * 12) / 100) };
+  const rows = clientId ? billableRows(reads.revenue, clientId) : [];
+  if (rows.length === 0) return { state: "not_billable" };
+  const stripeIds = new Set(rows.map((r) => r.stripe_customer_id).filter((s): s is string => !!s));
+  if (stripeIds.size === 0) return { state: "not_available" };
+  // Two billable Stripe customers on one account: which deal is it? Do not guess.
+  if (stripeIds.size > 1) return ARR_UNAVAILABLE;
+  const [stripeId] = [...stripeIds];
+  const deals = reads.deals.filter((d) => d.stripe_customer_id === stripeId);
+  if (deals.length === 0) return { state: "not_available" };
+  if (deals.length > 1) return ARR_UNAVAILABLE;
+  const monthly = deals[0].monthly_total == null ? NaN : Number(deals[0].monthly_total);
+  if (!Number.isFinite(monthly) || monthly <= 0) return ARR_UNAVAILABLE;
+  return { state: "base_contract", arr: Math.round(monthly * 12) };
 }
 
 /** Text for a cell. null means show nothing meaningful (dash). */

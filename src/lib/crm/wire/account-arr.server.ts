@@ -1,17 +1,17 @@
 /**
  * Reads the two Platform tables behind account ARR (RIV-1942), server side only.
- * public.revenue_customers (who is revenue) and public.billing_rate_configs
- * (the stored contracted base fee). No Stripe call, no write.
+ * public.revenue_customers (who is revenue, and their Stripe customer id) and
+ * public.deals (monthly_total, joined on stripe_customer_id). No Stripe call, no write.
  */
 
 import type { Account } from "../types";
 import { getServerSupabaseConfig } from "./config";
 import {
   ARR_UNAVAILABLE,
-  billableClientIds,
+  billableStripeIds,
   deriveAccountArr,
   type ArrReads,
-  type RateConfigRow,
+  type DealRow,
   type RevenueCustomerRow,
 } from "./account-arr";
 
@@ -34,21 +34,21 @@ function inList(ids: string[]): string {
 
 export async function readArrSources(clientIds: string[]): Promise<ArrReads> {
   const ids = [...new Set(clientIds.filter(Boolean))];
-  if (ids.length === 0) return { ok: true, revenue: [], rates: [] };
+  if (ids.length === 0) return { ok: true, revenue: [], deals: [] };
   try {
     const revenue = await getRows<RevenueCustomerRow>(
       "revenue_customers",
-      `select=client_id,billable&client_id=${inList(ids)}`,
+      `select=client_id,stripe_customer_id,billable&client_id=${inList(ids)}`,
     );
-    const billable = [...billableClientIds(revenue)];
-    const rates =
-      billable.length === 0
+    const stripeIds = billableStripeIds(revenue);
+    const deals =
+      stripeIds.length === 0
         ? []
-        : await getRows<RateConfigRow>(
-            "billing_rate_configs",
-            `select=client_id,base_fee_cents&is_active=eq.true&client_id=${inList(billable)}`,
+        : await getRows<DealRow>(
+            "deals",
+            `select=stripe_customer_id,monthly_total&stripe_customer_id=${inList(stripeIds)}`,
           );
-    return { ok: true, revenue, rates };
+    return { ok: true, revenue, deals };
   } catch {
     return { ok: false };
   }
