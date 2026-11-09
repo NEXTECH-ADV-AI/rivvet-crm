@@ -207,6 +207,19 @@ export type AccountLifecycle =
 
 export type AccountHealth = "healthy" | "watch" | "risk";
 
+/**
+ * RIV-1942: the ARR state of one account.
+ * base_contract: billable, from the active contracted base fee x 12 (usage and RevShare excluded).
+ * not_billable: not a revenue customer, so no ARR.
+ * not_available: billable but no stored contract value the CRM can read.
+ * unavailable: the revenue or contract read failed.
+ */
+export type AccountArrInfo =
+  | { state: "base_contract"; arr: number }
+  | { state: "not_billable" }
+  | { state: "not_available" }
+  | { state: "unavailable" };
+
 export interface Account {
   id: string;
   /** UUID account_id when live */
@@ -219,7 +232,10 @@ export interface Account {
   lifecycleStage?: AccountLifecycle;
   ownerId: OwnerId;
   ownerEmail?: string | null;
+  /** Base contract ARR in dollars; 0 whenever arrInfo is not base_contract (RIV-1942). */
   arr: number;
+  /** Where arr came from, or why there is none. Absent in mock mode. */
+  arrInfo?: AccountArrInfo;
   billingEmail: string | null;
   nextAction: string | null;
   nextActionDue: string | null;
