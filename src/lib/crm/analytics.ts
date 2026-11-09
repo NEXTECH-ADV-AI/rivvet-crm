@@ -34,6 +34,25 @@ export function pipelineState(input: {
   return input.opportunities.length ? "ready" : "empty";
 }
 
+/** The three money KPIs on Analytics, exactly as rendered. Only a "ready"
+ *  pipeline shows dollars; loading, unavailable and empty each show their own
+ *  state, never a formatted $0 (RIV-1940). */
+export function pipelineKpiDisplay(
+  state: PipelineState,
+  kpis: { pipeline: number; weighted: number; closing30Amt: number; closing30Count: number },
+): { pipeline: string; weighted: string; closing: string; closingSub: string | undefined } {
+  if (state !== "ready") {
+    const v = state === "loading" ? "\u2026" : state === "unavailable" ? "Unavailable" : "None yet";
+    return { pipeline: v, weighted: v, closing: v, closingSub: undefined };
+  }
+  return {
+    pipeline: formatMoney(kpis.pipeline),
+    weighted: formatMoney(kpis.weighted),
+    closing: formatMoney(kpis.closing30Amt),
+    closingSub: `${kpis.closing30Count} ${kpis.closing30Count === 1 ? "opportunity" : "opportunities"}`,
+  };
+}
+
 function openOpp(o: Opportunity) {
   return o.stage !== "closed_won" && o.stage !== "closed_lost";
 }

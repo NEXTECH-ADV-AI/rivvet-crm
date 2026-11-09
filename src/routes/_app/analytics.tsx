@@ -18,7 +18,7 @@ import { PageHeader } from "@/components/crm/page-header";
 import { PriorityBadge } from "@/components/crm/priority-badge";
 import { useCrmStore } from "@/lib/crm/store";
 import { useLeadBook } from "@/lib/crm/wire";
-import { buildGtmAnalytics, formatMoney, pipelineState } from "@/lib/crm/analytics";
+import { buildGtmAnalytics, formatMoney, pipelineKpiDisplay, pipelineState } from "@/lib/crm/analytics";
 import { formatDate, STAGE_LABEL, plain } from "@/lib/crm/priority";
 
 export const Route = createFileRoute("/_app/analytics")({
@@ -39,8 +39,6 @@ function AnalyticsPage() {
   const hydratedAt = useCrmStore((s) => s.hydratedAt);
   const unavailable = useCrmStore((s) => s.opportunitiesUnavailable);
   const pipeline = pipelineState({ opportunities, hydratedAt, unavailable });
-  const noPipelineNumber =
-    pipeline === "loading" ? "…" : pipeline === "unavailable" ? "Unavailable" : null;
   const notice =
     pipeline === "loading"
       ? "Loading opportunities…"
@@ -49,7 +47,6 @@ function AnalyticsPage() {
         : pipeline === "empty"
           ? "No opportunities yet."
           : null;
-  const money = (v: number) => noPipelineNumber ?? formatMoney(v);
   const book = useLeadBook().data?.book ?? null;
 
   const data = useMemo(
@@ -58,6 +55,7 @@ function AnalyticsPage() {
   );
   const n = (v: number | null) => (v == null ? "…" : v.toLocaleString());
   const { kpis } = data;
+  const money = pipelineKpiDisplay(pipeline, kpis);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -90,16 +88,12 @@ function AnalyticsPage() {
           label="HVAC share"
           value={kpis.hvacShare == null ? "…" : `${kpis.hvacShare}%`}
         />
-        <Kpi label="Pipeline" value={money(kpis.pipeline)} />
-        <Kpi label="Weighted" value={money(kpis.weighted)} />
+        <Kpi label="Pipeline" value={money.pipeline} />
+        <Kpi label="Weighted" value={money.weighted} />
         <Kpi
           label="Closing in 30 days"
-          value={money(kpis.closing30Amt)}
-          sub={
-            noPipelineNumber
-              ? undefined
-              : `${kpis.closing30Count} ${kpis.closing30Count === 1 ? "opportunity" : "opportunities"}`
-          }
+          value={money.closing}
+          sub={money.closingSub}
         />
       </div>
 
