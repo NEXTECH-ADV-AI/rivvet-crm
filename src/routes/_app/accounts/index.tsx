@@ -6,6 +6,7 @@ import { PriorityBadge } from "@/components/crm/priority-badge";
 import { StatusChip } from "@/components/crm/status-chip";
 import { EmptyState } from "@/components/crm/empty-state";
 import { DEMO_NOW } from "@/lib/crm/seed";
+import { arrText } from "@/lib/crm/wire/account-arr";
 import { accountPriority, formatMoney, formatRelative, STAGE_LABEL } from "@/lib/crm/priority";
 import { VERTICAL_LABEL } from "@/lib/crm/lead-model";
 import { useAccountsFunnel, useAccountsList } from "@/lib/crm/wire";
@@ -200,6 +201,9 @@ function AccountsPage() {
                   <th className="px-4 py-2.5 font-medium">Location</th>
                   <th className="px-4 py-2.5 font-medium">Updated</th>
                   <th className="px-4 py-2.5 font-medium text-right">ICP</th>
+                  <th className="px-4 py-2.5 font-medium text-right" title="Contracted base fee x 12. Usage and RevShare are not included.">
+                    Base ARR
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -258,11 +262,10 @@ function AccountsPage() {
                         {formatRelative(a.lastTouch, DEMO_NOW)}
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-xs tabular">
-                        {a.qualificationScore != null
-                          ? a.qualificationScore
-                          : a.arr
-                            ? formatMoney(a.arr)
-                            : "—"}
+                        {a.qualificationScore != null ? a.qualificationScore : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-xs tabular">
+                        {arrText(a, formatMoney) ?? ""}
                       </td>
                     </tr>
                   );
