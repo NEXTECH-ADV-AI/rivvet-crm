@@ -207,6 +207,19 @@ export type AccountLifecycle =
 
 export type AccountHealth = "healthy" | "watch" | "risk";
 
+/**
+ * RIV-1942: the ARR state of one account.
+ * base_contract: billable, from the matching deal's monthly_total x 12 (usage and RevShare excluded).
+ * not_billable: not a revenue customer, so no ARR.
+ * not_available: billable but no deal row for its Stripe customer.
+ * unavailable: the read failed, or the deal is ambiguous (more than one) or has no monthly_total.
+ */
+export type AccountArrInfo =
+  | { state: "base_contract"; arr: number }
+  | { state: "not_billable" }
+  | { state: "not_available" }
+  | { state: "unavailable" };
+
 export interface Account {
   id: string;
   /** UUID account_id when live */
@@ -219,7 +232,10 @@ export interface Account {
   lifecycleStage?: AccountLifecycle;
   ownerId: OwnerId;
   ownerEmail?: string | null;
+  /** Base contract ARR in dollars; 0 whenever arrInfo is not base_contract (RIV-1942). */
   arr: number;
+  /** Where arr came from, or why there is none. Absent in mock mode. */
+  arrInfo?: AccountArrInfo;
   billingEmail: string | null;
   nextAction: string | null;
   nextActionDue: string | null;

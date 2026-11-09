@@ -14,6 +14,7 @@ import {
   type ProdAccountRow,
   type ProdContactRow,
 } from "./account-map";
+import { withAccountArr } from "./account-arr.server";
 import { parseTotal } from "./supabase-rest.server";
 
 const DEFAULT_LIMIT = 50;
@@ -217,7 +218,7 @@ export async function listAccountsService(
     const total = parseTotal(res.headers.get("content-range")) ?? rows.length;
     return {
       source: "live",
-      accounts: rows.map(mapAccountRow),
+      accounts: await withAccountArr(rows.map(mapAccountRow)),
       total,
       limit,
       offset,
@@ -259,7 +260,7 @@ export async function getAccountService(
     if (!accRows[0]) {
       return { source: "live", account: null, contacts: [] };
     }
-    const account = mapAccountRow(accRows[0]);
+    const [account] = await withAccountArr([mapAccountRow(accRows[0])]);
 
     const cRes = await fetch(
       `${url}/rest/v1/contacts?select=contact_id,account_id,name,title,email,phone,is_primary,created_at&account_id=eq.${encodeURIComponent(id)}&order=is_primary.desc,created_at.asc&limit=50`,

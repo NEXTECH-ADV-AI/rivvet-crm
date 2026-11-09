@@ -136,7 +136,8 @@ export function mapAccountRow(row: ProdAccountRow): Account {
     lifecycleStage: life,
     ownerId: ownerFromEmail(ownerEmail),
     ownerEmail,
-    arr: num(row.arr ?? row.mrr, 0),
+    // public.accounts has no arr or mrr column (RIV-1942); withAccountArr stamps it.
+    arr: 0,
     billingEmail: row.billing_email ? str(row.billing_email) : null,
     nextAction: row.next_action ? str(row.next_action) : null,
     nextActionDue: row.next_action_due ? str(row.next_action_due) : null,

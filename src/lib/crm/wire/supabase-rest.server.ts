@@ -7,12 +7,12 @@ import { getServerSupabaseConfig } from "./config";
 import type { GtmLeadRow } from "./gtm-lead-map";
 
 export class WireHttpError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-  ) {
+  // Explicit field, not a parameter property: node's strip-only test runner rejects those.
+  status: number;
+  constructor(message: string, status: number) {
     super(message);
     this.name = "WireHttpError";
+    this.status = status;
   }
 }
 
