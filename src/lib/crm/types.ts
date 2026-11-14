@@ -253,6 +253,7 @@ export interface Account {
   primaryContactName?: string | null;
   primaryContactEmail?: string | null;
   primaryContactPhone?: string | null;
+  nextActionKnown?: boolean;
   clientId?: string | null;
   isTest?: boolean;
 }
@@ -283,6 +284,8 @@ export interface Opportunity {
   primaryContactId: string | null;
   stage: OppStage;
   amount: number;
+  /** False only when no source amount was recorded; explicit zero is a known amount. */
+  amountKnown?: boolean;
   monthlyAmount: number | null;
   currency: string;
   ownerId: OwnerId;
@@ -333,6 +336,7 @@ export interface Activity {
   dueAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  isTest?: boolean;
   secondaryRelatedType?: "lead" | "opportunity" | "account";
   secondaryRelatedId?: string;
 }

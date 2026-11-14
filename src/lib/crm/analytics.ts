@@ -1,4 +1,3 @@
-import { DEMO_NOW } from "./seed";
 import {
   daysUntil,
   formatMoney,
@@ -39,16 +38,16 @@ export function pipelineState(input: {
  *  state, never a formatted $0 (RIV-1940). */
 export function pipelineKpiDisplay(
   state: PipelineState,
-  kpis: { pipeline: number; weighted: number; closing30Amt: number; closing30Count: number },
+  kpis: { pipeline: number; weighted: number; closing30Amt: number; closing30Count: number; unpriced?: number; openDeals?: number; closingUnpriced?: number },
 ): { pipeline: string; weighted: string; closing: string; closingSub: string | undefined } {
   if (state !== "ready") {
     const v = state === "loading" ? "\u2026" : state === "unavailable" ? "Unavailable" : "None yet";
     return { pipeline: v, weighted: v, closing: v, closingSub: undefined };
   }
   return {
-    pipeline: formatMoney(kpis.pipeline),
-    weighted: formatMoney(kpis.weighted),
-    closing: formatMoney(kpis.closing30Amt),
+    pipeline: kpis.unpriced && kpis.unpriced === kpis.openDeals ? "Not priced" : formatMoney(kpis.pipeline),
+    weighted: kpis.unpriced && kpis.unpriced === kpis.openDeals ? "Not priced" : formatMoney(kpis.weighted),
+    closing: kpis.closingUnpriced && kpis.closingUnpriced === kpis.closing30Count ? "Not priced" : formatMoney(kpis.closing30Amt),
     closingSub: `${kpis.closing30Count} ${kpis.closing30Count === 1 ? "opportunity" : "opportunities"}`,
   };
 }
@@ -63,7 +62,11 @@ export function buildGtmAnalytics(
   accounts: Account[],
   activities: Activity[],
   book?: LeadBookSnapshot | null,
+  options: { period?: "30d" | "all"; now?: number } = {},
 ) {
+  const now = options.now ?? Date.now();
+  const inPeriod = (iso: string) => options.period !== "30d" || (Date.parse(iso) >= now - 30 * 86400000 && Date.parse(iso) <= now);
+  const periodLeads = leads.filter((l) => inPeriod(l.createdAt));
   const open = opportunities.filter(openOpp);
   const won = opportunities.filter((o) => o.stage === "closed_won");
   const lost = opportunities.filter((o) => o.stage === "closed_lost");
@@ -74,10 +77,10 @@ export function buildGtmAnalytics(
   );
   const wonYtd = won.reduce((s, o) => s + o.amount, 0);
   const closing30 = open.filter(
-    (o) => o.closeDate && daysUntil(o.closeDate, DEMO_NOW) <= 30,
+    (o) => o.closeDate && daysUntil(o.closeDate, now) >= 0 && daysUntil(o.closeDate, now) <= 30,
   );
   const closing30Amt = closing30.reduce((s, o) => s + o.amount, 0);
-  const p1Opps = open.filter((o) => oppPriority(o, DEMO_NOW).priority === "P1");
+  const p1Opps = open.filter((o) => oppPriority(o, now).priority === "P1");
   const missingNext = open.filter((o) => !o.nextAction).length;
 
   const sequenceReady = leads.filter(isSequenceReady);
@@ -88,15 +91,15 @@ export function buildGtmAnalytics(
   );
   const openTasks = activities.filter((a) => !a.completedAt && a.dueAt);
 
-  const byStage = KANBAN_STAGES.filter((s) => s !== "closed_lost").map(
+  const byStage = KANBAN_STAGES.filter((s) => s !== "closed_lost" && s !== "closed_won").map(
     (stage) => {
-      const items =
-        stage === "closed_won" ? won : open.filter((o) => o.stage === stage);
+      const items = open.filter((o) => o.stage === stage);
       return {
         stage,
         label: STAGE_LABEL[stage] ?? stage,
         count: items.length,
         amount: items.reduce((s, o) => s + o.amount, 0),
+        unpriced: items.filter((o) => o.amountKnown === false).length,
       };
     },
   );
@@ -123,7 +126,7 @@ export function buildGtmAnalytics(
   const weekIndex = (iso: string | null | undefined) => {
     const t = iso ? new Date(iso).getTime() : NaN;
     if (!Number.isFinite(t)) return -1;
-    const ago = Math.floor((DEMO_NOW - t) / WEEK);
+    const ago = Math.floor((now - t) / WEEK);
     return ago >= 0 && ago < 6 ? 5 - ago : -1;
   };
   const weekly = ["W-5", "W-4", "W-3", "W-2", "W-1", "This"].map((week) => ({
@@ -135,46 +138,33 @@ export function buildGtmAnalytics(
   for (const o of opportunities) {
     const c = weekIndex(o.createdAt);
     if (c >= 0) weekly[c].created += 1;
-    const closedAt = weekIndex(o.updatedAt);
-    if (closedAt >= 0 && o.stage === "closed_won") weekly[closedAt].won += 1;
-    if (closedAt >= 0 && o.stage === "closed_lost") weekly[closedAt].lost += 1;
+    if (c >= 0 && o.stage === "closed_won") weekly[c].won += 1;
+    if (c >= 0 && o.stage === "closed_lost") weekly[c].lost += 1;
   }
 
-  const sourceMix = [
-    {
-      source: "Inbound",
-      value: leads.filter((l) =>
-        l.source.toLowerCase().includes("inbound"),
-      ).length,
-    },
-    {
-      source: "Outbound",
-      value: leads.filter((l) => l.source.toLowerCase().includes("outbound"))
-        .length,
-    },
-    {
-      source: "Scrape",
-      value: leads.filter(
-        (l) =>
-          l.source.toLowerCase().includes("scrape") ||
-          l.source.toLowerCase().includes("google_maps"),
-      ).length,
-    },
-    {
-      source: "Partner",
-      value: leads.filter(
-        (l) =>
-          l.source.toLowerCase().includes("partner") ||
-          l.source.toLowerCase().includes("referral"),
-      ).length,
-    },
-  ].filter((s) => s.value > 0);
+  const sourceCounts = new Map<string, number>();
+  for (const lead of periodLeads) {
+    const source = lead.source.toLowerCase();
+    const label = /partner|referral/.test(source) ? "Partner"
+      : source.includes("inbound") ? "Inbound"
+      : source.includes("outbound") ? "Outbound"
+      : /scrape|google_maps/.test(source) ? "Scrape" : "Other";
+    sourceCounts.set(label, (sourceCounts.get(label) ?? 0) + 1);
+  }
+  const sourceMix = [...sourceCounts].map(([source, value]) => ({ source, value }));
 
   const closedTotal = won.length + lost.length;
   const winRate =
     closedTotal > 0 ? Math.round((won.length / closedTotal) * 100) : null;
 
   return {
+    period: {
+      created: opportunities.filter((o) => inPeriod(o.createdAt)).length,
+      won: won.length,
+      lost: lost.length,
+      activities: activities.filter((a) => inPeriod(a.completedAt ?? a.createdAt)).length,
+      leads: periodLeads.length,
+    },
     kpis: {
       pipeline,
       weighted,
@@ -182,6 +172,8 @@ export function buildGtmAnalytics(
       closing30Amt,
       closing30Count: closing30.length,
       openDeals: open.length,
+      unpriced: open.filter((o) => o.amountKnown === false).length,
+      closingUnpriced: closing30.filter((o) => o.amountKnown === false).length,
       p1Count: p1Opps.length,
       missingNext,
       sequenceReady: sequenceReady.length,
@@ -212,8 +204,9 @@ export function buildGtmAnalytics(
         id: o.id,
         name: o.name,
         amount: o.amount,
+        amountKnown: o.amountKnown,
         stage: STAGE_LABEL[o.stage] ?? o.stage,
-        priority: oppPriority(o, DEMO_NOW).priority,
+        priority: oppPriority(o, now).priority,
         closeDate: o.closeDate,
       })),
   };

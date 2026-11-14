@@ -220,6 +220,7 @@ export function mapOpportunityRow(row: ProdOppRow): Opportunity {
       : null,
     stage,
     amount,
+    amountKnown: (row.amount ?? row.contract_value) != null && String(row.amount ?? row.contract_value).trim() !== "" && Number.isFinite(Number(row.amount ?? row.contract_value)),
     monthlyAmount,
     currency: "USD",
     ownerId: ownerFromEmail(ownerEmail),

@@ -14,6 +14,9 @@ import type { AccountLifecycle, Vertical } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
 
 export const Route = createFileRoute("/_app/accounts/")({
+  validateSearch: (search: Record<string, unknown>): { search?: string } => ({
+    search: typeof search.search === "string" ? search.search.slice(0, 200) : undefined,
+  }),
   component: AccountsPage,
 });
 
@@ -29,7 +32,8 @@ const LIFECYCLES: { value: AccountLifecycle | "all"; label: string }[] = [
 ];
 
 function AccountsPage() {
-  const [query, setQuery] = useState("");
+  const routeSearch = Route.useSearch();
+  const [query, setQuery] = useState(routeSearch.search ?? "");
   const [lifecycle, setLifecycle] = useState<AccountLifecycle | "all">("all");
   const [vertical, setVertical] = useState<string>("all");
   const [state, setState] = useState("all");

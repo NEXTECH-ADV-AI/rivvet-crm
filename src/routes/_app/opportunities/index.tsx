@@ -246,9 +246,9 @@ function OppsPage() {
                           {formatDate(o.closeDate)}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-xs font-semibold tabular">
-                          <div>{formatMoney(o.monthlyAmount ?? 0)}/mo</div>
+                          <div>{o.amountKnown === false ? "Not priced" : `${formatMoney(o.monthlyAmount ?? 0)}/mo`}</div>
                           <div className="font-normal text-fg-subtle">
-                            {formatMoney(o.amount)} TCV
+                            {o.amountKnown === false ? "Not priced" : `${formatMoney(o.amount)} TCV`}
                           </div>
                         </td>
                       </tr>

@@ -1,3 +1,4 @@
+import { CustomerOpsLink } from "@/components/crm/customer-ops-link";
 import { useMemo } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -81,6 +82,8 @@ function AccountDetail() {
           {accountQ.data.message}
         </p>
       )}
+
+      <CustomerOpsLink clientId={account.clientId} />
 
       <RecordHeader
         title={account.name}
@@ -214,7 +217,7 @@ function AccountDetail() {
                           </p>
                         </div>
                         <span className="font-mono text-xs font-semibold tabular">
-                          {formatMoney(o.amount)}
+                          {o.amountKnown === false ? "Not priced" : formatMoney(o.amount)}
                         </span>
                       </Link>
                     </li>
