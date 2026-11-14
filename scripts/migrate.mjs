@@ -14,6 +14,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
 
+// RIV-2230: preview builds may inherit a production database binding.
+// A review deployment must never apply migrations to that database.
+if (process.env.VERCEL_ENV === "preview") {
+  console.log("[migrate] Preview build: skipping database migrations.");
+  process.exit(0);
+}
+
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   console.log(
