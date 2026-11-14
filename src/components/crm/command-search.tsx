@@ -118,7 +118,7 @@ export function CommandSearch() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search leads, accounts, opps…"
-              className="min-w-0 flex-1 bg-transparent py-3 text-base text-ink outline-none placeholder:text-fg-subtle"
+              className="min-w-0 flex-1 bg-transparent py-3 text-base text-ink placeholder:text-fg-subtle"
             />
             <Dialog.Close
               aria-label="Close search"

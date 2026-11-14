@@ -21,9 +21,11 @@ function Login() {
 
   const pending = useRef(false);
   const input = useRef<HTMLInputElement>(null);
+  const previousStep = useRef(step);
 
   useEffect(() => {
-    input.current?.focus();
+    if (step !== previousStep.current || error) input.current?.focus();
+    previousStep.current = step;
   }, [step, error]);
 
   // Tapping the email link signs in another tab; this tab follows it to Home (RIV-1544).
@@ -65,7 +67,7 @@ function Login() {
   }
 
   const field =
-    "w-full rounded-md border border-border-soft bg-card px-3 py-3 text-base text-ink placeholder:text-fg-subtle outline-none transition focus:border-product-mint";
+    "w-full rounded-md border border-border-soft bg-card px-3 py-3 text-base text-ink placeholder:text-fg-subtle transition focus:border-product-mint";
   const button =
     "flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 

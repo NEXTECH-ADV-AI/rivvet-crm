@@ -76,8 +76,12 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-signal-cyan);
+    outline: 2px solid var(--crm-focus-ring, var(--color-product-mint));
     outline-offset: 2px;
+  }
+
+  .bg-sidebar {
+    --crm-focus-ring: var(--color-bright-mint);
   }
 
   ::selection {
