@@ -173,7 +173,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Kpi label="Amount" value={formatMoney(record.form.amount ?? 0)} />
+        <Kpi label="Amount" value={record.form.amount == null ? "Not priced" : formatMoney(record.form.amount)} />
         <Kpi label="Expected close" value={record.form.closeDate ? formatDate(record.form.closeDate) : "Not set"} />
         <Kpi label="Next step due" value={record.form.nextStepDue ? formatDate(record.form.nextStepDue) : "Not set"} />
         <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5 shadow-soft">

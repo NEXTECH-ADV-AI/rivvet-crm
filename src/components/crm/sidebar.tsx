@@ -8,7 +8,7 @@ import {
   BarChart3,
   Settings,
 } from "lucide-react";
-import { RivvetIcon, RivvetWordmarkOnDark } from "./logo";
+import { RivvetBrand } from "./logo";
 import { cn } from "@/components/ui/cn";
 import { useCrmStore } from "@/lib/crm/store";
 import { queueAccounts } from "@/lib/crm/filters";
@@ -56,12 +56,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate}
         className="flex items-center gap-2.5 px-3.5 py-4 hover:bg-sidebar-hover/60"
       >
-        <RivvetIcon className="size-9 shrink-0" alt="" />
         <div className="min-w-0">
-          <RivvetWordmarkOnDark className="h-[18px] w-auto max-w-[128px]" />
-          <p className="mt-0.5 font-mono text-[9px] tracking-[0.18em] text-bright-mint">
-            CRM
-          </p>
+          <RivvetBrand variant="dark" />
+          <p className="mt-2 font-mono text-[9px] tracking-[0.18em] text-bright-mint">CRM</p>
         </div>
       </Link>
 

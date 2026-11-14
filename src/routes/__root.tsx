@@ -28,12 +28,8 @@ export const Route = createRootRoute({
         : []),
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/brand/rivvet-icon.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/brand/rivvet-ai-icon-transparent.svg" },
       { rel: "stylesheet", href: appCss },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap",
-      },
     ],
   }),
   component: RootDocument,

@@ -1,0 +1,30 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Rivvet AI white transparent hex icon</title>
+  <desc id="desc">Canonical Rivvet AI six-node hex icon on a white transparent background.</desc>
+  <defs>
+    <linearGradient id="rv-icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <g stroke="url(#rv-icon-grad)" stroke-width="14.76" stroke-linecap="round" opacity="0.85" fill="none">
+    <line x1="512.00" y1="216.80" x2="767.69" y2="364.40"/>
+    <line x1="512.00" y1="216.80" x2="256.31" y2="364.40"/>
+    <line x1="512.00" y1="807.20" x2="767.69" y2="659.60"/>
+    <line x1="512.00" y1="807.20" x2="256.31" y2="659.60"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="10.33" stroke-linecap="round" opacity="0.38" fill="none">
+    <line x1="512.00" y1="512.00" x2="512.00" y2="216.80"/>
+    <line x1="512.00" y1="512.00" x2="767.69" y2="659.60"/>
+    <line x1="512.00" y1="512.00" x2="256.31" y2="659.60"/>
+  </g>
+  <g fill="#FFFFFF" stroke="url(#rv-icon-grad)" stroke-width="20.5">
+    <circle cx="512.00" cy="216.80" r="61.5"/>
+    <circle cx="767.69" cy="364.40" r="61.5"/>
+    <circle cx="767.69" cy="659.60" r="61.5"/>
+    <circle cx="512.00" cy="807.20" r="61.5"/>
+    <circle cx="256.31" cy="659.60" r="61.5"/>
+    <circle cx="256.31" cy="364.40" r="61.5"/>
+  </g>
+  <circle cx="512" cy="512" r="61.5" fill="url(#rv-icon-grad)"/>
+</svg>

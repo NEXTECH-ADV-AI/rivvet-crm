@@ -1,3 +1,4 @@
+import { useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccountFn,
@@ -153,10 +154,15 @@ export function usePatchOpportunityStage() {
 /** Full-book hydrate into Zustand so Home / Kanban / Analytics stay functional E2E */
 export function useCrmHydrate() {
   const hydrateFromWire = useCrmStore((s) => s.hydrateFromWire);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Refresh overview data without replacing values while a record is being edited.
+  const overview = ["/home", "/analytics", "/activities"].includes(pathname.replace(/\/$/, ""));
   const q = useQuery({
     queryKey: ["crm", "hydrate"],
     queryFn: () => hydrateCrmFn(),
     staleTime: 60_000,
+    refetchInterval: overview ? 5 * 60_000 : false,
+    refetchOnWindowFocus: overview,
   });
 
   useEffect(() => {
@@ -169,6 +175,7 @@ export function useCrmHydrate() {
         contacts: q.data.contacts,
         activities: q.data.activities,
         message: q.data.message,
+        counts: q.data.counts,
       });
     }
   }, [q.data, hydrateFromWire]);

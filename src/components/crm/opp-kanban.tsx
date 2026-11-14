@@ -124,7 +124,8 @@ export function OppKanban({
                     </span>
                   </div>
                   <p className="mt-0.5 font-mono text-[10px] tabular text-fg-muted">
-                    {formatMoney(total)}
+                    {cards.length > 0 && cards.every((o) => o.amountKnown === false) ? "Not priced" : formatMoney(total)}
+                    {cards.some((o) => o.amountKnown === false) && <span className="ml-1">· {cards.filter((o) => o.amountKnown === false).length} unpriced</span>}
                   </p>
                 </header>
 
@@ -180,8 +181,8 @@ export function OppKanban({
                         </div>
                         <div className="flex items-center justify-between gap-2 pl-4">
                           <span className="font-mono text-xs font-semibold tabular text-ink">
-                            {formatMoney(o.monthlyAmount ?? o.amount)}
-                            {o.monthlyAmount ? (
+                            {o.amountKnown === false ? "Not priced" : formatMoney(o.monthlyAmount ?? o.amount)}
+                            {o.amountKnown !== false && o.monthlyAmount ? (
                               <span className="font-normal text-fg-subtle">/mo</span>
                             ) : null}
                           </span>
