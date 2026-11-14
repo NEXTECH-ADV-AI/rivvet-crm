@@ -96,3 +96,13 @@ desktop.addEventListener('change', () => {
   const menu = document.getElementById('menu-dialog');
   if (desktop.matches && menu.open) menu.close();
 });
+
+const priorityToggle = document.getElementById('priority-toggle');
+priorityToggle.addEventListener('click', () => {
+  const expanded = priorityToggle.getAttribute('aria-expanded') !== 'true';
+  const rows = [...document.querySelectorAll('#sample-priority-list > li')];
+  for (const row of rows.slice(3)) row.hidden = !expanded;
+  priorityToggle.setAttribute('aria-expanded', String(expanded));
+  priorityToggle.textContent = expanded ? 'Show fewer' : `Show all ${rows.length}`;
+  document.getElementById('priority-count').textContent = `Showing ${expanded ? rows.length : 3} of ${rows.length} priorities`;
+});

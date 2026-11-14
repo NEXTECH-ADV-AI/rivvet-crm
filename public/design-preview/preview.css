@@ -10,3 +10,5 @@
 /* Keep the review disclosure visible while scrolling each page. */
 .preview-banner{position:sticky;top:0;z-index:3}.topbar{top:39px}.sidebar{top:39px;height:calc(100dvh - 39px)}.dialog-disclosure{padding:0 12px 8px;color:var(--muted);font-size:11px}.drawer .dialog-disclosure{color:#a4b2bf}
 @media(max-width:767px){.topbar{top:57px}}
+
+.priority-disclosure{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}

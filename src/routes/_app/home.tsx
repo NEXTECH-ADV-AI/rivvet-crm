@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FounderMorningBrief } from "@/components/crm/founder-morning-brief";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, Building2, Target } from "lucide-react";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_app/home")({
 
 function HomePage() {
   const { user } = Route.useRouteContext();
+  const [showAllPriorities, setShowAllPriorities] = useState(false);
   const now = Date.now();
   const activities = useCrmStore((s) => s.activities);
   const hydrateMessage = useCrmStore((s) => s.hydrateMessage);
@@ -52,15 +54,21 @@ function HomePage() {
       <section className="mb-5 crm-surface overflow-hidden" aria-label="Today priorities">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft bg-ink px-4 py-4 text-white">
           <div><p className="font-mono text-[10px] uppercase tracking-widest text-bright-mint">Today</p><h2 className="mt-1 text-lg font-semibold">Start here</h2></div>
-          <span className="text-xs text-white/80">{dailyWork.filter((item) => item.state === "overdue").length} overdue · {dailyWork.filter((item) => item.state === "today").length} due today</span>
+          <span className="text-xs text-white/80">{hydratedAt ? `${dailyWork.filter((item) => item.state === "overdue").length} overdue · ${dailyWork.filter((item) => item.state === "today").length} due today` : "Loading priority counts..."}</span>
         </div>
         {!hydratedAt ? <p className="p-4 text-sm text-fg-muted">Loading your priorities...</p> : <>
           {hydrateMessage?.includes("unavailable") && <p role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">Some source data is unavailable. This priority list may be incomplete.</p>}
-          {dailyWork.length ? <ol className="divide-y divide-border-soft">{dailyWork.slice(0, 8).map((item, index) => <li key={item.id}><a href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-mist">
+          {dailyWork.length ? <ol id="daily-priority-list" className="divide-y divide-border-soft">{(showAllPriorities ? dailyWork : dailyWork.slice(0, 3)).map((item, index) => <li key={item.id}><a href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-mist">
             <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-mist font-mono text-xs text-fg-muted">{index + 1}</span>
             <div className="min-w-0 flex-1"><p className="break-words text-sm font-semibold">{item.title}</p><p className="mt-0.5 break-words text-xs text-fg-muted">{item.record} · {item.reason}</p></div>
             <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold ${item.state === "overdue" ? "bg-red-50 text-red-800" : item.state === "today" ? "bg-product-mint/10 text-product-mint" : "bg-mist text-fg-muted"}`}>{item.state === "unscheduled" ? "Plan next" : item.state === "upcoming" ? "Upcoming" : item.state === "today" ? "Today" : "Overdue"}</span>
           </a></li>)}</ol> : <p className="p-4 text-sm text-fg-muted">No follow-ups flagged in the loaded records.</p>}
+          {dailyWork.length > 3 && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-soft px-4 py-2">
+            <span className="text-xs text-fg-muted">Showing {showAllPriorities ? dailyWork.length : 3} of {dailyWork.length} priorities</span>
+            <button type="button" aria-expanded={showAllPriorities} aria-controls="daily-priority-list" onClick={() => setShowAllPriorities((show) => !show)} className="min-h-11 rounded-md px-3 py-2 text-xs font-semibold text-product-mint hover:bg-mist">
+              {showAllPriorities ? "Show fewer" : `Show all ${dailyWork.length}`}
+            </button>
+          </div>}
           <div className="flex flex-wrap justify-between gap-2 border-t border-border-soft px-4 py-3 text-xs text-fg-muted"><span>{dailyWork.length} flagged across {opportunities.length} loaded opportunities (up to 200), {accounts.length} loaded accounts and recent tasks.</span><Link to="/activities" className="font-semibold text-product-mint">All activities →</Link></div>
         </>}
       </section>
@@ -138,7 +146,11 @@ function HomePage() {
         </QueuePanel>
 
         <QueuePanel title="Accounts to check on" icon={Building2} to="/accounts">
-          {acctQ.length === 0 ? (
+          {!hydratedAt ? (
+            <p className="text-xs text-fg-muted">Loading accounts...</p>
+          ) : acctQ.length === 0 && hydrateMessage?.includes("customer accounts unavailable") ? (
+            <p role="alert" className="text-xs text-red-800">Customer accounts are unavailable right now. Refresh to try again.</p>
+          ) : acctQ.length === 0 ? (
             <p className="text-xs text-fg-muted">No account is flagged at risk in the loaded account sample.</p>
           ) : (
             acctQ.slice(0, 5).map((a) => {
