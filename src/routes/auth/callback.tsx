@@ -10,7 +10,7 @@
  * `?next=/home` was stripping the #access_token fragment and causing
  * "No sign-in token found".
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import {
@@ -100,6 +100,11 @@ function AuthCallback() {
   const [phase, setPhase] = useState<"working" | Outcome | "error">("working");
   const [error, setError] = useState<string | null>(null);
 
+  const recovery = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (phase === "error" || phase === "handoff") recovery.current?.focus();
+  }, [phase]);
+
   useEffect(() => {
     let live = true;
     signIn ??= runSignIn();
@@ -107,7 +112,8 @@ function AuthCallback() {
       (outcome) => {
         if (!live) return;
         setPhase(outcome);
-        if (outcome === "handoff") window.close(); // only where the browser allows it; the message covers the rest
+        if (outcome === "handoff")
+          window.close(); // only where the browser allows it; the message covers the rest
         else window.location.replace("/home");
       },
       (err: unknown) => {
@@ -125,7 +131,16 @@ function AuthCallback() {
     <main className="grid min-h-dvh place-items-center bg-mist px-4 py-10">
       <div className="w-full max-w-sm space-y-5 text-center">
         <RivvetBrand className="justify-center" />
-        <div className="crm-surface space-y-3 p-6">
+        <div className="crm-surface space-y-3 break-words p-4 sm:p-6">
+          <p role="status" className="sr-only">
+            {phase === "working"
+              ? "Signing you in to Rivvet CRM"
+              : phase === "done"
+                ? "Opening Rivvet CRM"
+                : phase === "handoff"
+                  ? "You are signed in. Rivvet CRM opened in your original tab."
+                  : ""}
+          </p>
           {phase === "working" && (
             <>
               <Loader2 className="mx-auto size-6 animate-spin text-product-mint" aria-hidden />
@@ -136,8 +151,14 @@ function AuthCallback() {
           {phase === "handoff" && (
             <>
               <p className="text-lg font-semibold text-ink">You're signed in</p>
-              <p className="text-sm text-fg-muted">Rivvet CRM opened in the tab where you asked for the code. You can close this tab.</p>
-              <a href="/home" className="inline-block text-sm font-semibold text-product-mint hover:underline">
+              <p className="text-sm text-fg-muted">
+                Rivvet CRM opened in the tab where you asked for the code. You can close this tab.
+              </p>
+              <a
+                ref={recovery}
+                href="/home"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-product-mint hover:underline"
+              >
                 Or keep working here
               </a>
             </>
@@ -145,10 +166,17 @@ function AuthCallback() {
           {phase === "error" && (
             <>
               <p className="text-lg font-semibold text-ink">Sign-in didn't work</p>
-              <p role="alert" className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+              <p
+                role="alert"
+                className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+              >
                 {error ?? "Unknown error"}
               </p>
-              <a href="/login" className="inline-flex rounded-md bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:bg-ink/90">
+              <a
+                ref={recovery}
+                href="/login"
+                className="inline-flex min-h-11 items-center rounded-md bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:bg-ink/90"
+              >
                 Back to sign in
               </a>
             </>

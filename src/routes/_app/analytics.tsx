@@ -231,7 +231,7 @@ function AnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <ul className="min-w-0 flex-1 space-y-1.5">
+            <ul className="min-w-[8rem] flex-1 space-y-1.5">
               {data.sourceMix.map((s, i) => (
                 <li
                   key={s.source}
@@ -313,10 +313,10 @@ function Kpi({
   warn?: boolean;
 }) {
   return (
-    <div className="crm-surface px-3 py-3">
+    <div className="crm-surface min-w-0 px-3 py-3">
       <p className="crm-label">{label}</p>
       <p
-        className={`mt-1 font-mono text-xl font-semibold tabular ${
+        className={`mt-1 break-words font-mono text-lg font-semibold sm:text-xl tabular ${
           warn
             ? "text-warn"
             : accent
@@ -371,7 +371,7 @@ function Panel({
   notice?: string | null;
 }) {
   return (
-    <section className={`crm-surface p-4 ${className ?? ""}`}>
+    <section className={`crm-surface min-w-0 p-4 ${className ?? ""}`}>
       <div className="mb-3">
         <h2 className="text-sm font-semibold text-ink">{title}</h2>
         {subtitle && (
