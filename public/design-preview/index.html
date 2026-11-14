@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Rivvet CRM | Sample design preview</title>
+  <link rel="stylesheet" href="./preview.css">
+  <script src="./preview.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <div class="preview-banner"><strong>Design preview · Sample data</strong><span>No live records, emails or account changes.</span></div>
+  <div class="shell">
+    <aside class="sidebar desktop-nav" aria-label="Desktop navigation">
+      <div class="brand"><img src="../brand/rivvet-ai-logo-lockup-white.svg" alt="Rivvet AI"><span>CRM</span></div>
+      <nav class="nav-items" aria-label="Primary">
+        <button data-page="home" aria-current="page">Home</button>
+        <button disabled>Leads <small>Unavailable</small></button>
+        <button disabled>Accounts <small>Unavailable</small></button>
+        <button disabled>Opportunities <small>Unavailable</small></button>
+        <button disabled>Activities <small>Unavailable</small></button>
+        <button data-page="analytics">Analytics</button>
+        <button data-page="signin">Sign-in design</button>
+      </nav>
+      <div class="nav-footer"><button disabled>Settings <small>Unavailable in preview</small></button></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <button id="menu-open" class="icon-button mobile-only" aria-label="Open menu" aria-expanded="false" aria-controls="menu-dialog">☰</button>
+        <img class="header-logo" src="../brand/rivvet-ai-logo-lockup-transparent.svg" alt="Rivvet AI">
+        <button id="search-open" class="search-trigger" aria-label="Search sample records" aria-haspopup="dialog" aria-expanded="false" aria-controls="search-dialog"><span aria-hidden="true">⌕</span><span class="wide-label">Search</span></button>
+      </header>
+      <main id="main" tabindex="-1">
+        <section id="home-view" data-view="home">
+          <div class="page-heading"><h1>What needs you</h1><p>Your next decisions, customer follow-ups and sales work.</p></div>
+          <section class="card morning"><div class="section-heading"><div><p class="eyebrow">Morning brief</p><h2>Keep the next conversation moving</h2></div><span class="pill">Sample snapshot</span></div><p>Three example follow-ups need attention. Review the overdue customer check-in, then prepare today's sales conversation.</p><p class="muted small">Source generated: sample only · Preview synced: sample only · Automatic updates are not connected here.</p></section>
+          <section class="card priorities" aria-label="Today priorities">
+            <div class="priority-heading"><div><p class="eyebrow">Today</p><h2>Start here</h2></div><span>1 overdue · 1 due today</span></div>
+            <ol class="priority-list">
+              <li><span class="number">1</span><div><strong>Check in after the first week</strong><p>Juniper Example Services · Customer follow-up</p><small>Record actions unavailable in this preview</small></div><span class="pill overdue">Overdue</span></li>
+              <li><span class="number">2</span><div><strong>Prepare the discovery conversation</strong><p>Harbor Sample Heating · Sales opportunity</p><small>Record actions unavailable in this preview</small></div><span class="pill today">Today</span></li>
+              <li><span class="number">3</span><div><strong>Choose a next step</strong><p>Cedar Demo Electric · No next step recorded</p><small>Record actions unavailable in this preview</small></div><span class="pill">Plan next</span></li>
+            </ol>
+            <p class="card-foot">3 flagged across 8 sample opportunities and 4 sample accounts. All figures are fictitious.</p>
+          </section>
+          <section class="call-queue"><div><p class="eyebrow">Call queue</p><strong>12 <span>sample contacts who opened an email and have a phone</span></strong></div><span class="unavailable">Calling unavailable</span></section>
+          <section class="card"><div class="section-heading"><h2>Outreach <span class="muted">· all time, sample lead book</span></h2><button class="text-button" data-page="analytics">Analytics →</button></div><div class="metrics five"><div><p>Leads</p><strong>240</strong></div><div><p>In a campaign</p><strong>96</strong></div><div><p>Opened</p><strong class="mint">38</strong></div><div><p>Replied</p><strong>9</strong></div><div><p>Demos booked</p><strong>4</strong></div></div></section>
+          <div class="two-columns"><section class="card"><h2>Opportunities needing a next step</h2><div class="sample-record"><span class="pill overdue">P1</span><div><strong>Cedar Demo Electric</strong><p>Discovery · Sample opportunity</p><p>Next: Set next step</p></div><span class="amount">Not priced</span></div><p class="muted small">Editing opportunities is unavailable.</p></section><section class="card"><h2>Accounts to check on</h2><div class="sample-record"><span class="pill overdue">P1</span><div><strong>Juniper Example Services</strong><p>Customer · Sample account</p><p>Next: First-week check-in</p></div></div><p class="muted small">Customer actions are unavailable.</p></section></div>
+        </section>
+        <section id="analytics-view" data-view="analytics" hidden>
+          <div class="page-heading"><h1>Analytics</h1><p>Leads, outreach and opportunities. Fictitious data for design review.</p></div>
+          <section class="card"><div class="section-heading"><div><h2>Sales activity</h2><p class="muted small">Choose the sample reporting window. Pipeline below is the current sample open book.</p></div><div class="segmented" aria-label="Reporting period"><button data-period="30d" aria-pressed="true">Past 30 days</button><button data-period="all" aria-pressed="false">All time</button></div></div><div class="metrics four"><div><p>Opportunities created</p><strong id="created-count">5</strong></div><div><p>Won opportunities, all time</p><strong>2</strong></div><div><p>Lost opportunities, all time</p><strong>1</strong></div><div><p>Loaded activity records</p><strong id="activity-count">18</strong></div></div><p class="card-foot" id="period-status" role="status">Sample period: past 30 days. Won/lost totals remain all time.</p><p class="muted small">Coverage: 8 sample opportunities, 40 sample leads, 4 sample accounts. Date filtering applies only to created opportunities and dated activities. These are fixed illustrations, not connected reporting.</p></section>
+          <p class="muted small">Current sample book totals, all time</p>
+          <div class="kpi-grid"><section class="card"><p class="eyebrow">Ready for email</p><strong class="kpi mint">72</strong><p class="muted small">96 valid email</p></section><section class="card"><p class="eyebrow">Open pipeline</p><strong class="kpi">$18,000</strong><p class="muted small">5 open, 1 not priced</p></section><section class="card"><p class="eyebrow">Weighted</p><strong class="kpi">$7,200</strong><p class="muted small">Known amounts only</p></section><section class="card"><p class="eyebrow">Closing in 30 days</p><strong class="kpi">$6,000</strong><p class="muted small">Dated sample opportunities</p></section></div>
+          <div class="two-columns"><section class="card"><h2>Pipeline by stage</h2><p class="muted small">Current sample open amounts only. Unpriced excluded.</p><div class="chart" aria-label="Sample pipeline: Discovery $4000, Proposal $8000, Negotiation $6000"><div><span>Discovery</span><div class="bar bar-half"></div><strong>$4,000</strong></div><div><span>Proposal</span><div class="bar bar-full"></div><strong>$8,000</strong></div><div><span>Negotiation</span><div class="bar bar-three"></div><strong>$6,000</strong></div></div></section><section class="card"><h2>Closed outcomes</h2><p class="muted small">All time, sample opportunities. Excluded from open pipeline.</p><div class="metrics two"><div><p>Closed won</p><strong>2</strong></div><div><p>Closed lost</p><strong>1</strong></div></div><p class="muted small">A record's edit date does not stand in for its close date.</p></section></div>
+        </section>
+        <section id="signin-view" data-view="signin" hidden>
+          <div class="page-heading"><h1>Sign-in design</h1><p>View-only states. No email is sent and no session is created.</p></div>
+          <div class="segmented state-controls" aria-label="Sign-in sample state"><button data-signin="email" aria-pressed="true">Email</button><button data-signin="code" aria-pressed="false">Code</button><button data-signin="error" aria-pressed="false">Error</button></div>
+          <div class="login-wrap"><img src="../brand/rivvet-ai-logo-lockup-transparent.svg" alt="Rivvet AI"><section class="card login-card"><p class="eyebrow">Rivvet CRM</p><h2 id="signin-title">Sign in</h2><p id="signin-description" class="muted">Use your Rivvet work email. This design sample cannot send a code.</p><div id="email-state"><label for="sample-email">Work email</label><input id="sample-email" type="email" value="reviewer@example.test" readonly autocomplete="off"><button class="primary" disabled>Email me a code</button></div><div id="code-state" hidden><label for="sample-code">Sign-in code</label><input id="sample-code" class="code" type="text" inputmode="numeric" value="12345678" readonly autocomplete="off"><button class="primary" disabled>Sign in</button><div class="recovery"><button disabled>Use a different email</button><button disabled>Send a new code</button></div></div><p id="signin-error" class="error" role="alert" hidden>Example error: That code didn't work. Try again.</p><p class="muted small">All sign-in actions are unavailable. Use the state controls above to inspect the design.</p></section><p class="muted small">Codes and links expire after 1 hour and work once in the actual app.</p></div>
+        </section>
+        <p class="review-foot">Standalone design review. Sample values do not represent Rivvet performance. Other pages and business actions are unavailable.</p>
+      </main>
+    </div>
+  </div>
+  <dialog id="menu-dialog" class="drawer" aria-labelledby="menu-title"><div class="dialog-heading"><h2 id="menu-title">Navigation</h2><button class="icon-button" data-close="menu-dialog" aria-label="Close menu">×</button></div><p class="dialog-disclosure">Design preview · Sample data</p><div class="brand"><img src="../brand/rivvet-ai-logo-lockup-white.svg" alt="Rivvet AI"><span>CRM</span></div><nav class="nav-items" aria-label="Mobile primary"><button data-page="home" aria-current="page">Home</button><button disabled>Leads <small>Unavailable</small></button><button disabled>Accounts <small>Unavailable</small></button><button disabled>Opportunities <small>Unavailable</small></button><button disabled>Activities <small>Unavailable</small></button><button data-page="analytics">Analytics</button><button data-page="signin">Sign-in design</button></nav><div class="nav-footer"><button disabled>Settings <small>Unavailable</small></button></div></dialog>
+  <dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title"><div class="dialog-heading"><h2 id="search-title">Search sample records</h2><button class="icon-button" data-close="search-dialog" aria-label="Close search">×</button></div><p class="dialog-disclosure">Design preview · Sample data</p><div class="search-body"><label for="sample-search">Company or page</label><input id="sample-search" type="search" placeholder="Search sample records" autocomplete="off"><p class="muted small">Local examples only. Record actions are unavailable.</p><ul id="search-results"></ul><p id="search-status" class="muted small" role="status"></p></div></dialog>
+</body>
+</html>
