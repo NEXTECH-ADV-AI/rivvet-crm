@@ -23,7 +23,7 @@ export function CrmHydrateBanner() {
   return (
     <div className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2 text-xs ${failed ? "border-amber-300 bg-amber-50 text-amber-900" : "border-border-soft bg-card text-fg-muted"}`}>
       <span role={failed ? "alert" : "status"}>{status}</span>
-      {overview ? <button type="button" disabled={q.isFetching} onClick={() => { void q.refetch(); void qc.refetchQueries({ queryKey: ["crm", "book"], type: "active" }); }} className="inline-flex items-center gap-1.5 rounded px-2 py-1 font-semibold hover:bg-mist disabled:opacity-50" aria-label="Refresh CRM overview">
+      {overview ? <button type="button" disabled={q.isFetching} onClick={() => { void q.refetch(); void qc.refetchQueries({ queryKey: ["crm", "book"], type: "active" }); void qc.refetchQueries({ queryKey: ["crm", "founder-morning-brief"], type: "active" }); }} className="inline-flex items-center gap-1.5 rounded px-2 py-1 font-semibold hover:bg-mist disabled:opacity-50" aria-label="Refresh CRM overview">
         <RefreshCw className={`size-3 ${q.isFetching ? "animate-spin" : ""}`} />{q.isFetching ? "Refreshing..." : "Refresh"}
       </button> : <span className="text-[10px] text-fg-subtle">Overview refresh pauses on record pages</span>}
     </div>

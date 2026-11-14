@@ -1,3 +1,4 @@
+import { FounderMorningBrief } from "@/components/crm/founder-morning-brief";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, Building2, Target } from "lucide-react";
 import { PageHeader } from "@/components/crm/page-header";
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_app/home")({
 });
 
 function HomePage() {
+  const { user } = Route.useRouteContext();
   const now = Date.now();
   const activities = useCrmStore((s) => s.activities);
   const hydrateMessage = useCrmStore((s) => s.hydrateMessage);
@@ -44,6 +46,8 @@ function HomePage() {
         title="What needs you"
         description="Your next decisions, customer follow-ups and sales work."
       />
+
+      {user.email === "brayden@rivvetai.com" && <FounderMorningBrief />}
 
       <section className="mb-5 crm-surface overflow-hidden" aria-label="Today priorities">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft bg-ink px-4 py-4 text-white">
