@@ -26,7 +26,7 @@ export function PriorityBadge({
     <span
       title={PRIORITY_HINT[priority]}
       className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+        "inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[12px] font-semibold",
         styles[priority],
         className,
       )}

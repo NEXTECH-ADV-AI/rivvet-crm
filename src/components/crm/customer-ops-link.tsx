@@ -28,7 +28,7 @@ export function CustomerOpsLink({
         }
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 font-semibold text-product-mint hover:underline"
+        className="min-h-11 inline-flex items-center gap-1 font-semibold text-product-mint hover:underline"
       >
         {clientId ? "Open customer in Ops" : "Browse Ops customers"}
         <ExternalLink className="size-3" />

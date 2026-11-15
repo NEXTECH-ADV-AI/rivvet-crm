@@ -12,11 +12,11 @@ export function MetaPanel({
   return (
     <section
       className={cn(
-        "rounded-xl border border-border-soft bg-card p-4 shadow-card",
+        "min-w-0 rounded-2xl border border-border bg-card p-4",
         className,
       )}
     >
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-subtle">
+      <h2 className="mb-3 text-[15px] font-semibold text-ink">
         {title}
       </h2>
       {children}
@@ -34,11 +34,11 @@ export function MetaRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-border-soft/70 py-2 text-sm last:border-0">
+    <div className="flex min-w-0 flex-wrap justify-between gap-2 border-b border-border-soft/70 py-2 text-sm last:border-0">
       <span className="shrink-0 text-fg-muted">{k}</span>
       <span
         className={cn(
-          "min-w-0 text-right text-ink break-all",
+          "min-w-0 max-w-full text-right text-ink [overflow-wrap:anywhere]",
           mono && "font-mono text-xs tabular",
         )}
       >
@@ -55,7 +55,7 @@ export function TagList({ tags }: { tags: string[] }) {
       {tags.map((t) => (
         <span
           key={t}
-          className="rounded-full border border-border-soft bg-mist px-2 py-0.5 font-mono text-[10px] text-fg-muted"
+          className="rounded-full border border-border-soft bg-mist px-2 py-0.5 font-mono text-[12px] text-fg-muted"
         >
           {t}
         </span>

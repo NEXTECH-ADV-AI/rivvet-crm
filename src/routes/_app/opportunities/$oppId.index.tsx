@@ -17,7 +17,7 @@ function OppDetail() {
     return (
       <div className="p-6 text-sm text-fg-muted">
         <p>{q.isError ? "Couldn't load this opportunity. Refresh to try again." : "This opportunity doesn't exist."}</p>
-        <Link to="/opportunities" className="mt-2 inline-block font-semibold text-ink underline">
+        <Link to="/opportunities" className="min-h-11 mt-2 inline-flex items-center font-semibold text-ink underline">
           Back to Opportunities
         </Link>
       </div>

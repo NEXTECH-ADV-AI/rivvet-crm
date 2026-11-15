@@ -115,17 +115,17 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
   const timeline = historyQ.data?.activities ?? [];
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-3">
+    <div className="mx-auto min-w-0 max-w-[1320px] space-y-5 [overflow-wrap:anywhere]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <Link
             to="/opportunities"
-            className="mb-1 inline-flex items-center gap-1 text-xs text-fg-muted hover:text-ink"
+            className="min-h-11 mb-1 inline-flex items-center gap-1 text-xs text-fg-muted hover:text-ink"
           >
             <ArrowLeft className="size-3.5" /> Opportunities
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+            <h1 className="min-w-0 font-display text-[22px] font-medium leading-[1.3] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] md:text-[28px]">
               {record.form.name}
             </h1>
             <select
@@ -133,7 +133,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               value={opp.stage}
               onChange={(e) => applyStage(e.target.value as OppStage)}
               disabled={patchStage.isPending}
-              className="rounded-full border border-border-soft bg-card px-2.5 py-0.5 text-xs font-medium text-ink disabled:opacity-60"
+              className="crm-control rounded-lg border border-border-soft bg-card px-2.5 py-0.5 font-medium text-ink disabled:opacity-60"
             >
               {KANBAN_STAGES.map((s) => (
                 <option key={s} value={s}>
@@ -142,12 +142,12 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               ))}
             </select>
             {patchStage.isError && (
-              <span className="text-[11px] text-danger">
+              <span className="text-[13px] text-danger">
                 Could not save stage — try again
               </span>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-fg-muted">
+          <p className="mt-1 text-[13px] text-fg-muted">
             {stageDays === 0 ? "Moved to this stage today" : `In this stage ${stageDays} day${stageDays === 1 ? "" : "s"}`} · Created {formatDate(opp.createdAt)} · {SOURCE_LABEL[opp.source] ?? "Added in the CRM"}
           </p>
         </div>
@@ -156,11 +156,11 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             type="button"
             disabled={!dirty || save.isPending}
             onClick={() => save.mutate(form, { onSuccess: (r) => setForm(r.record.form) })}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white shadow-soft enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
+            className="crm-button inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 font-semibold text-white enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Save className="size-3.5" /> {save.isPending ? "Saving…" : "Save changes"}
           </button>
-          <p role="status" className="text-[11px] text-fg-muted">
+          <p role="status" className="text-[13px] text-fg-muted">
             {save.isError
               ? `Couldn't save: ${save.error instanceof Error ? save.error.message : "try again"}`
               : dirty
@@ -172,19 +172,19 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi label="Amount" value={record.form.amount == null ? "Not priced" : formatMoney(record.form.amount)} />
         <Kpi label="Expected close" value={record.form.closeDate ? formatDate(record.form.closeDate) : "Not set"} />
         <Kpi label="Next step due" value={record.form.nextStepDue ? formatDate(record.form.nextStepDue) : "Not set"} />
-        <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5 shadow-soft">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">Priority</p>
+        <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5">
+          <p className="text-[13px] font-medium text-fg-muted">Priority</p>
           <PriorityBadge priority={p.priority} className="mt-1.5" />
-          <p className="mt-1 text-[11px] text-fg-muted">{p.reasons[0] ?? PRIORITY_HINT[p.priority]}</p>
+          <p className="mt-1 text-[13px] text-fg-muted">{p.reasons[0] ?? PRIORITY_HINT[p.priority]}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
-        <div className="space-y-3 xl:col-span-3">
+      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-12">
+        <div className="min-w-0 space-y-5 xl:col-span-3">
           <Card title="Contact">
             {record.hasAccount && (
               <Field label="Company">
@@ -231,7 +231,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
           </Card>
         </div>
 
-        <div className="space-y-3 xl:col-span-5">
+        <div className="min-w-0 space-y-5 xl:col-span-5">
           <Card title="Opportunity">
             <Field label="Name">
               <input value={form.name} onChange={(e) => set("name", e.target.value)} className="field" />
@@ -257,7 +257,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                 />
               </Field>
             </div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <Field label="Next step">
                 <input
                   value={form.nextStep}
@@ -291,7 +291,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                 type="button"
                 disabled={!note.trim() || logTouch.isPending}
                 onClick={() => logTouch.mutate({ ...ref, type: "note", note }, { onSuccess: () => setNote("") })}
-                className="rounded-md bg-ink px-3 py-1.5 text-[11px] font-semibold text-white enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
+                className="crm-button rounded-md bg-ink px-3 py-1.5 font-semibold text-white enabled:hover:bg-deep-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Add note
               </button>
@@ -299,7 +299,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                 type="button"
                 disabled={logTouch.isPending}
                 onClick={() => logTouch.mutate({ ...ref, type: "call", note }, { onSuccess: () => setNote("") })}
-                className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
+                className="crm-button rounded-md border border-border-soft px-3 py-1.5 font-semibold text-ink hover:bg-mist"
               >
                 Log a call
               </button>
@@ -307,7 +307,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                 type="button"
                 disabled={logTouch.isPending}
                 onClick={() => logTouch.mutate({ ...ref, type: "email", note }, { onSuccess: () => setNote("") })}
-                className="rounded-md border border-border-soft px-3 py-1.5 text-[11px] font-semibold text-ink hover:bg-mist"
+                className="crm-button rounded-md border border-border-soft px-3 py-1.5 font-semibold text-ink hover:bg-mist"
               >
                 Log an email I sent
               </button>
@@ -326,7 +326,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
 
         </div>
 
-        <div className="space-y-3 xl:col-span-4">
+        <div className="min-w-0 space-y-5 xl:col-span-4">
           <Card
             title={
               <span className="inline-flex items-center gap-1.5">
@@ -335,7 +335,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               </span>
             }
           >
-            <div className="mb-3 flex gap-1 rounded-lg bg-mist p-0.5">
+            <div className="mb-3 flex flex-wrap gap-1 rounded-lg bg-mist p-0.5">
               {(
                 [
                   ["commerce", "Commerce order", "Launch Partner agreement"],
@@ -353,14 +353,14 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                     })
                   }
                   className={cn(
-                    "flex-1 rounded-md px-2 py-2 text-left transition",
+                    "crm-button flex-1 rounded-md px-2 py-2 text-left transition",
                     opp.deal.tab === id
-                      ? "bg-card shadow-soft ring-1 ring-product-mint/30"
+                      ? "bg-card ring-1 ring-product-mint/30"
                       : "hover:bg-card/60",
                   )}
                 >
-                  <p className="text-[11px] font-semibold text-ink">{label}</p>
-                  <p className="text-[10px] text-fg-subtle">{sub}</p>
+                  <p className="text-[13px] font-semibold text-ink">{label}</p>
+                  <p className="text-[12px] text-fg-subtle">{sub}</p>
                 </button>
               ))}
             </div>
@@ -368,12 +368,12 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
             {opp.deal.tab === "commerce" ? (
               <div className="space-y-3">
                 <div className="rounded-xl border border-product-mint/30 bg-product-mint/5 p-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-ink">
                         {COMMERCE_PRODUCT_NAME}
                       </p>
-                      <p className="text-[11px] text-fg-muted">
+                      <p className="text-[13px] text-fg-muted">
                         {COMMERCE_PRODUCT_DESCRIPTION}
                       </p>
                     </div>
@@ -388,7 +388,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                   </div>
                 </div>
                 <Field label="Setup fee">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span className="text-fg-subtle">$</span>
                     <input
                       type="number"
@@ -404,13 +404,13 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                       }
                       className="field font-mono"
                     />
-                    <span className="shrink-0 text-[10px] text-fg-subtle">
+                    <span className="max-w-[7rem] text-[12px] text-fg-muted">
                       std {formatMoney(COMMERCE_SETUP_FEE)}
                     </span>
                   </div>
                 </Field>
                 <Field label="Monthly retainer">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span className="text-fg-subtle">$</span>
                     <input
                       type="number"
@@ -426,7 +426,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                       }
                       className="field font-mono"
                     />
-                    <span className="shrink-0 text-[10px] text-fg-subtle">
+                    <span className="max-w-[7rem] text-[12px] text-fg-muted">
                       /mo · std {formatMoney(COMMERCE_MONTHLY_RETAINER)}
                     </span>
                   </div>
@@ -453,7 +453,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                   </select>
                 </Field>
                 {opp.deal.performanceOption === "custom" && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="Custom rate">
                       <div className="flex items-center gap-1">
                         <input
@@ -468,7 +468,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                           }
                           className="field font-mono"
                         />
-                        <span className="text-[10px] text-fg-subtle">% net</span>
+                        <span className="text-[12px] text-fg-subtle">% net</span>
                       </div>
                     </Field>
                     <Field label="Custom term">
@@ -486,13 +486,13 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                           }
                           className="field font-mono"
                         />
-                        <span className="text-[10px] text-fg-subtle">mo</span>
+                        <span className="text-[12px] text-fg-subtle">mo</span>
                       </div>
                     </Field>
                   </div>
                 )}
                 {commercePerfTerms(opp.deal) && (
-                  <p className="font-mono text-[11px] text-product-mint">
+                  <p className="font-mono text-[13px] text-product-mint">
                     {commercePerfTerms(opp.deal)!.label}:{" "}
                     {commercePerfTerms(opp.deal)!.rate}% net sales ·{" "}
                     {commercePerfTerms(opp.deal)!.termMonths}mo from launch
@@ -513,7 +513,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                         })
                       }
                       className={cn(
-                        "flex w-full items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition",
+                        "crm-button flex w-full items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition",
                         selected
                           ? "border-product-mint/50 bg-product-mint/8"
                           : "border-border-soft bg-card hover:border-product-mint/30",
@@ -532,7 +532,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                         )}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="text-sm font-semibold text-ink">
                             {prod.name}
                           </p>
@@ -540,7 +540,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                             {formatMoney(prod.monthlyPrice)}/mo
                           </p>
                         </div>
-                        <p className="text-[11px] text-fg-muted">
+                        <p className="text-[13px] text-fg-muted">
                           {prod.description}
                         </p>
                       </div>
@@ -553,7 +553,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
 
           <Card title="Contract terms">
             {opp.deal.tab === "commerce" ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Effective date">
                   <input
                     type="date"
@@ -576,14 +576,14 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                     className="field font-mono"
                   />
                 </Field>
-                <p className="col-span-2 text-[11px] text-fg-muted">
+                <p className="sm:col-span-2 text-[13px] text-fg-muted">
                   Signing collects setup fee. Retainer + performance share start
                   on Public Launch Date.
                 </p>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field label="Term">
                     <select
                       value={opp.deal.termMonths}
@@ -647,7 +647,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                   </Field>
                 </div>
                 <Field label="Setup fee" className="mt-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span className="text-fg-subtle">$</span>
                     <input
                       type="number"
@@ -659,7 +659,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                       }
                       className="field font-mono"
                     />
-                    <span className="shrink-0 text-[11px] text-fg-subtle">
+                    <span className="shrink-0 text-[13px] text-fg-subtle">
                       at signing
                     </span>
                   </div>
@@ -671,19 +671,19 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
           <Card title="Pricing summary">
             {pricedFull.mode === "commerce" ? (
               <ul className="space-y-1.5 text-sm">
-                <li className="flex justify-between gap-2">
+                <li className="flex flex-wrap justify-between gap-2">
                   <span className="text-fg-muted">{COMMERCE_PRODUCT_NAME}</span>
                   <span className="font-mono tabular">
                     {formatMoney(pricedFull.setupFee)} setup
                   </span>
                 </li>
-                <li className="flex justify-between gap-2">
+                <li className="flex flex-wrap justify-between gap-2">
                   <span className="text-fg-muted">Monthly retainer</span>
                   <span className="font-mono tabular">
                     {formatMoney(pricedFull.monthly)}/mo
                   </span>
                 </li>
-                <li className="flex justify-between gap-2">
+                <li className="flex flex-wrap justify-between gap-2">
                   <span className="text-fg-muted">Performance share</span>
                   <span className="font-mono tabular">
                     {pricedFull.perf
@@ -691,7 +691,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                       : "required"}
                   </span>
                 </li>
-                <li className="flex justify-between gap-2 border-t border-border-soft pt-2 font-semibold">
+                <li className="flex flex-wrap justify-between gap-2 border-t border-border-soft pt-2 font-semibold">
                   <span>TCV</span>
                   <span className="font-mono tabular text-product-mint">
                     {formatMoney(pricedFull.tcv)}
@@ -700,7 +700,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
               </ul>
             ) : pricedFull.productName ? (
               <ul className="space-y-1.5 text-sm">
-                <li className="flex justify-between gap-2">
+                <li className="flex flex-wrap justify-between gap-2">
                   <span className="text-fg-muted">{pricedFull.productName}</span>
                   <span className="font-mono tabular">
                     {formatMoney(pricedFull.monthly)}/mo
@@ -711,13 +711,13 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
                   term
                   {opp.deal.freeMonths ? ` · ${opp.deal.freeMonths} free` : ""}
                 </li>
-                <li className="flex justify-between gap-2">
+                <li className="flex flex-wrap justify-between gap-2">
                   <span className="text-fg-muted">Setup</span>
                   <span className="font-mono tabular">
                     {formatMoney(pricedFull.setupFee)}
                   </span>
                 </li>
-                <li className="flex justify-between gap-2 border-t border-border-soft pt-2 font-semibold">
+                <li className="flex flex-wrap justify-between gap-2 border-t border-border-soft pt-2 font-semibold">
                   <span>TCV</span>
                   <span className="font-mono tabular text-product-mint">
                     {formatMoney(pricedFull.tcv)}
@@ -739,7 +739,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
           <button
             type="button"
             disabled
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink/35 px-4 py-3 text-sm font-semibold text-white"
+            className="crm-button flex w-full items-center justify-center gap-2 rounded-xl bg-ink/35 px-4 py-3 font-semibold text-white"
           >
             <Send className="size-4" />
             Send Contract
@@ -749,7 +749,7 @@ export function OppWorkspace({ record }: { record: OpportunityRecord }) {
           <Link
             to="/opportunities/$oppId/send"
             params={{ oppId: opp.id }}
-            className="block text-center text-[11px] font-medium text-product-mint hover:underline"
+            className="min-h-11 flex items-center justify-center text-center text-[13px] font-medium text-product-mint hover:underline"
           >
             Open the send page →
           </Link>
@@ -769,9 +769,9 @@ function Card({
   right?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border-soft bg-card p-3.5 shadow-soft sm:p-4">
-      <div className="mb-2.5 flex items-center justify-between gap-2">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+    <section className="min-w-0 rounded-2xl border border-border bg-card p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-[15px] font-semibold text-ink">
           {title}
         </h2>
         {right}
@@ -791,8 +791,8 @@ function Field({
   className?: string;
 }) {
   return (
-    <label className={cn("block", className)}>
-      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
+    <label className={cn("min-w-0 block", className)}>
+      <span className="mb-1 block text-[13px] font-medium text-fg-muted">
         {label}
       </span>
       {children}
@@ -810,8 +810,8 @@ function Kpi({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5 shadow-soft">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
+    <div className="rounded-2xl border border-border-soft bg-card px-3 py-2.5">
+      <p className="text-[13px] font-medium text-fg-muted">
         {label}
       </p>
       <p

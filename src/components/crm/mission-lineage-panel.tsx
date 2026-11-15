@@ -55,20 +55,20 @@ function TrialRow({
 }) {
   return (
     <div>
-      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
+      <h3 className="mb-1.5 text-[13px] font-medium text-fg-muted">
         Trial state
       </h3>
       {trial.status === "ok" ? (
         <div className="flex items-center gap-2 text-xs">
           <StatusChip label={TRIAL_LABEL[trial.state] ?? trial.state} tone="mint" />
           {trial.trialEndsAt && (
-            <span className="font-mono text-[10px] text-fg-subtle">
+            <span className="font-mono text-[12px] text-fg-subtle">
               ends {trial.trialEndsAt.slice(0, 10)}
             </span>
           )}
         </div>
       ) : (
-        <p className="text-[11px] text-fg-subtle">Not set up yet.</p>
+        <p className="text-[13px] text-fg-subtle">Not set up yet.</p>
       )}
     </div>
   );
@@ -83,20 +83,20 @@ function MissionsRow({
 }) {
   return (
     <div>
-      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">
+      <h3 className="mb-1.5 text-[13px] font-medium text-fg-muted">
         Campaign touches
       </h3>
       {missions.status !== "ok" ? (
-        <p className="text-[11px] text-fg-subtle">Not available yet.</p>
+        <p className="text-[13px] text-fg-subtle">Not available yet.</p>
       ) : missions.chips.length === 0 ? (
-        <p className="text-[11px] text-fg-subtle">No mission touches attributed.</p>
+        <p className="text-[13px] text-fg-subtle">No mission touches attributed.</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {missions.chips.map((c) => (
             <span
               key={c.missionId}
               title={c.eventTypes.join(", ") || undefined}
-              className="rounded-full border border-border-soft bg-mist px-2 py-0.5 font-mono text-[10px] text-fg-muted"
+              className="rounded-full border border-border-soft bg-mist px-2 py-0.5 font-mono text-[12px] text-fg-muted"
             >
               {c.missionId.slice(0, 8)} · {c.touchCount} touch
               {c.touchCount === 1 ? "" : "es"}

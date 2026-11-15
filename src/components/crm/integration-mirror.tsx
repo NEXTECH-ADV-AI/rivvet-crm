@@ -23,7 +23,7 @@ export function IntegrationMirror({
 
   return (
     <MetaPanel title="Integrations (read-only mirror)">
-      <div className="mb-3 flex items-center gap-1.5 text-[11px] text-warn">
+      <div className="mb-3 flex items-center gap-1.5 text-[13px] text-warn">
         <Lock className="size-3" />
         Not connected — sandbox mirrors only. Mutations disabled.
       </div>

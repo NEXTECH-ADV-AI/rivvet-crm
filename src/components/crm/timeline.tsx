@@ -68,11 +68,11 @@ export function Timeline({
                 <StatusChip label={a.type.replace("_", " ")} tone="neutral" />
                 {open && <StatusChip label="Open" tone="warn" />}
               </div>
-              <p className="mt-1 text-sm font-medium text-ink">{a.subject}</p>
+              <p className="mt-1 text-sm font-medium text-ink [overflow-wrap:anywhere]">{a.subject}</p>
               {a.body && (
-                <p className="mt-0.5 text-xs text-fg-muted line-clamp-2">{a.body}</p>
+                <p className="mt-0.5 text-sm text-fg-muted [overflow-wrap:anywhere]">{a.body}</p>
               )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-fg-subtle">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-fg-subtle">
                 <span className="font-mono tabular">
                   {formatRelative(a.createdAt, DEMO_NOW)}
                 </span>
@@ -87,7 +87,7 @@ export function Timeline({
                 <button
                   type="button"
                   onClick={() => onComplete(a.id)}
-                  className="mt-2 rounded-md border border-border-soft bg-card px-2 py-1 text-[11px] font-semibold text-ink hover:bg-mist"
+                  className="crm-button mt-2 rounded-md border border-border-soft bg-card px-2 py-1 font-semibold text-ink hover:bg-mist"
                 >
                   Mark done
                 </button>
