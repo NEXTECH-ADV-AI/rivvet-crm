@@ -77,6 +77,7 @@ const sampleEntries = [
   ['Accounts', 'Design page · Customer relationships'],
   ['Opportunities', 'Design page · Board and list'],
   ['Settings', 'Design page · Sample identity and connection'],
+  ['Activities', 'Design page · Open tasks and customer history'],
 ];
 function renderSearch() {
   const query = document.getElementById('sample-search').value.trim().toLowerCase();
@@ -169,4 +170,13 @@ document.getElementById('lead-totals-toggle').addEventListener('click', (event) 
   button.setAttribute('aria-expanded', String(expanded));
   button.textContent = expanded ? 'Hide totals' : 'Show totals';
   document.getElementById('lead-totals').hidden = !expanded;
+});
+
+// This switch only reveals a fictitious system row in the static sample.
+document.getElementById('include-sample-system').addEventListener('change', (event) => {
+  const included = event.currentTarget.checked;
+  document.getElementById('sample-system-activity').hidden = !included;
+  document.getElementById('activity-sample-count').textContent = included
+    ? '5 sample activity records, including 1 sample system record.'
+    : '4 sample activity records; 1 sample system record hidden.';
 });
