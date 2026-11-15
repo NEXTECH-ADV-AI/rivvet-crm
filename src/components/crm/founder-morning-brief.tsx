@@ -27,22 +27,22 @@ export function FounderMorningBrief() {
   const data = !q.isError && q.data?.status === "ready" ? q.data.brief : null;
   return (
     <section
-      className="mb-5 overflow-hidden rounded-xl border border-product-mint/30 bg-card shadow-soft"
+      className="mb-5 overflow-hidden rounded-xl border border-border bg-card"
       aria-label="Private morning brief"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft px-5 py-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-product-mint">
+          <p className="text-xs text-fg-muted">
             Founder brief · preview
           </p>
-          <h2 className="mt-1 text-sm font-semibold text-ink">Your morning priorities</h2>
+          <h2 className="mt-1 text-[15px] font-semibold text-ink">Your morning priorities</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
             href="https://rivvet-ceo-command-center.rivvet-ai-6921.chatgpt.site"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-product-mint hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 rounded-sm px-2 py-2 text-[13px] font-semibold text-product-mint hover:underline"
           >
             Open full morning brief
             <ExternalLink className="size-3" />
@@ -51,7 +51,7 @@ export function FounderMorningBrief() {
             type="button"
             disabled={q.isFetching}
             onClick={() => void q.refetch()}
-            className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold text-fg-muted hover:bg-mist disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-sm px-2 py-2 text-[13px] font-semibold text-fg-muted hover:bg-mist disabled:opacity-50"
             aria-label="Refresh private morning brief"
           >
             <RefreshCw className={`size-3 ${q.isFetching ? "animate-spin" : ""}`} />
@@ -62,7 +62,7 @@ export function FounderMorningBrief() {
       {!data ? (
         <p
           role={q.isError || q.data?.status === "unavailable" ? "status" : undefined}
-          className="px-4 py-4 text-sm text-fg-muted"
+          className="px-5 py-4 text-sm text-fg-muted"
         >
           {q.isLoading
             ? "Loading your private morning brief..."
@@ -72,7 +72,7 @@ export function FounderMorningBrief() {
         </p>
       ) : (
         <>
-          <div className="px-4 py-4">
+          <div className="px-5 py-4">
             <h3 className="break-words text-base font-semibold text-ink">{data.brief.title}</h3>
             {data.brief.subtitle && (
               <p className="mt-1 break-words text-xs text-fg-muted">{data.brief.subtitle}</p>
@@ -96,12 +96,12 @@ export function FounderMorningBrief() {
               acting.
             </p>
           )}
-          <div className="grid gap-4 border-t border-border-soft p-4 lg:grid-cols-2">
+          <div className="grid gap-5 border-t border-border-soft px-5 py-4 lg:grid-cols-2">
             <div>
-              <h3 className="text-xs font-semibold text-ink">Recommended next steps</h3>
-              <ol className="mt-2 space-y-3">
+              <h3 className="text-[13px] font-semibold text-ink">Recommended next steps</h3>
+              <ol className="mt-2 divide-y divide-border-soft">
                 {data.priorities.slice(0, 5).map((item, index) => (
-                  <li key={`${index}:${item.title}`} className="rounded-lg bg-mist/60 p-3">
+                  <li key={`${index}:${item.title}`} className="py-3">
                     <p className="break-words text-sm font-semibold">{item.title}</p>
                     <p className="mt-1 break-words text-xs leading-relaxed text-fg-muted">
                       {item.action}
@@ -122,10 +122,10 @@ export function FounderMorningBrief() {
               )}
             </div>
             <div>
-              <h3 className="text-xs font-semibold text-ink">Customer follow-ups</h3>
-              <ul className="mt-2 space-y-3">
+              <h3 className="text-[13px] font-semibold text-ink">Customer follow-ups</h3>
+              <ul className="mt-2 divide-y divide-border-soft">
                 {data.customers.slice(0, 4).map((item, index) => (
-                  <li key={`${index}:${item.name}`} className="rounded-lg bg-mist/60 p-3">
+                  <li key={`${index}:${item.name}`} className="py-3">
                     <div className="flex flex-wrap items-center justify-between gap-1">
                       <p className="break-words text-sm font-semibold">{item.name}</p>
                       <span className="rounded bg-card px-1.5 py-0.5 text-[10px] font-semibold capitalize text-fg-muted">
@@ -148,7 +148,7 @@ export function FounderMorningBrief() {
               )}
             </div>
           </div>
-          <details className="border-t border-border-soft px-4 py-3">
+          <details className="border-t border-border-soft px-5 py-3">
             <summary className="cursor-pointer text-xs font-semibold text-fg-muted">
               Source freshness and coverage
             </summary>

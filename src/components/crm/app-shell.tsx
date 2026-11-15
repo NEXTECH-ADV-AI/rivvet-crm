@@ -3,7 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { Sidebar } from "./sidebar";
-import { RivvetBrand, RivvetIcon, RivvetWordmark } from "./logo";
+import { RivvetBrand } from "./logo";
 import { CommandSearch } from "./command-search";
 import { CrmHydrateBanner } from "./crm-hydrate";
 
@@ -56,13 +56,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Dialog.Portal>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <CrmHydrateBanner />
-          <header className="sticky top-[var(--grok-banner-h,0px)] z-20 border-b border-border-soft bg-card/95 backdrop-blur-md">
-            <div className="flex items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
+          <header className="sticky top-[var(--grok-banner-h,0px)] z-20 border-b border-border bg-sidebar text-white md:bg-card md:text-ink md:[--crm-focus-ring:var(--color-product-mint)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 sm:gap-x-3 sm:px-6 lg:px-8">
               <Dialog.Trigger asChild>
                 <button
                   type="button"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-md text-ink hover:bg-mist md:hidden"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-sm text-white hover:bg-white/6 md:hidden"
                   aria-label="Open menu"
                 >
                   <Menu className="size-5" aria-hidden />
@@ -74,23 +73,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-2 md:hidden"
                 aria-label="Rivvet CRM home"
               >
-                <RivvetIcon className="size-8" alt="" />
-                <RivvetWordmark className="h-4 w-auto max-w-[120px]" />
+                <RivvetBrand variant="dark" className="h-8 max-w-[152px]" />
               </Link>
 
-              <Link
-                to="/home"
-                className="hidden items-center gap-3 md:flex"
-                aria-label="Rivvet CRM home"
-              >
-                <RivvetBrand variant="light" />
-                <span className="hidden h-5 w-px bg-border-soft lg:block" />
-                <span className="hidden font-mono text-[10px] tracking-[0.14em] text-fg-subtle lg:inline">
-                  CRM
-                </span>
-              </Link>
+              <div className="order-last w-full min-w-0 border-t border-white/10 pt-1 md:order-none md:w-auto md:flex-1 md:border-0 md:pt-0">
+                <CrmHydrateBanner />
+              </div>
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-2 md:order-last">
                 <CommandSearch />
               </div>
             </div>
@@ -99,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <main
             id="crm-main"
             tabIndex={-1}
-            className="min-w-0 flex-1 scroll-mt-24 px-4 py-4 sm:px-6 sm:py-5 lg:px-8"
+            className="min-w-0 flex-1 scroll-mt-24 px-4 py-5 sm:px-6 md:px-8 md:py-7 xl:px-10"
           >
             {children}
           </main>

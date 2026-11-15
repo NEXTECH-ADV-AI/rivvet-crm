@@ -94,11 +94,11 @@ export function CommandSearch() {
         <button
           type="button"
           aria-label="Search CRM"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border border-border-soft bg-card px-3 py-1.5 text-xs text-fg-muted shadow-soft hover:border-product-mint/40"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-sm border border-white/15 bg-white/6 px-3 py-2 text-[13px] text-white hover:bg-white/12 md:border-border md:bg-card md:text-fg-muted md:hover:bg-mist"
         >
-          <Search className="size-3.5" />
-          <span className="hidden sm:inline">Search</span>
-          <kbd className="hidden rounded border border-border-soft bg-mist px-1.5 font-mono text-[10px] sm:inline">
+          <Search className="size-4" />
+          <span className="hidden md:inline">Search</span>
+          <kbd className="hidden rounded border border-border bg-mist px-1.5 font-mono text-[10px] md:inline">
             ⌘K
           </kbd>
         </button>
@@ -106,7 +106,7 @@ export function CommandSearch() {
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-deep-ink/40" />
-        <Dialog.Content className="fixed left-1/2 top-[12dvh] z-50 flex max-h-[80dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border-soft bg-card shadow-card">
+        <Dialog.Content className="fixed left-1/2 top-[12dvh] z-50 flex max-h-[80dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-float">
           <Dialog.Title className="sr-only">Search CRM</Dialog.Title>
           <Dialog.Description className="sr-only">
             Find loaded leads, accounts and opportunities by ID, name or domain.

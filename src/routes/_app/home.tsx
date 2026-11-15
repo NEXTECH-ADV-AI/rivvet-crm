@@ -43,7 +43,7 @@ function HomePage() {
   const fmt = (n: number | undefined) => (n == null ? "…" : n.toLocaleString());
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
         title="What needs you"
         description="Your next decisions, customer follow-ups and sales work."
@@ -52,44 +52,44 @@ function HomePage() {
       {user.email === "brayden@rivvetai.com" && <FounderMorningBrief />}
 
       <section className="mb-5 crm-surface overflow-hidden" aria-label="Today priorities">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft bg-ink px-4 py-4 text-white">
-          <div><p className="font-mono text-[10px] uppercase tracking-widest text-bright-mint">Today</p><h2 className="mt-1 text-lg font-semibold">Start here</h2></div>
-          <span className="text-xs text-white/80">{hydratedAt ? `${dailyWork.filter((item) => item.state === "overdue").length} overdue · ${dailyWork.filter((item) => item.state === "today").length} due today` : "Loading priority counts..."}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft bg-card px-5 py-3 text-ink">
+          <h2 className="text-[15px] font-semibold">Start here <span className="font-normal text-fg-muted">· Today</span></h2>
+          <span className="text-[13px] text-fg-muted">{hydratedAt ? `${dailyWork.filter((item) => item.state === "overdue").length} overdue · ${dailyWork.filter((item) => item.state === "today").length} due today` : "Loading priority counts..."}</span>
         </div>
         {!hydratedAt ? <p className="p-4 text-sm text-fg-muted">Loading your priorities...</p> : <>
           {hydrateMessage?.includes("unavailable") && <p role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">Some source data is unavailable. This priority list may be incomplete.</p>}
-          {dailyWork.length ? <ol id="daily-priority-list" className="divide-y divide-border-soft">{(showAllPriorities ? dailyWork : dailyWork.slice(0, 3)).map((item, index) => <li key={item.id}><a href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-mist">
+          {dailyWork.length ? <ol id="daily-priority-list" className="divide-y divide-border-soft">{(showAllPriorities ? dailyWork : dailyWork.slice(0, 3)).map((item, index) => <li key={item.id}><a href={item.href} className="flex items-start gap-3 px-5 py-3 hover:bg-mist">
             <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-mist font-mono text-xs text-fg-muted">{index + 1}</span>
             <div className="min-w-0 flex-1"><p className="break-words text-sm font-semibold">{item.title}</p><p className="mt-0.5 break-words text-xs text-fg-muted">{item.record} · {item.reason}</p></div>
             <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold ${item.state === "overdue" ? "bg-red-50 text-red-800" : item.state === "today" ? "bg-product-mint/10 text-product-mint" : "bg-mist text-fg-muted"}`}>{item.state === "unscheduled" ? "Plan next" : item.state === "upcoming" ? "Upcoming" : item.state === "today" ? "Today" : "Overdue"}</span>
           </a></li>)}</ol> : <p className="p-4 text-sm text-fg-muted">No follow-ups flagged in the loaded records.</p>}
-          {dailyWork.length > 3 && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-soft px-4 py-2">
+          {dailyWork.length > 3 && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-soft px-5 py-2">
             <span className="text-xs text-fg-muted">Showing {showAllPriorities ? dailyWork.length : 3} of {dailyWork.length} priorities</span>
             <button type="button" aria-expanded={showAllPriorities} aria-controls="daily-priority-list" onClick={() => setShowAllPriorities((show) => !show)} className="min-h-11 rounded-md px-3 py-2 text-xs font-semibold text-product-mint hover:bg-mist">
               {showAllPriorities ? "Show fewer" : `Show all ${dailyWork.length}`}
             </button>
           </div>}
-          <div className="flex flex-wrap justify-between gap-2 border-t border-border-soft px-4 py-3 text-xs text-fg-muted"><span>{dailyWork.length} flagged across {opportunities.length} loaded opportunities (up to 200), {accounts.length} loaded accounts and recent tasks.</span><Link to="/activities" className="font-semibold text-product-mint">All activities →</Link></div>
+          <div className="flex flex-wrap justify-between gap-2 border-t border-border-soft px-5 py-3 text-xs text-fg-muted"><span>{dailyWork.length} flagged across {opportunities.length} loaded opportunities (up to 200), {accounts.length} loaded accounts and recent tasks.</span><Link to="/activities" className="font-semibold text-product-mint">All activities →</Link></div>
         </>}
       </section>
 
       <Link
         to="/leads"
-        className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-product-mint/30 bg-product-mint/10 p-4 shadow-soft transition hover:bg-product-mint/15"
+        className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4 transition hover:bg-card-soft"
       >
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-product-mint">Call queue</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">
+          <p className="text-[15px] font-semibold text-ink">Call queue</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
             {callQ.data ? callQ.data.total.toLocaleString() : "…"}
             <span className="ml-2 text-sm font-normal text-fg-muted">people who opened an email and have a phone</span>
           </p>
         </div>
-        <span className="shrink-0 text-sm font-semibold text-ink">Start calling →</span>
+        <span className="shrink-0 text-[15px] font-semibold text-ink">Start calling →</span>
       </Link>
 
-      <div className="mb-5 rounded-xl border border-border-soft bg-card p-3 shadow-soft sm:p-4">
+      <div className="mb-5 rounded-xl border border-border bg-card px-5 py-4">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">Outreach <span className="font-normal text-fg-subtle">· all time, full lead book</span></h2>
+          <h2 className="text-[15px] font-semibold text-ink">Outreach <span className="font-normal text-fg-subtle">· all time, full lead book</span></h2>
           <Link
             to="/analytics"
             className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-muted hover:underline"
@@ -110,7 +110,7 @@ function HomePage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <QueuePanel title="Opportunities needing a next step" icon={Target} to="/opportunities">
           {pipeline === "loading" ? (
             <p className="text-xs text-fg-muted">Loading opportunities…</p>
@@ -130,7 +130,7 @@ function HomePage() {
                   key={o.id}
                   to="/opportunities/$oppId"
                   params={{ oppId: o.id }}
-                  className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
+                  className="group flex items-start gap-3 border-b border-border-soft py-3 transition last:border-b-0 hover:bg-card-soft"
                 >
                   <QueueBody
                     title={o.name}
@@ -160,7 +160,7 @@ function HomePage() {
                   key={a.id}
                   to="/accounts/$accountId"
                   params={{ accountId: a.id }}
-                  className="group flex items-start gap-3 rounded-lg border border-border-soft bg-card-soft/60 px-3 py-2.5 transition hover:border-product-mint/40 hover:bg-mist"
+                  className="group flex items-start gap-3 border-b border-border-soft py-3 transition last:border-b-0 hover:bg-card-soft"
                 >
                   <QueueBody
                     title={a.name}
@@ -192,9 +192,9 @@ function Kpi({
 }) {
   return (
     <div>
-      <p className="crm-label">{label}</p>
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
-        className={`mt-0.5 font-mono text-lg font-semibold tabular ${
+        className={`mt-1 text-[26px] font-semibold leading-none tabular ${
           accent ? "text-product-mint" : "text-ink"
         }`}
       >
@@ -219,11 +219,11 @@ function QueuePanel({
   className?: string;
 }) {
   return (
-    <section className={`crm-surface p-4 ${className ?? ""}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className={`crm-surface overflow-hidden ${className ?? ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft px-5 py-3">
         <div className="flex items-center gap-2">
           <Icon className="size-4 text-fg-muted" />
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
         </div>
         <Link
           to={to}
@@ -232,7 +232,7 @@ function QueuePanel({
           Open <ArrowRight className="size-3" />
         </Link>
       </div>
-      <div className="space-y-2">{children}</div>
+      <div className="px-5 py-4">{children}</div>
     </section>
   );
 }
