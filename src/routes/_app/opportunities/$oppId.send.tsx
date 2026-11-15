@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Lock } from "lucide-react";
 import { LockedBanner } from "@/components/crm/locked-banner";
 import { IntegrationMirror } from "@/components/crm/integration-mirror";
 import { useCrmStore } from "@/lib/crm/store";
+import { useOpportunityRecord } from "@/lib/crm/wire";
 import { formatMoney } from "@/lib/crm/priority";
 
 export const Route = createFileRoute("/_app/opportunities/$oppId/send")({
@@ -12,11 +13,12 @@ export const Route = createFileRoute("/_app/opportunities/$oppId/send")({
 
 function SendPreview() {
   const { oppId } = Route.useParams();
+  const q = useOpportunityRecord(oppId);
   const opportunities = useCrmStore((s) => s.opportunities);
   const allDocs = useCrmStore((s) => s.sendDocuments);
   const allPayments = useCrmStore((s) => s.payments);
 
-  const opp = useMemo(
+  const cachedOpp = useMemo(
     () => opportunities.find((o) => o.id === oppId),
     [opportunities, oppId],
   );
@@ -29,7 +31,35 @@ function SendPreview() {
     [allPayments, oppId],
   );
 
-  if (!opp) throw notFound();
+  const opp = cachedOpp ?? q.data?.record?.opportunity;
+  if (!opp) {
+    return (
+      <section className="crm-surface mx-auto max-w-3xl space-y-3 p-5">
+        <p role={q.isError ? "alert" : "status"} className="text-sm text-fg-muted">
+          {q.isPending
+            ? "Loading the opportunity…"
+            : q.isError
+              ? "Couldn't load this opportunity. Try again."
+              : "This opportunity doesn't exist or is no longer available."}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {q.isError && (
+            <button
+              type="button"
+              disabled={q.isFetching}
+              onClick={() => void q.refetch()}
+              className="crm-button border border-border bg-card text-ink hover:bg-mist"
+            >
+              {q.isFetching ? "Retrying…" : "Try again"}
+            </button>
+          )}
+          <Link to="/opportunities" className="crm-button text-product-mint hover:underline">
+            Back to Opportunities
+          </Link>
+        </div>
+      </section>
+    );
+  }
 
   const steps = [
     { id: 1, label: "Review package", state: "done" as const },
