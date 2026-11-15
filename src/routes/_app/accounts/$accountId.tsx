@@ -1,3 +1,4 @@
+import { CustomerOpsLink } from "@/components/crm/customer-ops-link";
 import { useMemo } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -68,10 +69,10 @@ function AccountDetail() {
   const life = account.lifecycleStage ?? account.status;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="mx-auto min-w-0 [overflow-wrap:anywhere] max-w-4xl space-y-4">
       <Link
         to="/accounts"
-        className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
+        className="min-h-11 inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
       >
         <ArrowLeft className="size-3.5" /> Accounts
       </Link>
@@ -81,6 +82,8 @@ function AccountDetail() {
           {accountQ.data.message}
         </p>
       )}
+
+      <CustomerOpsLink clientId={account.clientId} />
 
       <RecordHeader
         title={account.name}
@@ -116,7 +119,7 @@ function AccountDetail() {
             type="button"
             disabled={!live || logTouch.isPending || logTouch.isSuccess}
             onClick={() => logTouch.mutate({ accountId: account.id, type: "call" })}
-            className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
+            className="crm-button rounded-md bg-ink px-3 py-2 font-semibold text-white transition hover:bg-deep-ink disabled:opacity-50"
           >
             {logTouch.isSuccess ? "Call logged" : logTouch.isError ? "Couldn't log. Retry" : "Log a call"}
           </button>
@@ -166,16 +169,16 @@ function AccountDetail() {
                     <p className="text-sm font-medium text-ink">
                       {c.firstName} {c.lastName}
                       {c.isPrimary && (
-                        <span className="ml-2 font-mono text-[10px] text-product-mint">
+                        <span className="ml-2 font-mono text-[12px] text-product-mint">
                           PRIMARY
                         </span>
                       )}
                     </p>
-                    <p className="text-[11px] text-fg-subtle">
+                    <p className="text-[13px] text-fg-muted [overflow-wrap:anywhere]">
                       {c.title} · {c.email}
                     </p>
                     {c.phone && (
-                      <p className="font-mono text-[10px] text-fg-subtle">
+                      <p className="font-mono text-[12px] text-fg-subtle">
                         {c.phone}
                       </p>
                     )}
@@ -201,20 +204,20 @@ function AccountDetail() {
                       <Link
                         to="/opportunities/$oppId"
                         params={{ oppId: o.id }}
-                        className="flex items-center gap-3 rounded-lg border border-border-soft px-3 py-2.5 hover:bg-mist"
+                        className="min-h-11 flex flex-wrap items-center gap-3 rounded-lg border border-border-soft px-3 py-2.5 hover:bg-mist"
                       >
                         <PriorityBadge priority={op.priority} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
+                          <p className="text-sm font-medium [overflow-wrap:anywhere]">
                             {o.name}
                           </p>
-                          <p className="text-[11px] text-fg-subtle">
+                          <p className="text-[13px] text-fg-muted [overflow-wrap:anywhere]">
                             {STAGE_LABEL[o.stage]} ·{" "}
                             {formatRelative(o.lastTouch, DEMO_NOW)}
                           </p>
                         </div>
                         <span className="font-mono text-xs font-semibold tabular">
-                          {formatMoney(o.amount)}
+                          {o.amountKnown === false ? "Not priced" : formatMoney(o.amount)}
                         </span>
                       </Link>
                     </li>

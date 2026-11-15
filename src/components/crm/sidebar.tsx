@@ -1,14 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Home,
-  Users,
-  Building2,
-  Target,
-  ListTodo,
-  BarChart3,
-  Settings,
-} from "lucide-react";
-import { RivvetIcon, RivvetWordmarkOnDark } from "./logo";
+import { Home, Users, Building2, Target, ListTodo, BarChart3, Settings } from "lucide-react";
+import { RivvetBrand } from "./logo";
 import { cn } from "@/components/ui/cn";
 import { useCrmStore } from "@/lib/crm/store";
 import { queueAccounts } from "@/lib/crm/filters";
@@ -50,57 +42,47 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 
   return (
-    <aside className="flex h-full w-[15.5rem] flex-col bg-sidebar text-sidebar-fg">
+    <aside className="flex h-full min-h-0 w-full md:w-56 flex-col bg-sidebar text-sidebar-fg">
       <Link
         to="/home"
         onClick={onNavigate}
-        className="flex items-center gap-2.5 px-3.5 py-4 hover:bg-sidebar-hover/60"
+        className="flex shrink-0 items-center gap-3 px-5 py-6 hover:bg-white/6"
       >
-        <RivvetIcon className="size-9 shrink-0" alt="" />
         <div className="min-w-0">
-          <RivvetWordmarkOnDark className="h-[18px] w-auto max-w-[128px]" />
-          <p className="mt-0.5 font-mono text-[9px] tracking-[0.18em] text-bright-mint">
-            CRM
-          </p>
+          <RivvetBrand variant="dark" className="max-w-[140px]" />
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">CRM</p>
         </div>
       </Link>
 
-
-      <nav className="flex-1 space-y-0.5 px-2" aria-label="Primary">
+      <nav
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3"
+        aria-label="Primary"
+      >
         {NAV.map((item) => {
-          const active =
-            pathname === item.to || pathname.startsWith(item.to + "/");
+          const active = pathname === item.to || pathname.startsWith(item.to + "/");
           const Icon = item.icon;
           const count =
-            item.badge && item.badge in badges
-              ? badges[item.badge as keyof typeof badges]
-              : null;
+            item.badge && item.badge in badges ? badges[item.badge as keyof typeof badges] : null;
           return (
             <Link
               key={item.to}
               to={item.to}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors",
+                "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] md:text-[14px] font-medium transition-colors",
                 active
-                  ? "bg-sidebar-hover text-white"
-                  : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-fg",
+                  ? "bg-white/12 text-white"
+                  : "text-white/70 hover:bg-white/6 hover:text-white",
               )}
             >
-              <Icon
-                className={cn(
-                  "size-4 shrink-0",
-                  active ? "text-sidebar-active" : "",
-                )}
-              />
+              <Icon className={cn("size-4 shrink-0", active ? "text-sidebar-active" : "")} />
               <span className="flex-1 truncate">{item.label}</span>
               {count != null && count > 0 && (
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular",
-                    active
-                      ? "bg-bright-mint/15 text-bright-mint"
-                      : "bg-white/5 text-sidebar-muted",
+                    active ? "bg-bright-mint/15 text-bright-mint" : "bg-white/5 text-sidebar-muted",
                   )}
                 >
                   {count}
@@ -111,15 +93,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      <div className="border-t border-white/5 p-2">
+      <div className="shrink-0 border-t border-white/10 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Link
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
           to="/settings"
           onClick={onNavigate}
           className={cn(
-            "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium",
+            "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] md:text-[14px] font-medium",
             pathname.startsWith("/settings")
-              ? "bg-sidebar-hover text-white"
-              : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-fg",
+              ? "bg-white/12 text-white"
+              : "text-white/70 hover:bg-white/6 hover:text-white",
           )}
         >
           <Settings className="size-4" />

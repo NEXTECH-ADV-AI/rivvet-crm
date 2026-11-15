@@ -16,6 +16,7 @@ import {
 } from "./config";
 import { seedActivities, seedContacts } from "../seed";
 import { mapTaskRow, mapTouchRow } from "./activity-map";
+import { parseTotal } from "./supabase-rest.server";
 import { OPPS_UNAVAILABLE_TAG } from "../analytics";
 import type { Account, Activity, Contact, Lead, Opportunity } from "../types";
 
@@ -57,6 +58,29 @@ async function fetchActivitiesLive(): Promise<Activity[]> {
   return [...tasks.map(mapTaskRow), ...touches.map(mapTouchRow)];
 }
 
+/** Customer follow-ups are crm_tasks, not account columns. Read the exact account relationships. */
+export async function customerNextSteps(accounts: Account[]): Promise<Account[]> {
+  if (!accounts.length) return accounts;
+  const { url, key } = getServerSupabaseConfig();
+  try {
+    const ids = accounts.map((a) => a.id).filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    if (!ids.length) return accounts;
+    const res = await fetch(`${url}/rest/v1/crm_tasks?select=account_id,title,due_at&account_id=in.(${ids.join(",")})&source=eq.crm_next_action&status=eq.open&is_test=is.false&order=created_at.desc&limit=1000`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json", Prefer: "count=exact" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error("Customer next steps unavailable");
+    const tasks = await res.json() as { account_id: string; title: string; due_at: string | null }[];
+    const complete = tasks.length === parseTotal(res.headers.get("content-range"));
+    return accounts.map((a) => {
+      const task = tasks.find((t) => t.account_id === a.id);
+      return { ...a, nextAction: task?.title ?? null, nextActionDue: task?.due_at?.slice(0, 10) ?? null, nextActionKnown: complete || Boolean(task) };
+    });
+  } catch {
+    return accounts.map((a) => ({ ...a, nextActionKnown: false }));
+  }
+}
+
 async function hydrateViaProxy(proxyBase: string): Promise<HydratePayload | null> {
   const base = proxyBase.replace(/\/$/, "");
   const res = await fetch(`${base}/api/crm/book`, {
@@ -70,7 +94,7 @@ async function hydrateViaProxy(proxyBase: string): Promise<HydratePayload | null
   return {
     ...data,
     source: "live",
-    message: `Hydrated LIVE via ${base.replace(/^https?:\/\//, "")} · leads live · accounts live · opps live`,
+    message: data.message || "Loaded live CRM overview",
     counts: data.counts ?? {
       leads: data.leads?.length ?? 0,
       accounts: data.accounts?.length ?? 0,
@@ -100,7 +124,7 @@ export async function hydrateCrmService(opts?: {
 
   const live = isLiveWire();
 
-  const [leadsR, accountsR, oppsR] = await Promise.all([
+  const [leadsR, accountsR, oppsR, customersR] = await Promise.all([
     listLeadsService({
       view: "all",
       limit: 200,
@@ -108,17 +132,20 @@ export async function hydrateCrmService(opts?: {
     }),
     listAccountsService({ limit: 200, offset: 0, sort: "recent" }),
     listOpportunitiesService({ limit: 200, offset: 0 }),
+    listAccountsService({ lifecycle: "customer", limit: 200, offset: 0, sort: "recent" }),
   ]);
 
   let activities: Activity[] = seedActivities;
   let contacts: Contact[] = seedContacts;
+  let activitiesUnavailable = false;
 
-  if (live && (leadsR.source === "live" || oppsR.source === "live")) {
+  if (live) {
     try {
       activities = await fetchActivitiesLive();
     } catch {
       // Live deploy: show nothing rather than demo rows.
       activities = [];
+      activitiesUnavailable = true;
     }
     contacts = [];
   }
@@ -130,7 +157,12 @@ export async function hydrateCrmService(opts?: {
       ? "live"
       : "mock";
 
+  const customers = live ? await customerNextSteps(customersR.accounts) : customersR.accounts;
+  const mergedAccounts = [...new Map([...accountsR.accounts, ...customers].map((a) => [a.id, a])).values()];
   const parts = [
+    ...(customersR.message ? ["customer accounts unavailable"] : []),
+    ...(customers.some((a) => a.nextActionKnown === false) ? ["customer next steps unavailable"] : []),
+    ...(activitiesUnavailable ? ["activities unavailable"] : []),
     `leads ${leadsR.source}`,
     `accounts ${accountsR.source}`,
     oppsR.unavailable ? OPPS_UNAVAILABLE_TAG : `opps ${oppsR.source}`,
@@ -143,7 +175,7 @@ export async function hydrateCrmService(opts?: {
   return {
     source,
     leads: leadsR.leads,
-    accounts: accountsR.accounts,
+    accounts: mergedAccounts,
     opportunities: oppsR.opportunities,
     contacts,
     activities,

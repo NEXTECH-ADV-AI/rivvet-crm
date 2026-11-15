@@ -32,24 +32,25 @@ export function ViewTabs({
   views?: { id: ListView; label: string }[];
 }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-lg border border-border-soft bg-card-soft p-1">
+    <div tabIndex={0} role="region" aria-label="Saved views, scroll for more" className="crm-scroll flex gap-4 border-b border-border pb-px">
       {views.map((v) => {
         const active = value === v.id;
         return (
           <button
             key={v.id}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(v.id)}
             className={cn(
-              "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-(--dur-fast)",
+              "min-h-11 shrink-0 border-b-2 px-1 py-2.5 text-sm font-semibold transition-colors duration-(--dur-fast)",
               active
-                ? "bg-card text-ink shadow-soft"
-                : "text-fg-muted hover:text-ink",
+                ? "border-ink text-ink"
+                : "border-transparent text-fg-muted hover:text-ink",
             )}
           >
             {v.label}
             {counts?.[v.id] != null && (
-              <span className="ml-1.5 font-mono text-[10px] text-fg-subtle">
+              <span className="ml-1.5 font-mono text-xs text-fg-subtle">
                 {counts[v.id]}
               </span>
             )}

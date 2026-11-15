@@ -45,20 +45,22 @@ export function LeadFilters({
     value.state !== "all";
 
   return (
-    <div className="space-y-2 rounded-xl border border-border-soft bg-card p-2.5 shadow-soft">
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-fg-subtle" />
           <input
+            aria-label="Search leads"
             value={value.query}
             onChange={(e) => set("query", e.target.value)}
             placeholder="Search name, company, state, campaign…"
-            className="w-full rounded-md border border-border-soft bg-mist/60 py-2 pl-8 pr-8 text-sm focus:border-signal-cyan focus:bg-card focus:outline-none"
+            className="crm-control w-full pl-9 pr-12 placeholder:text-fg-subtle"
           />
           {value.query && (
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-subtle"
+              aria-label="Clear search"
+              className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-sm text-fg-subtle"
               onClick={() => set("query", "")}
             >
               <X className="size-3.5" />
@@ -71,7 +73,7 @@ export function LeadFilters({
         {dirty && (
           <button
             type="button"
-            className="text-[11px] font-medium text-product-mint hover:underline"
+            className="crm-button text-product-mint hover:underline"
             onClick={() =>
               onChange({
                 query: "",
@@ -93,7 +95,7 @@ export function LeadFilters({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
         <Select
           label="Vertical"
           value={value.vertical}
@@ -160,24 +162,26 @@ export function LeadFilters({
         />
         <button
           type="button"
+          aria-pressed={value.sequenceOnly}
           onClick={() => set("sequenceOnly", !value.sequenceOnly)}
           className={cn(
-            "rounded-md border px-2.5 py-1.5 text-[11px] font-semibold",
+            "crm-button border",
             value.sequenceOnly
               ? "border-product-mint/40 bg-product-mint/10 text-product-mint"
-              : "border-border-soft bg-mist/50 text-fg-muted hover:text-ink",
+              : "border-border bg-card text-fg-muted hover:text-ink",
           )}
         >
           Ready for email only
         </button>
-        <div className="flex rounded-md border border-border-soft bg-mist/50 p-0.5">
+        <div className="flex flex-wrap rounded-sm border border-border bg-mist p-0.5">
           {(["all", "P1", "P2", "P3"] as const).map((p) => (
             <button
               key={p}
               type="button"
+              aria-pressed={value.priority === p}
               onClick={() => set("priority", p)}
               className={cn(
-                "rounded px-2 py-1 text-[11px] font-semibold",
+                "crm-button",
                 value.priority === p
                   ? p === "P1"
                     ? "bg-p1 text-white"
@@ -208,12 +212,12 @@ function Select({
   options: { value: string; label: string }[];
 }) {
   return (
-    <label>
+    <label className="min-w-0 max-w-full">
       <span className="sr-only">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-border-soft bg-mist/60 px-2 py-1.5 text-[11px] text-ink focus:border-signal-cyan focus:outline-none"
+        className="crm-control"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

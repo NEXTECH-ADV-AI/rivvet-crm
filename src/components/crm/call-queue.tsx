@@ -65,23 +65,23 @@ export function CallRow({ lead }: { lead: Lead }) {
   }
 
   return (
-    <li className={cn("grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,22rem)] lg:items-center", state === "saved" && "opacity-50")}>
+    <li className={cn("grid min-w-0 gap-4 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,22rem)] xl:items-center", state === "saved" && "opacity-50")}>
       <div className="min-w-0">
-        <Link to="/leads/$leadId" params={{ leadId: lead.id }} className="font-semibold text-ink hover:text-product-mint">
+        <Link to="/leads/$leadId" params={{ leadId: lead.id }} className="inline-flex min-h-11 items-center break-words font-semibold text-ink hover:text-product-mint">
           {lead.company || lead.name}
         </Link>
-        <p className="truncate text-xs text-fg-muted">
+        <p className="break-words text-[13px] text-fg-muted">
           {[lead.name !== lead.company ? lead.name : null, VERTICAL_LABEL[lead.vertical] ?? lead.vertical, where]
             .filter(Boolean)
             .join(" · ")}
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {lead.phone && (
           <a
             href={`tel:${lead.phone}`}
-            className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold tabular-nums text-white transition hover:bg-ink/90 active:scale-[0.98]"
+            className="crm-button inline-flex items-center justify-center gap-1.5 bg-ink tabular-nums text-white transition hover:bg-ink/90 active:scale-[0.98]"
           >
             <Phone className="size-4" aria-hidden />
             {formatPhone(lead.phone)}
@@ -95,13 +95,13 @@ export function CallRow({ lead }: { lead: Lead }) {
       {state === "saved" ? (
         <p className="text-sm text-product-mint">Logged.</p>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid min-w-0 gap-2 sm:grid-cols-2">
           <label className="sr-only" htmlFor={`o-${lead.id}`}>Call outcome</label>
           <select
             id={`o-${lead.id}`}
             value={outcome}
             onChange={(e) => setOutcome(e.target.value as CallOutcome)}
-            className="rounded-md border border-border-soft bg-card px-2 py-1.5 text-sm"
+            className="crm-control w-full"
           >
             <option value="">How did it go?</option>
             {CALL_OUTCOMES.map((o) => (
@@ -116,7 +116,7 @@ export function CallRow({ lead }: { lead: Lead }) {
               aria-label="Call back at"
               value={callbackAt}
               onChange={(e) => setCallbackAt(e.target.value)}
-              className="rounded-md border border-border-soft bg-card px-2 py-1.5 text-sm"
+              className="crm-control w-full"
             />
           )}
           <input
@@ -125,18 +125,18 @@ export function CallRow({ lead }: { lead: Lead }) {
             aria-label="Note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-border-soft bg-card px-2 py-1.5 text-sm"
+            className="crm-control w-full sm:col-span-2"
           />
           <button
             type="button"
             disabled={!outcome || state === "saving" || (outcome === "callback" && !callbackAt)}
             onClick={() => void save()}
-            className="rounded-md border border-border-soft px-3 py-1.5 text-sm font-semibold transition hover:bg-mist active:scale-[0.98] disabled:opacity-40"
+            className="crm-button border border-border bg-card transition hover:bg-mist active:scale-[0.98] sm:col-span-2"
           >
             {state === "saving" ? "Saving…" : "Log call"}
           </button>
           {error && (
-            <p role="alert" className="w-full text-xs text-red-700">
+            <p role="alert" className="w-full text-sm text-red-700 sm:col-span-2">
               {error}
             </p>
           )}

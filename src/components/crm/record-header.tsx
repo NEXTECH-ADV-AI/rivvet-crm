@@ -37,16 +37,16 @@ export function RecordHeader({
     <header
       className={cn(
         "crm-surface p-4 sm:p-5",
-        sticky && "sticky top-[6.5rem] z-10 sm:top-[6.75rem]",
+        sticky && "md:sticky md:top-[6.75rem] md:z-10",
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-2">
+        <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <PriorityBadge priority={priority} />
             <StatusChip label={status} tone={statusTone} />
             {idLabel && (
-              <span className="font-mono text-[10px] text-fg-subtle">
+              <span className="font-mono text-[12px] text-fg-subtle">
                 {idLabel}
               </span>
             )}
@@ -57,7 +57,7 @@ export function RecordHeader({
             )}
           </div>
           <div>
-            <h1 className="truncate text-xl font-semibold tracking-tight text-ink sm:text-[1.35rem]">
+            <h1 className="min-w-0 font-display text-[22px] font-medium leading-[1.3] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] md:text-[28px]">
               {title}
             </h1>
             {subtitle && (
@@ -66,7 +66,7 @@ export function RecordHeader({
           </div>
         </div>
         {actions && (
-          <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
+          <div className="flex min-w-0 flex-wrap gap-2">{actions}</div>
         )}
       </div>
 
@@ -84,7 +84,7 @@ export function RecordHeader({
         />
       </dl>
       {reasons && reasons.length > 0 && (
-        <p className="mt-2.5 text-[11px] leading-relaxed text-fg-subtle">
+        <p className="mt-2.5 text-[13px] leading-relaxed text-fg-subtle">
           <span className="font-medium text-fg-muted">Why “{PRIORITY_LABEL[priority]}”:</span>{" "}
           {reasons.join(" · ")}
         </p>
@@ -111,7 +111,7 @@ function Meta({
       <dt className="crm-label">{label}</dt>
       <dd
         className={cn(
-          "mt-0.5 text-sm font-medium",
+          "mt-0.5 text-sm font-medium [overflow-wrap:anywhere]",
           mono && "font-mono tabular",
           highlight ? "text-danger" : "text-ink",
         )}

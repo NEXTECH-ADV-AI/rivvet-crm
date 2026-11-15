@@ -46,6 +46,7 @@ export interface CrmState {
   dataSource: "mock" | "live" | "seed";
   hydrateMessage: string | null;
   hydratedAt: string | null;
+  coverage: { leads: number; accounts: number; opportunities: number } | null;
 
   /** Keep leads a list page showed, so their detail page can open (RIV-1541). */
   rememberLeads: (leads: Lead[]) => void;
@@ -59,6 +60,7 @@ export interface CrmState {
     contacts: Contact[];
     activities: Activity[];
     message: string;
+    counts?: { leads: number; accounts: number; opportunities: number };
   }) => void;
   setOppNextAction: (id: string, patch: NextActionPatch) => void;
   patchOpp: (id: string, patch: OppPatch) => void;
@@ -119,6 +121,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   dataSource: "seed",
   hydrateMessage: null,
   hydratedAt: null,
+  coverage: null,
 
   rememberLeads: (leads) => {
     if (leads.length) set((s) => ({ leads: mergeById(leads, s.leads) }));
@@ -140,6 +143,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       dataSource: payload.source,
       hydrateMessage: payload.message,
       hydratedAt: new Date().toISOString(),
+      coverage: payload.counts ?? null,
     });
   },
 

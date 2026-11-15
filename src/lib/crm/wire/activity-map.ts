@@ -21,7 +21,10 @@ const CONVERSION_LABEL: Record<string, string> = {
 /** System subjects ("GTM conversion: unsubscribe (gtm_leads_suppression)") read in plain words. */
 export function plainSubject(subject: string): string {
   const m = /^GTM conversion:\s*([a-z_]+)/i.exec(subject);
-  if (!m) return subject;
+  if (!m) {
+    const reply = /^Reply:\s*([A-Z_]+)$/.exec(subject);
+    return reply ? `Email reply: ${reply[1].toLowerCase().replace(/_/g, " ")}` : subject;
+  }
   return CONVERSION_LABEL[m[1].toLowerCase()] ?? m[1].replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 

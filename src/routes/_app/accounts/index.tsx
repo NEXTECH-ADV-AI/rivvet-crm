@@ -14,6 +14,9 @@ import type { AccountLifecycle, Vertical } from "@/lib/crm/types";
 import { cn } from "@/components/ui/cn";
 
 export const Route = createFileRoute("/_app/accounts/")({
+  validateSearch: (search: Record<string, unknown>): { search?: string } => ({
+    search: typeof search.search === "string" ? search.search.slice(0, 200) : undefined,
+  }),
   component: AccountsPage,
 });
 
@@ -29,7 +32,8 @@ const LIFECYCLES: { value: AccountLifecycle | "all"; label: string }[] = [
 ];
 
 function AccountsPage() {
-  const [query, setQuery] = useState("");
+  const routeSearch = Route.useSearch();
+  const [query, setQuery] = useState(routeSearch.search ?? "");
   const [lifecycle, setLifecycle] = useState<AccountLifecycle | "all">("all");
   const [vertical, setVertical] = useState<string>("all");
   const [state, setState] = useState("all");
@@ -57,7 +61,7 @@ function AccountsPage() {
   const funnel = funnelQ.data;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
         title="Accounts"
         description="Every business we track, live."
@@ -66,7 +70,7 @@ function AccountsPage() {
       {funnel && (
         <section
           aria-label="Account totals"
-          className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border-soft bg-border-soft sm:grid-cols-3 lg:grid-cols-6"
+          className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border-soft sm:grid-cols-3 lg:grid-cols-6"
         >
           {(
             [
@@ -79,8 +83,8 @@ function AccountsPage() {
             ] as const
           ).map(([label, value]) => (
             <div key={label} className="bg-card px-3 py-2.5 sm:px-4 sm:py-3">
-              <p className="crm-label">{label}</p>
-              <p className="mt-0.5 font-mono text-lg font-semibold tabular text-ink">
+              <p className="text-[13px] text-fg-muted">{label}</p>
+              <p className="mt-1 text-[24px] font-semibold tabular text-ink">
                 {Number(value).toLocaleString()}
               </p>
             </div>
@@ -94,8 +98,8 @@ function AccountsPage() {
         </p>
       )}
 
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
-        <label className="min-w-[12rem] flex-1 text-[11px] text-fg-muted">
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-end">
+        <label className="min-w-0 flex-1 sm:min-w-[12rem] text-[13px] text-fg-muted">
           Search
           <input
             type="search"
@@ -108,7 +112,7 @@ function AccountsPage() {
             className="field mt-1 w-full"
           />
         </label>
-        <label className="text-[11px] text-fg-muted">
+        <label className="text-[13px] text-fg-muted">
           Lifecycle
           <select
             value={lifecycle}
@@ -125,7 +129,7 @@ function AccountsPage() {
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-fg-muted">
+        <label className="text-[13px] text-fg-muted">
           Vertical
           <select
             value={vertical}
@@ -143,7 +147,7 @@ function AccountsPage() {
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-fg-muted">
+        <label className="text-[13px] text-fg-muted">
           State
           <input
             value={state === "all" ? "" : state}
@@ -157,7 +161,7 @@ function AccountsPage() {
             className="field mt-1 w-16 font-mono"
           />
         </label>
-        <label className="text-[11px] text-fg-muted">
+        <label className="text-[13px] text-fg-muted">
           Sort
           <select
             value={sort}
@@ -174,7 +178,7 @@ function AccountsPage() {
         </label>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border-soft bg-card shadow-card">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         {listQ.isLoading ? (
           <p className="px-4 py-10 text-center text-sm text-fg-muted">
             Loading accounts…
@@ -190,9 +194,9 @@ function AccountsPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div role="region" aria-label="Accounts table, scroll horizontally" tabIndex={0} className="crm-scroll">
             <table className="w-full min-w-[880px] text-left text-sm">
-              <thead className="border-b border-border-soft bg-card-soft text-[10px] uppercase tracking-wider text-fg-subtle">
+              <thead className="border-b border-border-soft bg-card-soft text-[13px] text-fg-muted">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Priority</th>
                   <th className="px-4 py-2.5 font-medium">Account</th>
@@ -222,7 +226,7 @@ function AccountsPage() {
                         <Link
                           to="/accounts/$accountId"
                           params={{ accountId: a.id }}
-                          className="font-medium text-ink hover:text-product-mint"
+                          className="inline-flex min-h-11 items-center font-medium text-ink hover:text-product-mint"
                         >
                           {a.name}
                         </Link>
@@ -276,7 +280,7 @@ function AccountsPage() {
         )}
 
         {total > 0 && (
-          <div className="flex items-center justify-between border-t border-border-soft px-4 py-2.5 text-xs text-fg-muted">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-soft px-4 py-2.5 text-xs text-fg-muted">
             <span className="font-mono tabular">
               {page * PAGE_SIZE + 1} to{" "}
               {Math.min((page + 1) * PAGE_SIZE, total)} of{" "}
@@ -285,10 +289,11 @@ function AccountsPage() {
             <div className="flex gap-1">
               <button
                 type="button"
+                aria-label="Previous page"
                 disabled={page <= 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 className={cn(
-                  "rounded-md border border-border-soft p-1.5",
+                  "crm-button inline-flex items-center justify-center border border-border bg-card",
                   page <= 0
                     ? "opacity-40"
                     : "hover:border-product-mint/40",
@@ -301,12 +306,13 @@ function AccountsPage() {
               </span>
               <button
                 type="button"
+                aria-label="Next page"
                 disabled={page >= pageCount - 1}
                 onClick={() =>
                   setPage((p) => Math.min(pageCount - 1, p + 1))
                 }
                 className={cn(
-                  "rounded-md border border-border-soft p-1.5",
+                  "crm-button inline-flex items-center justify-center border border-border bg-card",
                   page >= pageCount - 1
                     ? "opacity-40"
                     : "hover:border-product-mint/40",

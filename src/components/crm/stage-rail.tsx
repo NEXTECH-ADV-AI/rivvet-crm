@@ -13,8 +13,8 @@ export function StageRail({ stage }: { stage: OppStage }) {
   const closed = stage === "closed_won" || stage === "closed_lost";
 
   return (
-    <div className="overflow-x-auto">
-      <ol className="flex min-w-[520px] gap-1">
+    <div className="min-w-0">
+      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {ALL.map((s, i) => {
           const active = s === stage;
           const past = !closed && i < idx;
@@ -24,7 +24,7 @@ export function StageRail({ stage }: { stage: OppStage }) {
             <li
               key={s}
               className={cn(
-                "flex-1 rounded-md border px-2 py-2 text-center text-[10px] font-medium uppercase tracking-wide",
+                "flex-1 rounded-md border px-2 py-2 text-center text-[13px] font-medium",
                 active && !closed && "border-signal-cyan/50 bg-signal-cyan/10 text-ink",
                 past && "border-product-mint/30 bg-product-mint/10 text-product-mint",
                 won && "border-product-mint/50 bg-product-mint/15 text-product-mint",
@@ -37,7 +37,7 @@ export function StageRail({ stage }: { stage: OppStage }) {
           );
         })}
       </ol>
-      <p className="mt-2 text-[10px] text-fg-subtle">
+      <p className="mt-2 text-[12px] text-fg-subtle">
         Stage transitions are read-only here — production stage side-effects stay locked.
       </p>
     </div>

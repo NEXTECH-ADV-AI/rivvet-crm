@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Lock } from "lucide-react";
 import { LockedBanner } from "@/components/crm/locked-banner";
 import { IntegrationMirror } from "@/components/crm/integration-mirror";
 import { useCrmStore } from "@/lib/crm/store";
+import { useOpportunityRecord } from "@/lib/crm/wire";
 import { formatMoney } from "@/lib/crm/priority";
 
 export const Route = createFileRoute("/_app/opportunities/$oppId/send")({
@@ -12,11 +13,12 @@ export const Route = createFileRoute("/_app/opportunities/$oppId/send")({
 
 function SendPreview() {
   const { oppId } = Route.useParams();
+  const q = useOpportunityRecord(oppId);
   const opportunities = useCrmStore((s) => s.opportunities);
   const allDocs = useCrmStore((s) => s.sendDocuments);
   const allPayments = useCrmStore((s) => s.payments);
 
-  const opp = useMemo(
+  const cachedOpp = useMemo(
     () => opportunities.find((o) => o.id === oppId),
     [opportunities, oppId],
   );
@@ -29,7 +31,35 @@ function SendPreview() {
     [allPayments, oppId],
   );
 
-  if (!opp) throw notFound();
+  const opp = cachedOpp ?? q.data?.record?.opportunity;
+  if (!opp) {
+    return (
+      <section className="crm-surface mx-auto max-w-3xl space-y-3 p-5">
+        <p role={q.isError ? "alert" : "status"} className="text-sm text-fg-muted">
+          {q.isPending
+            ? "Loading the opportunity…"
+            : q.isError
+              ? "Couldn't load this opportunity. Try again."
+              : "This opportunity doesn't exist or is no longer available."}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {q.isError && (
+            <button
+              type="button"
+              disabled={q.isFetching}
+              onClick={() => void q.refetch()}
+              className="crm-button border border-border bg-card text-ink hover:bg-mist"
+            >
+              {q.isFetching ? "Retrying…" : "Try again"}
+            </button>
+          )}
+          <Link to="/opportunities" className="crm-button text-product-mint hover:underline">
+            Back to Opportunities
+          </Link>
+        </div>
+      </section>
+    );
+  }
 
   const steps = [
     { id: 1, label: "Review package", state: "done" as const },
@@ -39,21 +69,21 @@ function SendPreview() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto min-w-0 [overflow-wrap:anywhere] max-w-3xl space-y-4">
       <Link
         to="/opportunities/$oppId"
         params={{ oppId }}
-        className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
+        className="min-h-11 inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
       >
         <ArrowLeft className="size-3.5" /> {opp.name}
       </Link>
 
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[10px] tracking-wider text-fg-subtle">
+          <p className="font-mono text-[12px] tracking-wider text-fg-subtle">
             CONTRACT / SEND · MIRROR SHELL
           </p>
-          <h1 className="text-xl font-semibold text-ink">Send proposal</h1>
+          <h1 className="min-w-0 font-display text-[22px] font-medium leading-[1.3] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] md:text-[28px]">Send proposal</h1>
           <p className="text-sm text-fg-muted">
             {opp.accountName} · {formatMoney(opp.amount)} · send:{" "}
             <span className="font-mono">{opp.lockedSendState ?? "none"}</span> ·
@@ -63,7 +93,7 @@ function SendPreview() {
             </span>
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full border border-warn/30 bg-warn/10 px-2 py-1 font-mono text-[10px] font-semibold text-warn">
+        <span className="inline-flex items-center gap-1 rounded-full border border-warn/30 bg-warn/10 px-2 py-1 font-mono text-[12px] font-semibold text-warn">
           <Lock className="size-3" /> LOCKED
         </span>
       </div>
@@ -85,7 +115,7 @@ function SendPreview() {
                   : "border-border-soft bg-mist text-fg-subtle"
             }`}
           >
-            <span className="font-mono text-[10px]">0{s.id}</span>
+            <span className="font-mono text-[12px]">0{s.id}</span>
             <p className="mt-1 font-medium">{s.label}</p>
           </li>
         ))}
@@ -93,7 +123,7 @@ function SendPreview() {
 
       <IntegrationMirror docs={docs} payments={payments} />
 
-      <div className="rounded-xl border border-border-soft bg-card p-5 shadow-card">
+      <div className="rounded-xl border border-border-soft bg-card p-5">
         <div className="space-y-3">
           <Field
             label="Recipient email"
@@ -111,7 +141,7 @@ function SendPreview() {
         <button
           type="button"
           disabled
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-ink/40 px-4 py-3 font-mono text-[11px] font-bold tracking-wider text-white"
+          className="crm-button mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-ink/40 px-4 py-3 font-mono font-bold tracking-wider text-white"
         >
           <Lock className="size-3.5" />
           SEND DISABLED IN SANDBOX
@@ -124,10 +154,10 @@ function SendPreview() {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <label className="text-[10px] font-medium uppercase tracking-wider text-fg-subtle">
+      <label className="text-[13px] font-medium text-fg-muted">
         {label}
       </label>
-      <div className="mt-1 rounded-md border border-border-soft bg-mist px-3 py-2.5 font-mono text-sm text-fg-muted">
+      <div className="mt-1 [overflow-wrap:anywhere] rounded-md border border-border-soft bg-mist px-3 py-2.5 font-mono text-sm text-fg-muted">
         {value}
       </div>
     </div>

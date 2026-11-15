@@ -1,0 +1,19 @@
+<svg viewBox="0 0 1040 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Rivvet AI white transparent wordmark</title>
+  <desc id="desc">Rivvet AI wordmark with the three-dot i on a white transparent background.</desc>
+  <defs>
+    <linearGradient id="rv-wordmark-dots" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <g fill="#FFFFFF" font-family="IBM Plex Sans, Arial, Helvetica, sans-serif" font-size="178" font-weight="800" letter-spacing="0">
+    <text x="0" y="185">R</text>
+    <text x="226" y="185">VVET AI</text>
+  </g>
+  <g fill="url(#rv-wordmark-dots)">
+    <circle cx="183" cy="76" r="15"/>
+    <circle cx="183" cy="126" r="15"/>
+    <circle cx="183" cy="176" r="15"/>
+  </g>
+</svg>

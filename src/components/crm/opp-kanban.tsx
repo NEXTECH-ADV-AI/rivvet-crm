@@ -76,8 +76,8 @@ export function OppKanban({
 
   return (
     <div className="space-y-3">
-      <div className="-mx-1 overflow-x-auto pb-2">
-        <div className="flex min-w-max gap-2.5 px-1">
+      <div tabIndex={0} role="region" aria-label="Opportunity stages, scroll horizontally" className="crm-scroll pb-2">
+        <div className="flex min-w-max gap-4 p-1">
           {KANBAN_STAGES.map((stage) => {
             const cards = byStage[stage];
             const total = cards.reduce((sum, o) => sum + o.amount, 0);
@@ -89,10 +89,10 @@ export function OppKanban({
               <section
                 key={stage}
                 className={cn(
-                  "flex w-[248px] shrink-0 flex-col rounded-xl border bg-card shadow-soft transition-colors",
+                  "flex w-[272px] shrink-0 flex-col rounded-xl border bg-card transition-colors",
                   isOver
                     ? "border-bright-mint/60 bg-bright-mint/5"
-                    : "border-border-soft",
+                    : "border-border",
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -107,11 +107,11 @@ export function OppKanban({
                   onDrop(stage);
                 }}
               >
-                <header className="border-b border-border-soft px-2.5 py-2">
+                <header className="border-b border-border-soft px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <h3
                       className={cn(
-                        "text-[11px] font-semibold uppercase tracking-wide",
+                        "text-[14px] font-semibold",
                         stage === "closed_won" && "text-product-mint",
                         stage === "closed_lost" && "text-danger",
                         !isClosed && "text-ink",
@@ -124,11 +124,12 @@ export function OppKanban({
                     </span>
                   </div>
                   <p className="mt-0.5 font-mono text-[10px] tabular text-fg-muted">
-                    {formatMoney(total)}
+                    {cards.length > 0 && cards.every((o) => o.amountKnown === false) ? "Not priced" : formatMoney(total)}
+                    {cards.some((o) => o.amountKnown === false) && <span className="ml-1">· {cards.filter((o) => o.amountKnown === false).length} unpriced</span>}
                   </p>
                 </header>
 
-                <div className="flex min-h-[100px] flex-1 flex-col gap-1.5 p-1.5">
+                <div className="flex min-h-[100px] flex-1 flex-col gap-3 p-3">
                   {cards.length === 0 && (
                     <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border-soft px-2 py-5 text-center text-[11px] text-fg-subtle">
                       Drop
@@ -151,7 +152,7 @@ export function OppKanban({
                           setOverStage(null);
                         }}
                         className={cn(
-                          "rounded-lg border border-border-soft bg-card-soft/90 p-2 shadow-soft transition",
+                          "rounded-lg border border-border bg-card-soft p-3 transition",
                           "hover:border-product-mint/35 hover:bg-mist",
                           dragging && "opacity-40 ring-2 ring-bright-mint/40",
                         )}
@@ -168,7 +169,7 @@ export function OppKanban({
                             <Link
                               to="/opportunities/$oppId"
                               params={{ oppId: o.id }}
-                              className="mt-0.5 block text-[13px] font-medium leading-snug text-ink hover:text-product-mint"
+                              className="mt-0.5 flex min-h-11 items-center break-words text-sm font-medium leading-snug text-ink hover:text-product-mint"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {o.name}
@@ -180,8 +181,8 @@ export function OppKanban({
                         </div>
                         <div className="flex items-center justify-between gap-2 pl-4">
                           <span className="font-mono text-xs font-semibold tabular text-ink">
-                            {formatMoney(o.monthlyAmount ?? o.amount)}
-                            {o.monthlyAmount ? (
+                            {o.amountKnown === false ? "Not priced" : formatMoney(o.monthlyAmount ?? o.amount)}
+                            {o.amountKnown !== false && o.monthlyAmount ? (
                               <span className="font-normal text-fg-subtle">/mo</span>
                             ) : null}
                           </span>
@@ -196,13 +197,14 @@ export function OppKanban({
                           {" · "}
                           {formatRelative(o.lastTouch, now)}
                         </p>
-                        <div className="mt-1.5 pl-4 sm:hidden">
+                        <div className="mt-3 pl-4">
                           <select
+                            aria-label={`Stage for ${o.name}`}
                             value={o.stage}
                             onChange={(e) =>
                               applyStage(o.id, e.target.value as OppStage)
                             }
-                            className="w-full rounded-md border border-border-soft bg-card px-2 py-1 text-[11px] text-ink"
+                            className="crm-control w-full"
                           >
                             {KANBAN_STAGES.map((s) => (
                               <option key={s} value={s}>

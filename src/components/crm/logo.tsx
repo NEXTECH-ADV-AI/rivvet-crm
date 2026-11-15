@@ -1,7 +1,7 @@
 import { cn } from "@/components/ui/cn";
 
-const ICON_SRC = "/brand/rivvet-icon.png";
-const WORDMARK_SRC = "/brand/rivvet-wordmark.png";
+const ICON_SRC = "/brand/rivvet-ai-icon-transparent.svg";
+const WORDMARK_SRC = "/brand/rivvet-ai-wordmark-transparent.svg";
 
 /** Canonical network mark (cyan → mint graph) */
 export function RivvetIcon({
@@ -56,12 +56,12 @@ export function RivvetWordmarkOnDark({
 }) {
   return (
     <img
-      src={WORDMARK_SRC}
+      src="/brand/rivvet-ai-wordmark-white.svg"
       alt={alt}
       width={1600}
       height={320}
       className={cn(
-        "h-auto w-auto object-contain object-left brightness-0 invert",
+        "h-auto w-auto object-contain object-left",
         className,
       )}
       draggable={false}
@@ -84,15 +84,12 @@ export function RivvetBrand({
   className?: string;
   showWordmark?: boolean;
 }) {
-  return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <RivvetIcon className="size-8 shrink-0 sm:size-9" alt="" />
-      {showWordmark &&
-        (variant === "dark" ? (
-          <RivvetWordmarkOnDark className="h-5 w-auto max-w-[148px] sm:h-[22px]" />
-        ) : (
-          <RivvetWordmark className="h-5 w-auto max-w-[148px] sm:h-[22px]" />
-        ))}
-    </div>
-  );
+  return showWordmark ? (
+    <img
+      src={variant === "dark" ? "/brand/rivvet-ai-logo-lockup-white.svg" : "/brand/rivvet-ai-logo-lockup-transparent.svg"}
+      alt="Rivvet AI"
+      className={cn("h-9 w-auto max-w-[180px] object-contain", className)}
+      draggable={false}
+    />
+  ) : <RivvetIcon className={className} />;
 }

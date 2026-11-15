@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Bar,
@@ -32,6 +32,8 @@ const CHART_MUTED = "#7a929c";
 const PIE = ["#00B089", "#00C8FF", "#072336", "#c9851a", "#4a6470"];
 
 function AnalyticsPage() {
+  const [period, setPeriod] = useState<"30d" | "all">("30d");
+  const coverage = useCrmStore((s) => s.coverage);
   const opportunities = useCrmStore((s) => s.opportunities);
   const leads = useCrmStore((s) => s.leads);
   const accounts = useCrmStore((s) => s.accounts);
@@ -50,28 +52,46 @@ function AnalyticsPage() {
   const book = useLeadBook().data?.book ?? null;
 
   const data = useMemo(
-    () => buildGtmAnalytics(opportunities, leads, accounts, activities, book),
-    [opportunities, leads, accounts, activities, book],
+    () => buildGtmAnalytics(opportunities, leads, accounts, activities, book, { period }),
+    [opportunities, leads, accounts, activities, book, period],
   );
   const n = (v: number | null) => (v == null ? "…" : v.toLocaleString());
   const { kpis } = data;
   const money = pipelineKpiDisplay(pipeline, kpis);
+  const pipelineUnavailable = pipeline === "loading" || pipeline === "unavailable";
+  const activityUnavailable = useCrmStore((s) => s.hydrateMessage)?.includes("activities unavailable");
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
         title="Analytics"
         description="Leads, outreach and opportunities."
         action={
           <Link
             to="/leads"
-            className="rounded-md border border-border-soft bg-card px-3 py-2 text-xs font-semibold shadow-soft hover:bg-mist"
+            className="crm-button border border-border bg-card hover:bg-mist"
           >
             Email readiness
           </Link>
         }
       />
 
+      <section className="mb-5 crm-surface px-5 py-4" aria-label="Reporting period">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 className="text-[15px] font-semibold">Sales activity</h2><p className="text-xs text-fg-muted">Choose the reporting window. Pipeline below is the current open book.</p></div>
+          <div className="flex gap-1 rounded-lg bg-mist p-1" aria-label="Date range">
+            {(["30d", "all"] as const).map((value) => <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)} className={`crm-button ${period === value ? "bg-ink text-white" : "text-fg-muted"}`}>{value === "30d" ? "Past 30 days" : "All time"}</button>)}
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MiniStat label="Opportunities created" value={pipelineUnavailable ? null : data.period.created} />
+          <MiniStat label="Won opportunities, all time" value={pipelineUnavailable ? null : data.period.won} />
+          <MiniStat label="Lost opportunities, all time" value={pipelineUnavailable ? null : data.period.lost} />
+          <MiniStat label="Loaded activity records" value={!hydratedAt || activityUnavailable ? null : data.period.activities} />
+        </div>
+        <p className="mt-3 text-xs text-fg-subtle">Coverage: {opportunities.length} loaded opportunities (read limit 200), {leads.length} loaded leads, {accounts.length} of {coverage?.accounts ?? "unknown"} accounts, and {activities.length} recent activities. The date filter applies to created opportunities, dated activities and lead source mix. Won/lost totals use all time because a close timestamp is not available.</p>
+      </section>
+      <p className="mb-2 text-xs font-semibold text-fg-muted">Current book totals, all time</p>
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi
           label="Ready for email"
@@ -88,8 +108,8 @@ function AnalyticsPage() {
           label="HVAC share"
           value={kpis.hvacShare == null ? "…" : `${kpis.hvacShare}%`}
         />
-        <Kpi label="Pipeline" value={money.pipeline} />
-        <Kpi label="Weighted" value={money.weighted} />
+        <Kpi label="Open pipeline" value={money.pipeline} sub={`${kpis.openDeals} open, ${kpis.unpriced} not priced`} />
+        <Kpi label="Weighted" value={money.weighted} sub="Known amounts only" />
         <Kpi
           label="Closing in 30 days"
           value={money.closing}
@@ -97,6 +117,7 @@ function AnalyticsPage() {
         />
       </div>
 
+      <p className="mb-2 text-xs text-fg-subtle">Readiness below covers the {leads.length} loaded leads; account risk covers {accounts.length} loaded accounts.</p>
       <div className="mb-5 grid gap-3 sm:grid-cols-4">
         <MiniStat label="Ready, not in a campaign" value={kpis.readyNotLoaded} />
         <MiniStat label="Missing details" value={kpis.needsEnrich} />
@@ -106,7 +127,7 @@ function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-        <Panel title="Pipeline by stage" subtitle="Open amount" notice={notice}>
+        <Panel title="Pipeline by stage" subtitle={`Current open amounts only; ${kpis.unpriced} unpriced excluded. Closed-won is separate.`} notice={notice}>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -141,7 +162,7 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Velocity" subtitle="Created, won and lost" notice={notice}>
+        <Panel title="Opportunity cohorts" subtitle="Last six creation weeks, grouped by current outcome. These are not close dates." notice={notice}>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.weekly}>
@@ -189,8 +210,8 @@ function AnalyticsPage() {
           </div>
         </Panel>
 
-        <Panel title="Lead source mix" subtitle="By count">
-          <div className="flex h-52 items-center gap-4">
+        <Panel title="Lead source mix" subtitle={`${data.period.leads} loaded leads created ${period === "30d" ? "in the past 30 days" : "all time"}; this is a sample, not the full lead book.`}>
+          <div className="flex min-h-52 flex-wrap items-center gap-4">
             <div className="h-40 w-40 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -210,7 +231,7 @@ function AnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <ul className="min-w-0 flex-1 space-y-1.5">
+            <ul className="min-w-[8rem] flex-1 space-y-1.5">
               {data.sourceMix.map((s, i) => (
                 <li
                   key={s.source}
@@ -244,11 +265,11 @@ function AnalyticsPage() {
                 <Link
                   to="/opportunities/$oppId"
                   params={{ oppId: d.id }}
-                  className="flex items-center gap-3 py-2.5 hover:bg-mist/50"
+                  className="flex min-h-11 items-center gap-3 py-3 hover:bg-mist/50"
                 >
                   <PriorityBadge priority={d.priority} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">
+                    <p className="break-words text-sm font-medium text-ink">
                       {d.name}
                     </p>
                     <p className="text-[11px] text-fg-subtle">
@@ -256,8 +277,8 @@ function AnalyticsPage() {
                       {d.closeDate ? ` · ${formatDate(d.closeDate)}` : ""}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-semibold tabular">
-                    {formatMoney(d.amount)}
+                  <span className="font-mono text-[15px] font-semibold tabular">
+                    {d.amountKnown === false ? "Not priced" : formatMoney(d.amount)}
                   </span>
                 </Link>
               </li>
@@ -271,7 +292,7 @@ function AnalyticsPage() {
 
 const tooltipStyle = {
   background: "#fff",
-  border: "1px solid #d5e0dc",
+  border: "1px solid #dce2e9",
   borderRadius: 8,
   fontSize: 12,
 };
@@ -292,10 +313,10 @@ function Kpi({
   warn?: boolean;
 }) {
   return (
-    <div className="crm-surface px-3 py-3">
-      <p className="crm-label">{label}</p>
+    <div className="crm-surface min-w-0 px-4 py-3">
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
-        className={`mt-1 font-mono text-xl font-semibold tabular ${
+        className={`mt-1 break-words text-xl font-semibold sm:text-[24px] tabular ${
           warn
             ? "text-warn"
             : accent
@@ -307,7 +328,7 @@ function Kpi({
       >
         {value}
       </p>
-      {sub && <p className="text-[10px] text-fg-subtle">{sub}</p>}
+      {sub && <p className="text-xs text-fg-subtle">{sub}</p>}
     </div>
   );
 }
@@ -318,18 +339,18 @@ function MiniStat({
   warn,
 }: {
   label: string;
-  value: number;
+  value: number | null;
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border-soft bg-card-soft px-3 py-2.5">
-      <p className="text-[11px] text-fg-muted">{label}</p>
+    <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
-        className={`font-mono text-lg font-semibold tabular ${
+        className={`break-words text-xl font-semibold tabular ${
           warn ? "text-warn" : "text-ink"
         }`}
       >
-        {value}
+        {value == null ? "Unavailable" : value}
       </p>
     </div>
   );
@@ -350,9 +371,9 @@ function Panel({
   notice?: string | null;
 }) {
   return (
-    <section className={`crm-surface p-4 ${className ?? ""}`}>
+    <section className={`crm-surface min-w-0 px-5 py-4 ${className ?? ""}`}>
       <div className="mb-3">
-        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
         {subtitle && (
           <p className="text-[11px] text-fg-subtle">{subtitle}</p>
         )}

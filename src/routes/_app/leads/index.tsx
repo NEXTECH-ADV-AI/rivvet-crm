@@ -74,15 +74,16 @@ function LeadsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
         title="Leads"
         description="Start with the call queue, or pick another view."
         action={
           <button
             type="button"
+            aria-expanded={showBook}
             onClick={() => setShowBook((v) => !v)}
-            className="rounded-md border border-border-soft bg-card px-3 py-2 text-xs font-semibold shadow-soft hover:bg-mist"
+            className="crm-button border border-border bg-card hover:bg-mist"
           >
             {showBook ? "Hide totals" : "Show totals"}
           </button>
@@ -129,7 +130,7 @@ function LeadsPage() {
         )}
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-subtle">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-fg-subtle">
         <p>
           {listQ.isFetching ? "Loading…" : `${total.toLocaleString()} matches`}
           {" · page "}
@@ -140,7 +141,7 @@ function LeadsPage() {
             type="button"
             disabled={page === 0}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            className="inline-flex items-center gap-1 rounded-md border border-border-soft px-2 py-1 disabled:opacity-40"
+            className="crm-button inline-flex items-center gap-1 border border-border bg-card"
           >
             <ChevronLeft className="size-3" /> Prev
           </button>
@@ -148,14 +149,14 @@ function LeadsPage() {
             type="button"
             disabled={page + 1 >= pageCount}
             onClick={() => setPage((p) => p + 1)}
-            className="inline-flex items-center gap-1 rounded-md border border-border-soft px-2 py-1 disabled:opacity-40"
+            className="crm-button inline-flex items-center gap-1 border border-border bg-card"
           >
             Next <ChevronRight className="size-3" />
           </button>
         </div>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-xl border border-border-soft bg-card shadow-card">
+      <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
         {listQ.isError ? (
           <EmptyState
             icon={Inbox}
@@ -175,9 +176,9 @@ function LeadsPage() {
         ) : view === "call_queue" ? (
           <CallQueue leads={rows} />
         ) : (
-          <div className="overflow-x-auto">
+          <div role="region" aria-label="Leads table, scroll horizontally" tabIndex={0} className="crm-scroll">
             <table className="w-full min-w-[1080px] text-left text-sm">
-              <thead className="border-b border-border-soft bg-card-soft text-[10px] uppercase tracking-wider text-fg-subtle">
+              <thead className="border-b border-border-soft bg-card-soft text-[13px] text-fg-muted">
                 <tr>
                   <th className="px-3 py-2.5 font-medium">Priority</th>
                   <th className="px-3 py-2.5 font-medium">Lead</th>
@@ -211,11 +212,11 @@ function LeadsPage() {
                         <Link
                           to="/leads/$leadId"
                           params={{ leadId: l.id }}
-                          className="font-medium text-ink hover:text-product-mint"
+                          className="inline-flex min-h-11 items-center font-medium text-ink hover:text-product-mint"
                         >
                           {l.name}
                         </Link>
-                        <p className="text-[11px] text-fg-subtle">
+                        <p className="text-xs text-fg-subtle">
                           {l.company}
                         </p>
                       </td>
@@ -272,7 +273,7 @@ function LeadsPage() {
                           </span>
                         </span>
                       </td>
-                      <td className="max-w-[160px] truncate px-3 py-2.5 text-xs">
+                      <td className="max-w-[240px] break-words px-3 py-2.5 text-xs">
                         <span className="text-ink">
                           {l.nextAction ??
                             (seq ? "Ready for email" : "—")}

@@ -45,23 +45,24 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-xl border border-border-soft bg-card p-2 shadow-soft sm:flex-row sm:items-center sm:gap-3 sm:p-2.5",
+        "flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:gap-4",
         className,
       )}
     >
       <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-fg-subtle" />
         <input
+          aria-label="Filter this view"
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           placeholder="Filter this view…"
-          className="w-full rounded-md border border-border-soft bg-mist/60 py-2 pl-8 pr-8 text-sm text-ink placeholder:text-fg-subtle focus:border-signal-cyan focus:bg-card focus:outline-none"
+          className="crm-control w-full pl-9 pr-12 placeholder:text-fg-subtle"
         />
         {query && (
           <button
             type="button"
             onClick={() => onQuery("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-fg-subtle hover:text-ink"
+            className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-sm text-fg-subtle hover:text-ink"
             aria-label="Clear search"
           >
             <X className="size-3.5" />
@@ -70,14 +71,15 @@ export function FilterBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <div className="flex rounded-md border border-border-soft bg-mist/50 p-0.5">
+        <div className="flex flex-wrap rounded-sm border border-border bg-mist p-0.5">
           {PRIORITIES.map((p) => (
             <button
               key={p.id}
               type="button"
+              aria-pressed={priority === p.id}
               onClick={() => onPriority(p.id)}
               className={cn(
-                "rounded px-2 py-1 text-[11px] font-semibold transition-colors",
+                "crm-button transition-colors",
                 priority === p.id
                   ? p.id === "P1"
                     ? "bg-p1 text-white"
@@ -94,9 +96,10 @@ export function FilterBar({
 
         {onOwner && owner && (
           <select
+            aria-label="Owner"
             value={owner}
             onChange={(e) => onOwner(e.target.value as OwnerFilter)}
-            className="rounded-md border border-border-soft bg-mist/60 px-2 py-1.5 text-xs text-ink focus:border-signal-cyan focus:outline-none"
+            className="crm-control"
           >
             {OWNERS.map((o) => (
               <option key={o.id} value={o.id}>
@@ -120,7 +123,7 @@ export function FilterBar({
               onPriority("all");
               onOwner?.("all");
             }}
-            className="text-[11px] font-medium text-product-mint hover:underline"
+            className="crm-button text-product-mint hover:underline"
           >
             Reset
           </button>

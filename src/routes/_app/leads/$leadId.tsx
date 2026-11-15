@@ -52,12 +52,12 @@ function LeadDetail() {
   if (!lead) {
     const loading = leadQ.isLoading;
     return (
-      <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <h1 className="text-lg font-semibold text-ink">
+      <div className="mx-auto min-w-0 [overflow-wrap:anywhere] max-w-md px-4 py-24 text-center">
+        <h1 className="min-w-0 font-display text-[22px] font-medium leading-[1.3] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] md:text-[28px]">
           {loading ? "Loading lead…" : leadQ.isError ? "Couldn't load this lead" : "Lead not found"}
         </h1>
         {!loading && (
-          <Link to="/leads" className="mt-4 inline-block text-sm font-semibold text-product-mint hover:underline">
+          <Link to="/leads" className="min-h-11 mt-4 inline-flex items-center text-sm font-semibold text-product-mint hover:underline">
             Go to Leads
           </Link>
         )}
@@ -72,10 +72,10 @@ function LeadDetail() {
   const targetCamp = campaignForVertical(lead.vertical);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="mx-auto min-w-0 [overflow-wrap:anywhere] max-w-4xl space-y-4">
       <Link
         to="/leads"
-        className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
+        className="min-h-11 inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-ink"
       >
         <ArrowLeft className="size-3.5" /> Leads
       </Link>
@@ -114,7 +114,7 @@ function LeadDetail() {
               type="button"
               disabled={!lead.gtmLeadId || logTouch.isPending || logTouch.isSuccess}
               onClick={() => lead.gtmLeadId && logTouch.mutate({ gtmLeadId: lead.gtmLeadId, type: "email" })}
-              className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
+              className="crm-button inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 font-semibold text-white transition hover:bg-deep-ink disabled:opacity-50"
             >
               <Mail className="size-3.5" />
               {logTouch.isSuccess ? "Email logged" : logTouch.isError ? "Couldn't log. Retry" : "Log an email I sent"}
@@ -202,7 +202,7 @@ function LeadDetail() {
               ] as const
             ).map(([label, v]) => (
               <div key={label} className="mb-1.5">
-                <div className="mb-0.5 flex justify-between text-[10px] text-fg-subtle">
+                <div className="mb-0.5 flex justify-between text-[12px] text-fg-subtle">
                   <span>{label}</span>
                   <span className="font-mono">
                     {v}/{icpMax}
@@ -264,7 +264,7 @@ function Gate({
           : "border-border-soft bg-card"
       }`}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
+      <p className="text-[13px] font-medium text-fg-muted">
         {label}
       </p>
       <p

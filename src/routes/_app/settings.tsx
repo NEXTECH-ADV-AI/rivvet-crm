@@ -26,19 +26,19 @@ function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto min-w-0 [overflow-wrap:anywhere] max-w-2xl space-y-4">
       <PageHeader title="Settings" />
 
       <section className="crm-surface flex flex-wrap items-center justify-between gap-3 p-5">
         <div className="min-w-0">
           <p className="crm-label">Signed in as</p>
-          <p className="truncate text-sm font-medium text-ink">{user.email}</p>
+          <p className="text-base font-medium text-ink [overflow-wrap:anywhere]">{user.email}</p>
         </div>
         <button
           type="button"
           onClick={() => void signOut()}
           disabled={signingOut}
-          className="rounded-md border border-border-soft px-3 py-1.5 text-sm font-semibold transition hover:bg-mist active:scale-[0.98] disabled:opacity-40"
+          className="crm-button rounded-md border border-border-soft px-3 py-1.5 font-semibold transition hover:bg-mist disabled:opacity-40"
         >
           {signingOut ? "Signing out…" : "Sign out"}
         </button>
