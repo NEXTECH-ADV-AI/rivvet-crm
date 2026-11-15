@@ -60,18 +60,18 @@ function ActivitiesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader title="Activities" description="Open tasks first, then the latest calls and emails." />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-fg-muted">
         <span>{visible.length} loaded activity records{hidden && !includeInternal ? `; ${hidden} test or system records hidden` : ""}.</span>
-        <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeInternal} onChange={(event) => setIncludeInternal(event.target.checked)} />Include test and system events</label>
+        <label className="inline-flex min-h-11 items-center gap-2"><input type="checkbox" checked={includeInternal} onChange={(event) => setIncludeInternal(event.target.checked)} />Include test and system events</label>
       </div>
       {!hydratedAt && <p className="mb-4 text-sm text-fg-muted">Loading activity...</p>}
       {message?.includes("activities unavailable") && <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Activity data is unavailable. An empty list does not mean there is no work due.</p>}
-      <section className="mb-6 rounded-xl border border-border-soft bg-card shadow-card">
-        <div className="flex items-center justify-between border-b border-border-soft px-4 py-3">
-          <h2 className="text-sm font-semibold">Open tasks</h2>
+      <section className="mb-6 rounded-xl border border-border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft px-5 py-3">
+          <h2 className="text-[15px] font-semibold">Open tasks</h2>
           {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
         </div>
         {open.length === 0 ? (
@@ -83,15 +83,15 @@ function ActivitiesPage() {
             {open.map((a) => {
               const overdue = dueState(a.dueAt, now) === "overdue";
               return (
-                <li key={a.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <li key={a.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-ink">{a.subject}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="break-words text-sm font-medium text-ink">{a.subject}</p>
+                    <p className="break-words text-[13px] text-fg-muted">
                       <RelatedLink type={a.relatedType} id={a.relatedId} name={a.relatedName} />
                       {a.body ? ` · ${a.body}` : ""}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {overdue && <StatusChip label="Overdue" tone="danger" />}
                     <span className="text-xs tabular-nums text-fg-muted">
                       {a.dueAt ? `Due ${fmtDue(a.dueAt)}` : "No due date"}
@@ -100,7 +100,7 @@ function ActivitiesPage() {
                       type="button"
                       disabled={saving === a.id}
                       onClick={() => void markDone(a.id)}
-                      className="rounded-md border border-border-soft px-2.5 py-1 text-xs font-semibold transition hover:bg-mist active:scale-[0.98] disabled:opacity-50"
+                      className="crm-button border border-border bg-card transition hover:bg-mist active:scale-[0.98]"
                     >
                       {saving === a.id ? "Saving…" : "Done"}
                     </button>
@@ -112,16 +112,16 @@ function ActivitiesPage() {
         )}
       </section>
 
-      <section className="rounded-xl border border-border-soft bg-card/80 shadow-soft">
-        <div className="border-b border-border-soft px-4 py-3">
-          <h2 className="text-sm font-semibold text-fg-muted">Recent customer activity</h2>
+      <section className="rounded-xl border border-border bg-card">
+        <div className="border-b border-border-soft px-5 py-3">
+          <h2 className="text-[15px] font-semibold text-fg-muted">Recent customer activity</h2>
         </div>
         {history.length === 0 ? (
           <p className="px-4 py-3 text-sm text-fg-muted">Nothing logged yet.</p>
         ) : (
           <ul className="divide-y divide-border-soft">
             {history.map((a) => (
-              <li key={a.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5 text-sm">
+              <li key={a.id} className="flex flex-wrap items-baseline justify-between gap-3 px-5 py-3 text-sm">
                 <span className="min-w-0 break-words">
                   <span className="mr-2 rounded bg-mist px-1.5 py-0.5 text-[10px] font-semibold capitalize text-fg-muted">{a.type.replace(/_/g, " ")}</span><span className="font-medium text-ink/90">{a.subject}</span>
                   <span className="text-fg-muted">
@@ -155,7 +155,7 @@ function RelatedLink({
       <Link
         to="/leads/$leadId"
         params={{ leadId: id }}
-        className="hover:text-product-mint"
+        className="inline-flex min-h-11 items-center hover:text-product-mint"
       >
         {name}
       </Link>
@@ -166,7 +166,7 @@ function RelatedLink({
       <Link
         to="/accounts/$accountId"
         params={{ accountId: id }}
-        className="hover:text-product-mint"
+        className="inline-flex min-h-11 items-center hover:text-product-mint"
       >
         {name}
       </Link>
@@ -177,7 +177,7 @@ function RelatedLink({
       <Link
         to="/opportunities/$oppId"
         params={{ oppId: id }}
-        className="hover:text-product-mint"
+        className="inline-flex min-h-11 items-center hover:text-product-mint"
       >
         {name}
       </Link>

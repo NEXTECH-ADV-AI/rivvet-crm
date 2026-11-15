@@ -118,24 +118,60 @@
     color: var(--color-fg-subtle);
   }
 
-  /* Soft form controls (opp workspace) */
+  /* Shared CRM controls keep the Ops sizing and focus treatment. */
+  .field,
+  .crm-control {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--color-ink);
+  }
   .field {
     display: block;
     width: 100%;
-    border-radius: 10px;
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-mist);
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    color: var(--color-ink);
-    outline: none;
   }
-  .field:focus {
-    border-color: color-mix(in oklab, var(--color-signal-cyan) 60%, white);
-    background: var(--color-card);
+  .field:focus,
+  .crm-control:focus {
+    border-color: var(--color-product-mint);
+    outline: 2px solid var(--color-product-mint);
+    outline-offset: 2px;
   }
   .field:read-only {
     color: var(--color-fg-muted);
+  }
+  .crm-button {
+    display: inline-block;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .crm-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .crm-scroll {
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  .crm-scroll:focus-visible {
+    outline-offset: -2px;
+  }
+  @media (min-width: 768px) {
+    .field,
+    .crm-control {
+      font-size: 0.875rem;
+    }
   }
 }
 

@@ -85,7 +85,7 @@ function OppsPage() {
     <div
       className={cn(
         "mx-auto",
-        layout === "board" ? "max-w-[1600px]" : "max-w-6xl",
+        layout === "board" ? "max-w-[1600px]" : "max-w-[1320px]",
       )}
     >
       <PageHeader
@@ -97,12 +97,12 @@ function OppsPage() {
             : "Board or list. Filters compose with saved views. Stage moves stay local."
         }
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setCreating(true)}
             disabled={creating || dataSource !== "live"}
-            className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:opacity-50"
+            className="crm-button inline-flex items-center gap-1.5 bg-ink text-white transition hover:bg-deep-ink active:scale-[0.98]"
           >
             <Plus className="size-3.5" aria-hidden />
             New opportunity
@@ -110,9 +110,10 @@ function OppsPage() {
           <div className="flex rounded-lg border border-border-soft bg-card-soft p-0.5">
             <button
               type="button"
+              aria-pressed={layout === "board"}
               onClick={() => setLayout("board")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium",
+                "crm-button inline-flex items-center gap-1.5",
                 layout === "board"
                   ? "bg-card text-ink shadow-soft"
                   : "text-fg-muted hover:text-ink",
@@ -123,9 +124,10 @@ function OppsPage() {
             </button>
             <button
               type="button"
+              aria-pressed={layout === "list"}
               onClick={() => setLayout("list")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium",
+                "crm-button inline-flex items-center gap-1.5",
                 layout === "list"
                   ? "bg-card text-ink shadow-soft"
                   : "text-fg-muted hover:text-ink",
@@ -155,7 +157,7 @@ function OppsPage() {
           <OppKanban listView={view} filterIds={filterIds} />
         </div>
       ) : (
-        <div className="mt-4 overflow-hidden rounded-xl border border-border-soft bg-card shadow-card">
+        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
           {rows.length === 0 ? (
             <EmptyState
               icon={Target}
@@ -163,9 +165,9 @@ function OppsPage() {
               body="Reset filters or switch saved view."
             />
           ) : (
-            <div className="overflow-x-auto">
+            <div role="region" aria-label="Opportunities table, scroll horizontally" tabIndex={0} className="crm-scroll">
               <table className="w-full min-w-[900px] text-left text-sm">
-                <thead className="border-b border-border-soft bg-card-soft text-[10px] uppercase tracking-wider text-fg-subtle">
+                <thead className="border-b border-border-soft bg-card-soft text-[13px] text-fg-muted">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Priority</th>
                     <th className="px-4 py-2.5 font-medium">Opportunity</th>
@@ -191,11 +193,11 @@ function OppsPage() {
                           <Link
                             to="/opportunities/$oppId"
                             params={{ oppId: o.id }}
-                            className="font-medium text-ink hover:text-product-mint"
+                            className="inline-flex min-h-11 items-center font-medium text-ink hover:text-product-mint"
                           >
                             {o.name}
                           </Link>
-                          <p className="text-[11px] text-fg-subtle">
+                          <p className="text-xs text-fg-subtle">
                             {o.accountName}
                           </p>
                         </td>
@@ -228,7 +230,7 @@ function OppsPage() {
                             <span className="text-xs text-fg-subtle">—</span>
                           )}
                         </td>
-                        <td className="max-w-[160px] truncate px-4 py-3">
+                        <td className="max-w-[240px] break-words px-4 py-3">
                           <span
                             className={
                               o.nextAction

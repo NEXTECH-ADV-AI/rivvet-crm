@@ -66,9 +66,9 @@ export function LeadBookFunnel({
       </div>
 
       {Object.keys(s.byCampaignLoads).length > 0 && (
-      <div className="crm-surface p-3 sm:p-4">
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">
+      <div className="crm-surface px-5 py-4">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[15px] font-semibold text-ink">
             Instantly load mix (multi-vertical)
           </h2>
           <span className="text-[11px] text-fg-subtle">
@@ -83,7 +83,7 @@ export function LeadBookFunnel({
               <li
                 key={name}
                 className={cn(
-                  "flex items-center justify-between rounded-lg border px-3 py-2",
+                  "flex min-w-0 items-center justify-between gap-3 rounded-lg border px-3 py-3",
                   count === 0
                     ? "border-warn/30 bg-warn/5"
                     : isHvac
@@ -91,7 +91,7 @@ export function LeadBookFunnel({
                       : "border-product-mint/25 bg-product-mint/5",
                 )}
               >
-                <span className="text-xs font-medium text-ink">{name}</span>
+                <span className="min-w-0 break-words text-[13px] font-medium text-ink">{name}</span>
                 <span className="font-mono text-sm font-semibold tabular">
                   {count}
                   {count === 0 && (
@@ -107,12 +107,12 @@ export function LeadBookFunnel({
       </div>
       )}
 
-      <div className="crm-surface p-3 sm:p-4">
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold text-ink">Lead stages</h2>
+      <div className="crm-surface px-5 py-4">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between">
+          <h2 className="text-[15px] font-semibold text-ink">Lead stages</h2>
           <span className="text-[11px] text-fg-subtle">This page of results</span>
         </div>
-        <div className="flex gap-1 overflow-x-auto pb-1">
+        <div tabIndex={0} role="region" aria-label="Lead stages, scroll horizontally" className="crm-scroll flex gap-2 p-1">
           {LIFECYCLE_ORDER.map((stage, i) => {
             const n = s.byLifecycle[stage] ?? 0;
             const pct = s.total > 0 ? (n / s.total) * 100 : 0;
@@ -121,15 +121,16 @@ export function LeadBookFunnel({
               <button
                 key={stage}
                 type="button"
+                aria-pressed={active}
                 onClick={() => onLifecycle?.(active ? "all" : stage)}
                 className={cn(
-                  "min-w-[88px] flex-1 rounded-lg border px-2 py-2 text-left transition",
+                  "min-h-11 min-w-[112px] flex-1 rounded-lg border px-3 py-3 text-left transition",
                   active
                     ? "border-signal-cyan bg-agent-soft"
                     : "border-border-soft bg-mist/40 hover:bg-mist",
                 )}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
+                <p className="text-xs font-semibold text-fg-subtle">
                   {i + 1}. {LIFECYCLE_LABEL[stage] ?? stage}
                 </p>
                 <p className="mt-1 font-mono text-sm font-semibold tabular text-ink">
@@ -145,8 +146,8 @@ export function LeadBookFunnel({
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
-        <div className="crm-surface p-3 lg:col-span-5">
-          <h2 className="mb-2 text-sm font-semibold text-ink">
+        <div className="crm-surface px-5 py-4 lg:col-span-5">
+          <h2 className="mb-2 text-[15px] font-semibold text-ink">
             Leads by trade
           </h2>
           <ul className="space-y-1.5">
@@ -161,13 +162,14 @@ export function LeadBookFunnel({
                   <li key={v}>
                     <button
                       type="button"
+                      aria-pressed={active}
                       onClick={() => onVertical?.(active ? "all" : v)}
                       className={cn(
-                        "flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left",
+                        "flex min-h-11 w-full items-center gap-2 rounded-sm px-1 py-2 text-left",
                         active && "bg-agent-soft",
                       )}
                     >
-                      <span className="w-28 shrink-0 text-xs text-fg-muted">
+                      <span className="w-24 shrink-0 break-words text-[13px] text-fg-muted">
                         {VERTICAL_LABEL[v] ?? v}
                         {isSeq && (
                           <span className="ml-1 text-[9px] text-product-mint">
@@ -184,10 +186,10 @@ export function LeadBookFunnel({
                           style={{ width: `${Math.min(100, pct)}%` }}
                         />
                       </div>
-                      <span className="w-16 text-right font-mono text-[11px] tabular text-ink">
+                      <span className="w-14 shrink-0 text-right font-mono text-[11px] tabular text-ink">
                         {count.toLocaleString()}
                       </span>
-                      <span className="w-12 text-right font-mono text-[10px] text-fg-subtle">
+                      <span className="w-10 shrink-0 text-right font-mono text-[10px] text-fg-subtle">
                         {formatPct(pct, 0)}
                       </span>
                     </button>
@@ -216,17 +218,17 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="crm-surface px-3 py-2.5">
-      <p className="crm-label">{label}</p>
+    <div className="crm-surface min-w-0 px-4 py-3">
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
         className={cn(
-          "mt-0.5 font-mono text-lg font-semibold tabular",
+          "mt-1 break-words text-[24px] font-semibold tabular",
           warn ? "text-warn" : accent ? "text-product-mint" : "text-ink",
         )}
       >
         {value}
       </p>
-      {sub && <p className="text-[10px] text-fg-subtle">{sub}</p>}
+      {sub && <p className="text-xs text-fg-subtle">{sub}</p>}
     </div>
   );
 }

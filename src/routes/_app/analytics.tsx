@@ -62,25 +62,25 @@ function AnalyticsPage() {
   const activityUnavailable = useCrmStore((s) => s.hydrateMessage)?.includes("activities unavailable");
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
         title="Analytics"
         description="Leads, outreach and opportunities."
         action={
           <Link
             to="/leads"
-            className="rounded-md border border-border-soft bg-card px-3 py-2 text-xs font-semibold shadow-soft hover:bg-mist"
+            className="crm-button border border-border bg-card hover:bg-mist"
           >
             Email readiness
           </Link>
         }
       />
 
-      <section className="mb-5 crm-surface p-4" aria-label="Reporting period">
+      <section className="mb-5 crm-surface px-5 py-4" aria-label="Reporting period">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-sm font-semibold">Sales activity</h2><p className="text-xs text-fg-muted">Choose the reporting window. Pipeline below is the current open book.</p></div>
+          <div><h2 className="text-[15px] font-semibold">Sales activity</h2><p className="text-xs text-fg-muted">Choose the reporting window. Pipeline below is the current open book.</p></div>
           <div className="flex gap-1 rounded-lg bg-mist p-1" aria-label="Date range">
-            {(["30d", "all"] as const).map((value) => <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)} className={`rounded-md px-3 py-2 text-xs font-semibold ${period === value ? "bg-ink text-white" : "text-fg-muted"}`}>{value === "30d" ? "Past 30 days" : "All time"}</button>)}
+            {(["30d", "all"] as const).map((value) => <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)} className={`crm-button ${period === value ? "bg-ink text-white" : "text-fg-muted"}`}>{value === "30d" ? "Past 30 days" : "All time"}</button>)}
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -265,7 +265,7 @@ function AnalyticsPage() {
                 <Link
                   to="/opportunities/$oppId"
                   params={{ oppId: d.id }}
-                  className="flex items-center gap-3 py-2.5 hover:bg-mist/50"
+                  className="flex min-h-11 items-center gap-3 py-3 hover:bg-mist/50"
                 >
                   <PriorityBadge priority={d.priority} />
                   <div className="min-w-0 flex-1">
@@ -277,7 +277,7 @@ function AnalyticsPage() {
                       {d.closeDate ? ` · ${formatDate(d.closeDate)}` : ""}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-semibold tabular">
+                  <span className="font-mono text-[15px] font-semibold tabular">
                     {d.amountKnown === false ? "Not priced" : formatMoney(d.amount)}
                   </span>
                 </Link>
@@ -292,7 +292,7 @@ function AnalyticsPage() {
 
 const tooltipStyle = {
   background: "#fff",
-  border: "1px solid #d5e0dc",
+  border: "1px solid #dce2e9",
   borderRadius: 8,
   fontSize: 12,
 };
@@ -313,10 +313,10 @@ function Kpi({
   warn?: boolean;
 }) {
   return (
-    <div className="crm-surface min-w-0 px-3 py-3">
-      <p className="crm-label">{label}</p>
+    <div className="crm-surface min-w-0 px-4 py-3">
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
-        className={`mt-1 break-words font-mono text-lg font-semibold sm:text-xl tabular ${
+        className={`mt-1 break-words text-xl font-semibold sm:text-[24px] tabular ${
           warn
             ? "text-warn"
             : accent
@@ -328,7 +328,7 @@ function Kpi({
       >
         {value}
       </p>
-      {sub && <p className="text-[10px] text-fg-subtle">{sub}</p>}
+      {sub && <p className="text-xs text-fg-subtle">{sub}</p>}
     </div>
   );
 }
@@ -343,10 +343,10 @@ function MiniStat({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border-soft bg-card-soft px-3 py-2.5">
-      <p className="text-[11px] text-fg-muted">{label}</p>
+    <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-[13px] text-fg-muted">{label}</p>
       <p
-        className={`font-mono text-lg font-semibold tabular ${
+        className={`break-words text-xl font-semibold tabular ${
           warn ? "text-warn" : "text-ink"
         }`}
       >
@@ -371,9 +371,9 @@ function Panel({
   notice?: string | null;
 }) {
   return (
-    <section className={`crm-surface min-w-0 p-4 ${className ?? ""}`}>
+    <section className={`crm-surface min-w-0 px-5 py-4 ${className ?? ""}`}>
       <div className="mb-3">
-        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
         {subtitle && (
           <p className="text-[11px] text-fg-subtle">{subtitle}</p>
         )}

@@ -6,9 +6,9 @@ import { useCrmStore } from "@/lib/crm/store";
 import { NEW_OPP_STAGES, type NewOppStage } from "@/lib/crm/opportunity-create";
 
 const primary =
-  "inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white transition hover:bg-deep-ink active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+  "crm-button inline-flex items-center justify-center gap-1.5 bg-ink text-white transition hover:bg-deep-ink active:scale-[0.98]";
 const field =
-  "mt-1 w-full rounded-md border border-border-soft bg-card px-3 py-2 text-sm text-ink placeholder:text-fg-subtle focus:border-product-mint focus:outline-none";
+  "crm-control mt-1 w-full placeholder:text-fg-subtle";
 
 function useCreateAndOpen() {
   const create = useCreateOpportunity();
@@ -69,7 +69,7 @@ type Picked = { kind: "account"; id: string; name: string; detail: string } | { 
 
 function StageSelect({ value, onChange }: { value: NewOppStage; onChange: (v: NewOppStage) => void }) {
   return (
-    <label className="block text-xs text-fg-muted">
+    <label className="block text-[13px] text-fg-muted">
       Stage
       <select value={value} onChange={(e) => onChange(e.target.value as NewOppStage)} className={field}>
         {NEW_OPP_STAGES.map((s) => (
@@ -138,12 +138,12 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 rounded-xl border border-border-soft bg-card p-4 shadow-card">
-      <h2 className="text-sm font-semibold text-ink">New opportunity</h2>
+    <form onSubmit={submit} className="mt-4 rounded-xl border border-border bg-card p-5">
+      <h2 className="text-[15px] font-semibold text-ink">New opportunity</h2>
 
       {!picked ? (
         <div className="relative mt-3">
-          <label className="block text-xs text-fg-muted">
+          <label className="block text-[13px] text-fg-muted">
             Company
             <input
               autoFocus
@@ -165,7 +165,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
             <ul
               id="opp-company-options"
               role="listbox"
-              className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border-soft bg-card shadow-card"
+              className="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-sm border border-border bg-card shadow-float"
             >
               {options.map((o, i) => (
                 <li
@@ -178,7 +178,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
                     e.preventDefault();
                     choose(o);
                   }}
-                  className={`cursor-pointer px-3 py-2 text-sm ${i === active ? "bg-mist" : ""} ${o.kind === "new" ? "border-t border-border-soft" : ""}`}
+                  className={`min-h-11 cursor-pointer break-words px-3 py-3 text-sm ${i === active ? "bg-mist" : ""} ${o.kind === "new" ? "border-t border-border-soft" : ""}`}
                 >
                   {o.kind === "account" ? (
                     <>
@@ -212,7 +212,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
             <button
               type="button"
               onClick={() => setPicked(null)}
-              className="shrink-0 text-xs font-medium text-fg-muted hover:text-ink"
+              className="crm-button shrink-0 text-fg-muted hover:text-ink"
             >
               Change
             </button>
@@ -232,7 +232,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
             <div className="grid gap-3 sm:grid-cols-2">
               {picked.kind === "new" && (
                 <>
-                  <label className="block text-xs text-fg-muted">
+                  <label className="block text-[13px] text-fg-muted">
                     Contact name
                     <input
                       autoFocus
@@ -242,7 +242,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
                       className={field}
                     />
                   </label>
-                  <label className="block text-xs text-fg-muted">
+                  <label className="block text-[13px] text-fg-muted">
                     Email
                     <input
                       type="email"
@@ -252,7 +252,7 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
                       className={field}
                     />
                   </label>
-                  <label className="block text-xs text-fg-muted">
+                  <label className="block text-[13px] text-fg-muted">
                     Phone
                     <input
                       type="tel"
@@ -278,11 +278,11 @@ export function NewOpportunityForm({ onCancel }: { onCancel: () => void }) {
           {create.error instanceof Error ? create.error.message : "Couldn't create it. Try again."}
         </p>
       )}
-      <div className="mt-4 flex justify-end gap-2">
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md px-3 py-2 text-xs font-medium text-fg-muted hover:text-ink"
+          className="crm-button text-fg-muted hover:text-ink"
         >
           Cancel
         </button>
