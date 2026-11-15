@@ -37,8 +37,9 @@ for (const button of document.querySelectorAll('[data-close]')) button.addEventL
 for (const button of document.querySelectorAll('[data-page]')) button.addEventListener('click', () => {
   const page = button.dataset.page;
   for (const section of document.querySelectorAll('[data-view]')) section.hidden = section.dataset.view !== page;
-  for (const nav of document.querySelectorAll('.nav-items [data-page]')) {
-    if (nav.dataset.page === page) nav.setAttribute('aria-current', 'page');
+  const parentPage = document.querySelector(`[data-view="${page}"]`).dataset.parent || page;
+  for (const nav of document.querySelectorAll('.nav-items [data-page], .nav-footer [data-page]')) {
+    if (nav.dataset.page === parentPage) nav.setAttribute('aria-current', 'page');
     else nav.removeAttribute('aria-current');
   }
   const menu = document.getElementById('menu-dialog');
@@ -72,6 +73,10 @@ const sampleEntries = [
   ['Cedar Demo Electric', 'Sample opportunity · Next step missing'],
   ['Home', 'Design page · Priorities and customer follow-ups'],
   ['Analytics', 'Design page · Sample sales metrics'],
+  ['Leads', 'Design page · Call queue and lead filters'],
+  ['Accounts', 'Design page · Customer relationships'],
+  ['Opportunities', 'Design page · Board and list'],
+  ['Settings', 'Design page · Sample identity and connection'],
 ];
 function renderSearch() {
   const query = document.getElementById('sample-search').value.trim().toLowerCase();
@@ -87,7 +92,7 @@ function renderSearch() {
     item.append(title, description);
     list.append(item);
   }
-  document.getElementById('search-status').textContent = matches.length ? `${matches.length} sample results. Record navigation is unavailable.` : 'No sample matches.';
+  document.getElementById('search-status').textContent = matches.length ? `${matches.length} sample results. Search results are view-only. Use the menu to browse sample pages.` : 'No sample matches.';
 }
 document.getElementById('sample-search').addEventListener('input', renderSearch);
 renderSearch();
@@ -105,4 +110,63 @@ priorityToggle.addEventListener('click', () => {
   priorityToggle.setAttribute('aria-expanded', String(expanded));
   priorityToggle.textContent = expanded ? 'Show fewer' : `Show all ${rows.length}`;
   document.getElementById('priority-count').textContent = `Showing ${expanded ? rows.length : 3} of ${rows.length} priorities`;
+});
+
+// Sample lists only: filters never change a record, session or persisted state.
+let leadView = 'call';
+let oppView = 'all';
+function filterSampleList(page) {
+  const root = document.querySelector(`[data-view="${page}"]`);
+  const filters = Object.fromEntries([...root.querySelectorAll('[data-filter]')].map((input) => [input.dataset.filter, input.value.trim().toLowerCase()]));
+  let visible = 0;
+  const matches = (row) => {
+    const view = page === 'leads' ? leadView : page === 'opportunities' ? oppView : 'all';
+    return (view === 'all' || (row.dataset.views || '').split(' ').includes(view))
+      && Object.entries(filters).every(([key, value]) => !value || key === 'sort' || (key === 'query' ? row.textContent.toLowerCase().includes(value) : (row.dataset[key] || '').toLowerCase() === value));
+  };
+  for (const row of root.querySelectorAll('[data-sample-row]')) {
+    row.hidden = !matches(row);
+    if (!row.hidden) visible++;
+  }
+  for (const row of root.querySelectorAll('[data-board-row]')) row.hidden = !matches(row);
+  for (const column of root.querySelectorAll('.board-column')) column.querySelector('.board-empty').hidden = [...column.querySelectorAll('[data-board-row]')].some((row) => !row.hidden);
+  if (page === 'leads') {
+    const call = leadView === 'call';
+    document.getElementById('lead-call-queue').hidden = !call;
+    document.getElementById('lead-table-view').hidden = call;
+    document.getElementById('lead-filters').hidden = call;
+    document.getElementById('lead-result-status').textContent = call ? '1 sample contact in the call queue.' : `${visible} sample leads. Filters apply only to these fictitious records.`;
+    document.getElementById('leads-empty').hidden = visible !== 0;
+  } else {
+    root.querySelector('[data-result-status]').textContent = `${visible} sample ${page}.${page === 'opportunities' ? ' Stage changes are disabled.' : ''}`;
+    root.querySelector('[data-empty]').hidden = visible !== 0;
+  }
+  if (page === 'accounts') {
+    const rows = [...root.querySelectorAll('[data-sample-row]')];
+    rows.sort((a, b) => filters.sort === 'name' ? a.cells[1].textContent.localeCompare(b.cells[1].textContent) : filters.sort === 'score' ? Number(b.dataset.score) - Number(a.dataset.score) : Number(a.dataset.age) - Number(b.dataset.age));
+    root.querySelector('tbody').append(...rows);
+  }
+}
+for (const page of ['leads', 'accounts', 'opportunities']) {
+  for (const control of document.querySelectorAll(`[data-view="${page}"] [data-filter]`)) control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', () => filterSampleList(page));
+}
+for (const group of ['lead', 'opp']) {
+  for (const button of document.querySelectorAll(`[data-${group}-view]`)) button.addEventListener('click', () => {
+    if (group === 'lead') leadView = button.dataset.leadView;
+    else oppView = button.dataset.oppView;
+    for (const control of document.querySelectorAll(`[data-${group}-view]`)) control.setAttribute('aria-pressed', String(control === button));
+    filterSampleList(group === 'lead' ? 'leads' : 'opportunities');
+  });
+}
+for (const button of document.querySelectorAll('[data-opp-layout]')) button.addEventListener('click', () => {
+  document.getElementById('opp-board').hidden = button.dataset.oppLayout !== 'board';
+  document.getElementById('opp-list').hidden = button.dataset.oppLayout !== 'list';
+  for (const control of document.querySelectorAll('[data-opp-layout]')) control.setAttribute('aria-pressed', String(control === button));
+});
+document.getElementById('lead-totals-toggle').addEventListener('click', (event) => {
+  const button = event.currentTarget;
+  const expanded = button.getAttribute('aria-expanded') !== 'true';
+  button.setAttribute('aria-expanded', String(expanded));
+  button.textContent = expanded ? 'Hide totals' : 'Show totals';
+  document.getElementById('lead-totals').hidden = !expanded;
 });
